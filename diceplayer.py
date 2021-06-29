@@ -23,6 +23,7 @@ if __name__ == '__main__':
     			                   help='input file of diceplayer [default = control.in]')
 	parser.add_argument('-o', dest='outfile', default='run.log', metavar='OUTFILE', 
     				                 help='output file of diceplayer [default = run.log]')
+	## Study the option of a parameter for continuing the last process via data from control.in and run.log files
 
 	args = parser.parse_args()
 

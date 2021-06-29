@@ -21,7 +21,7 @@ internal = {}
 ## Diceplayer:
 player['maxcyc'] = 1
 player['initcyc'] = 1        # May restart an optimization (append to geoms.xyz from start)
-player['nprocs'] = 1f
+player['nprocs'] = 1
 player['switchcyc'] = 3		 # At which step start doing only one QM calculation (geom & chg)
 player['altsteps'] = 20000   # Steps for thermalization when starting from previous step
 player['maxstep'] = 0.3      # Maxstep for geometry relaxation in Bohr

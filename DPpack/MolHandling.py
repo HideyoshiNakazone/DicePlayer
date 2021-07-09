@@ -11,144 +11,144 @@ from DPpack.SetGlobals import *
 
 #######################################  functions  ######################################
 
-def center_of_mass(molecule):
+# def center_of_mass(molecule):
 	
-	com = np.zeros(3)
-	total_mass = 0.0
-	for atom in molecule:
-		total_mass += atom['mass']
-		position = np.array([atom['rx'], atom['ry'], atom['rz']])
-		com += atom['mass'] * position
+# 	com = np.zeros(3)
+# 	total_mass = 0.0
+# 	for atom in molecule:
+# 		total_mass += atom['mass']
+# 		position = np.array([atom['rx'], atom['ry'], atom['rz']])
+# 		com += atom['mass'] * position
 	
-	com = com / total_mass
+# 	com = com / total_mass
 	
-	return com
+# 	return com
 
 
 
-def center_of_mass_distance(molecule1, molecule2):
+# def center_of_mass_distance(molecule1, molecule2):
 	
-	com1 = center_of_mass(molecule1)
-	com2 = center_of_mass(molecule2)
-	dx = com1[0] - com2[0]
-	dy = com1[1] - com2[1]
-	dz = com1[2] - com2[2]
-	distance = math.sqrt(dx**2 + dy**2 + dz**2)
+# 	com1 = center_of_mass(molecule1)
+# 	com2 = center_of_mass(molecule2)
+# 	dx = com1[0] - com2[0]
+# 	dy = com1[1] - com2[1]
+# 	dz = com1[2] - com2[2]
+# 	distance = math.sqrt(dx**2 + dy**2 + dz**2)
 	
-	return distance
+# 	return distance
 
 
 
-def center_of_mass_to_origin(molecule):
+# def center_of_mass_to_origin(molecule):
 	
-	com = center_of_mass(molecule)
-	for atom in molecule:
-		atom['rx'] -= com[0]
-		atom['ry'] -= com[1]
-		atom['rz'] -= com[2]
+# 	com = center_of_mass(molecule)
+# 	for atom in molecule:
+# 		atom['rx'] -= com[0]
+# 		atom['ry'] -= com[1]
+# 		atom['rz'] -= com[2]
 	
-	return
+# 	return
 
 
 
-def charges_and_dipole(molecule):
+# def charges_and_dipole(molecule):
 	
-	eA_to_Debye = 1/0.20819434
-	charge = 0
-	dipole = np.zeros(3)
-	for atom in molecule:
-		position = np.array([ atom['rx'], atom['ry'], atom['rz'] ])
-		dipole += atom['chg'] * position
-		charge += atom['chg']
+# 	eA_to_Debye = 1/0.20819434
+# 	charge = 0
+# 	dipole = np.zeros(3)
+# 	for atom in molecule:
+# 		position = np.array([ atom['rx'], atom['ry'], atom['rz'] ])
+# 		dipole += atom['chg'] * position
+# 		charge += atom['chg']
 	
-	dipole *= eA_to_Debye
-	total_dipole = math.sqrt(dipole[0]**2 + dipole[1]**2 + dipole[2]**2)
+# 	dipole *= eA_to_Debye
+# 	total_dipole = math.sqrt(dipole[0]**2 + dipole[1]**2 + dipole[2]**2)
 	
-	return [charge, dipole[0], dipole[1], dipole[2], total_dipole]
+# 	return [charge, dipole[0], dipole[1], dipole[2], total_dipole]
 
 
 
-def distances_between_atoms(molecule):
+# def distances_between_atoms(molecule):
 	
-	distances = []
-	dim = len(molecule)
-	for atom1 in molecule:
-		if atom1['na'] != ghost_number:
-			for atom2 in molecule:
-				if atom2['na'] != ghost_number:
-					dx = atom1['rx'] - atom2['rx']
-					dy = atom1['ry'] - atom2['ry']
-					dz = atom1['rz'] - atom2['rz']
-					distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
+# 	distances = []
+# 	dim = len(molecule)
+# 	for atom1 in molecule:
+# 		if atom1['na'] != ghost_number:
+# 			for atom2 in molecule:
+# 				if atom2['na'] != ghost_number:
+# 					dx = atom1['rx'] - atom2['rx']
+# 					dy = atom1['ry'] - atom2['ry']
+# 					dz = atom1['rz'] - atom2['rz']
+# 					distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
 	
-	return np.array(distances).reshape(dim, dim)
+# 	return np.array(distances).reshape(dim, dim)
 
 
 
-def eixos(molecule):
+# def eixos(molecule):
 	
-	eixos = np.zeros(3)
-	if len(molecule) == 2:
-		position1 = np.array([ molecule[0]['rx'], molecule[0]['ry'], molecule[0]['rz'] ])
-		position2 = np.array([ molecule[1]['rx'], molecule[1]['ry'], molecule[1]['rz'] ])
-		eixos = position2 - position1
-		eixos /= linalg.norm(eixos)
-	elif len(molecule) > 2:
-		position1 = np.array([ molecule[0]['rx'], molecule[0]['ry'], molecule[0]['rz'] ])
-		position2 = np.array([ molecule[1]['rx'], molecule[1]['ry'], molecule[1]['rz'] ])
-		position3 = np.array([ molecule[2]['rx'], molecule[2]['ry'], molecule[2]['rz'] ])
-		v1 = position2 - position1
-		v2 = position3 - position1
-		v3 = np.cross(v1, v2)
-		v2 = np.cross(v1, v3)
-		v1 /= linalg.norm(v1)
-		v2 /= linalg.norm(v2)
-		v3 /= linalg.norm(v3)
-		eixos = np.array([[v1[0], v1[1], v1[2]],
-		                  [v2[0], v2[1], v2[2]],
-		                  [v3[0], v3[1], v3[2]]])
+# 	eixos = np.zeros(3)
+# 	if len(molecule) == 2:
+# 		position1 = np.array([ molecule[0]['rx'], molecule[0]['ry'], molecule[0]['rz'] ])
+# 		position2 = np.array([ molecule[1]['rx'], molecule[1]['ry'], molecule[1]['rz'] ])
+# 		eixos = position2 - position1
+# 		eixos /= linalg.norm(eixos)
+# 	elif len(molecule) > 2:
+# 		position1 = np.array([ molecule[0]['rx'], molecule[0]['ry'], molecule[0]['rz'] ])
+# 		position2 = np.array([ molecule[1]['rx'], molecule[1]['ry'], molecule[1]['rz'] ])
+# 		position3 = np.array([ molecule[2]['rx'], molecule[2]['ry'], molecule[2]['rz'] ])
+# 		v1 = position2 - position1
+# 		v2 = position3 - position1
+# 		v3 = np.cross(v1, v2)
+# 		v2 = np.cross(v1, v3)
+# 		v1 /= linalg.norm(v1)
+# 		v2 /= linalg.norm(v2)
+# 		v3 /= linalg.norm(v3)
+# 		eixos = np.array([[v1[0], v1[1], v1[2]],
+# 		                  [v2[0], v2[1], v2[2]],
+# 		                  [v3[0], v3[1], v3[2]]])
 	
-	return eixos
+# 	return eixos
 
 
 
-def inertia_tensor(molecule):
+# def inertia_tensor(molecule):
 	
-	com = center_of_mass(molecule)
-	Ixx = Ixy = Ixz = Iyy = Iyz = Izz = 0.0
-	for atom in molecule:
-		####  Obtain the displacement from the center of mass
-		dx = atom['rx'] - com[0]
-		dy = atom['ry'] - com[1]
-		dz = atom['rz'] - com[2]
-		####  Update the diagonal components of the tensor
-		Ixx += atom['mass'] * (dy**2 + dz**2)
-		Iyy += atom['mass'] * (dz**2 + dx**2)
-		Izz += atom['mass'] * (dx**2 + dy**2)
-		####  Update the off-diagonal components of the tensor
-		Ixy += atom['mass'] * dx * dy * -1
-		Ixz += atom['mass'] * dx * dz * -1
-		Iyz += atom['mass'] * dy * dz * -1
+# 	com = center_of_mass(molecule)
+# 	Ixx = Ixy = Ixz = Iyy = Iyz = Izz = 0.0
+# 	for atom in molecule:
+# 		####  Obtain the displacement from the center of mass
+# 		dx = atom['rx'] - com[0]
+# 		dy = atom['ry'] - com[1]
+# 		dz = atom['rz'] - com[2]
+# 		####  Update the diagonal components of the tensor
+# 		Ixx += atom['mass'] * (dy**2 + dz**2)
+# 		Iyy += atom['mass'] * (dz**2 + dx**2)
+# 		Izz += atom['mass'] * (dx**2 + dy**2)
+# 		####  Update the off-diagonal components of the tensor
+# 		Ixy += atom['mass'] * dx * dy * -1
+# 		Ixz += atom['mass'] * dx * dz * -1
+# 		Iyz += atom['mass'] * dy * dz * -1
 		
-	return np.array([[Ixx, Ixy, Ixz],
-					 [Ixy, Iyy, Iyz],
-					 [Ixz, Iyz, Izz]])
+# 	return np.array([[Ixx, Ixy, Ixz],
+# 					 [Ixy, Iyy, Iyz],
+# 					 [Ixz, Iyz, Izz]])
 
 
 
-def minimum_distance(molecule1, molecule2):
+# def minimum_distance(molecule1, molecule2):
 	
-	distances = []
-	for atom1 in molecule1:
-		if atom1['na'] != ghost_number:
-			for atom2 in molecule2:
-				if atom2['na'] != ghost_number:
-					dx = atom1['rx'] - atom2['rx']
-					dy = atom1['ry'] - atom2['ry']
-					dz = atom1['rz'] - atom2['rz']
-					distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
+# 	distances = []
+# 	for atom1 in molecule1:
+# 		if atom1['na'] != ghost_number:
+# 			for atom2 in molecule2:
+# 				if atom2['na'] != ghost_number:
+# 					dx = atom1['rx'] - atom2['rx']
+# 					dy = atom1['ry'] - atom2['ry']
+# 					dz = atom1['rz'] - atom2['rz']
+# 					distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
 	
-	return min(distances)
+# 	return min(distances)
 
 
 
@@ -224,15 +224,15 @@ def calculate_step(gradient, hessian, fh):
 
 
 
-def read_position(molecule):
+# def read_position(molecule):
 	
-	position_list = []
-	for atom in molecule:
-		position_list.extend([ atom['rx'], atom['ry'], atom['rz'] ])
-	position = np.array(position_list)
-	position *= ang2bohr
+# 	position_list = []
+# 	for atom in molecule:
+# 		position_list.extend([ atom['rx'], atom['ry'], atom['rz'] ])
+# 	position = np.array(position_list)
+# 	position *= ang2bohr
 	
-	return position
+# 	return position
 
 
 
@@ -254,17 +254,17 @@ def update_molecule(position, fh):
 
 
 
-def update_hessian(step, cur_gradient, old_gradient, hessian):	## According to the BFGS
+# def update_hessian(step, cur_gradient, old_gradient, hessian):	## According to the BFGS
 	
-	dif_gradient = cur_gradient - old_gradient
+# 	dif_gradient = cur_gradient - old_gradient
 	
-	mat1 = 1/np.dot(dif_gradient, step) * np.matmul(dif_gradient.T, dif_gradient)
-	mat2 = 1/np.dot(step, np.matmul(hessian, step.T).T)
-	mat2 *= np.matmul( np.matmul(hessian, step.T), np.matmul(step, hessian) )
+# 	mat1 = 1/np.dot(dif_gradient, step) * np.matmul(dif_gradient.T, dif_gradient)
+# 	mat2 = 1/np.dot(step, np.matmul(hessian, step.T).T)
+# 	mat2 *= np.matmul( np.matmul(hessian, step.T), np.matmul(step, hessian) )
 	
-	hessian += mat1 - mat2
+# 	hessian += mat1 - mat2
 	
-	return hessian
+# 	return hessian
 
 
 
@@ -406,14 +406,14 @@ def populate_asec_vdw(cycle, fh):
 
 
 
-def principal_axes(inertia_tensor):
+# def principal_axes(inertia_tensor):
 	
-	try:
-		evals, evecs = linalg.eigh(inertia_tensor)
-	except:
-		sys.exit("Error: diagonalization of inertia tensor did not converge")
+# 	try:
+# 		evals, evecs = linalg.eigh(inertia_tensor)
+# 	except:
+# 		sys.exit("Error: diagonalization of inertia tensor did not converge")
 	
-	return evals, evecs
+# 	return evals, evecs
 
 
 
@@ -463,73 +463,73 @@ def print_mol_info(molecule, fh):
 
 
 
-def sizes_of_molecule(molecule):
+# def sizes_of_molecule(molecule):
 	
-	x_list = []
-	y_list = []
-	z_list = []
-	for atom in molecule:
-		if atom['na'] != ghost_number:
-			x_list.append(atom['rx'])
-			y_list.append(atom['ry'])
-			z_list.append(atom['rz'])
+# 	x_list = []
+# 	y_list = []
+# 	z_list = []
+# 	for atom in molecule:
+# 		if atom['na'] != ghost_number:
+# 			x_list.append(atom['rx'])
+# 			y_list.append(atom['ry'])
+# 			z_list.append(atom['rz'])
 	
-	x_max = max(x_list)
-	x_min = min(x_list)
-	y_max = max(y_list)
-	y_min = min(y_list)
-	z_max = max(z_list)
-	z_min = min(z_list)
+# 	x_max = max(x_list)
+# 	x_min = min(x_list)
+# 	y_max = max(y_list)
+# 	y_min = min(y_list)
+# 	z_max = max(z_list)
+# 	z_min = min(z_list)
 	
-	sizes = [x_max - x_min, y_max - y_min, z_max - z_min]
+# 	sizes = [x_max - x_min, y_max - y_min, z_max - z_min]
 	
-	return sizes
+# 	return sizes
 
 
 
-def standard_orientation(molecule):
+# def standard_orientation(molecule):
 	
-	center_of_mass_to_origin(molecule)
-	tensor = inertia_tensor(molecule)
-	evals, evecs = principal_axes(tensor)
-	if round(linalg.det(evecs)) == -1:
-		evecs[0,2] *= -1
-		evecs[1,2] *= -1
-		evecs[2,2] *= -1
-	if round(linalg.det(evecs)) != 1:
-		sys.exit("Error: could not make a rotation matrix while adopting the standard orientation")
+# 	center_of_mass_to_origin(molecule)
+# 	tensor = inertia_tensor(molecule)
+# 	evals, evecs = principal_axes(tensor)
+# 	if round(linalg.det(evecs)) == -1:
+# 		evecs[0,2] *= -1
+# 		evecs[1,2] *= -1
+# 		evecs[2,2] *= -1
+# 	if round(linalg.det(evecs)) != 1:
+# 		sys.exit("Error: could not make a rotation matrix while adopting the standard orientation")
 	
-	rot_matrix = evecs.T
-	for atom in molecule:
-		position = np.array([ atom['rx'], atom['ry'], atom['rz'] ])
-		new_position = np.matmul(rot_matrix, position.T).T
-		atom['rx'] = new_position[0]
-		atom['ry'] = new_position[1]
-		atom['rz'] = new_position[2]
+# 	rot_matrix = evecs.T
+# 	for atom in molecule:
+# 		position = np.array([ atom['rx'], atom['ry'], atom['rz'] ])
+# 		new_position = np.matmul(rot_matrix, position.T).T
+# 		atom['rx'] = new_position[0]
+# 		atom['ry'] = new_position[1]
+# 		atom['rz'] = new_position[2]
 	
-	return
+# 	return
 
 
 
-def total_mass(molecule):
+# def total_mass(molecule):
 	
-	mass = 0
-	for atom in molecule:
-		mass += atom['mass']
+# 	mass = 0
+# 	for atom in molecule:
+# 		mass += atom['mass']
 	
-	return mass
+# 	return mass
 
 
 
-def translate(molecule, vector):
+# def translate(molecule, vector):
 	
-	new_molecule = deepcopy(molecule)
-	for atom in new_molecule:
-		atom['rx'] += vector[0]
-		atom['ry'] += vector[1]
-		atom['rz'] += vector[2]
+# 	new_molecule = deepcopy(molecule)
+# 	for atom in new_molecule:
+# 		atom['rx'] += vector[0]
+# 		atom['ry'] += vector[1]
+# 		atom['rz'] += vector[2]
 	
-	return new_molecule
+# 	return new_molecule
 
 
 

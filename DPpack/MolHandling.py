@@ -152,75 +152,75 @@ from DPpack.SetGlobals import *
 
 
 
-def nearest_image(refmol, molecule, lx, ly, lz, criterium="com"):
+# def nearest_image(refmol, molecule, lx, ly, lz, criterium="com"):
 	
-	if criterium != "com" and criterium != "min":
-		sys.exit("Error in value passed to function nearest_image")
-	min_dist = 1e20
-	for i in range(-1, 2):
-		for j in range(-1, 2):
-			for k in range(-1, 2):
+# 	if criterium != "com" and criterium != "min":
+# 		sys.exit("Error in value passed to function nearest_image")
+# 	min_dist = 1e20
+# 	for i in range(-1, 2):
+# 		for j in range(-1, 2):
+# 			for k in range(-1, 2):
 				
-				tr_vector = [i * lx, j * ly, k * lz]
-				new_molecule = translate(molecule, tr_vector)
-				if criterium == "com":
-					dist = center_of_mass_distance(refmol, new_molecule)
-				else:
-					dist = minimum_distance(refmol, new_molecule)
+# 				tr_vector = [i * lx, j * ly, k * lz]
+# 				new_molecule = translate(molecule, tr_vector)
+# 				if criterium == "com":
+# 					dist = center_of_mass_distance(refmol, new_molecule)
+# 				else:
+# 					dist = minimum_distance(refmol, new_molecule)
 					
-				if dist < min_dist:
-					min_dist = dist
-					nearestmol = deepcopy(new_molecule)
+# 				if dist < min_dist:
+# 					min_dist = dist
+# 					nearestmol = deepcopy(new_molecule)
 	
-	return min_dist, nearestmol
+# 	return min_dist, nearestmol
 
 
 
-def calculate_step(gradient, hessian, fh):
+# def calculate_step(gradient, hessian, fh):
 	
-	invhessian = linalg.inv(hessian)
-	pre_step = -1 * np.matmul(invhessian, gradient.T).T
-	maxstep = np.amax(np.absolute(pre_step))
-	factor = min(1, player['maxstep']/maxstep)
-	step = factor * pre_step
+# 	invhessian = linalg.inv(hessian)
+# 	pre_step = -1 * np.matmul(invhessian, gradient.T).T
+# 	maxstep = np.amax(np.absolute(pre_step))
+# 	factor = min(1, player['maxstep']/maxstep)
+# 	step = factor * pre_step
 	
-	fh.write("\nCalculated step:\n")
-	pre_step_list = pre_step.tolist()
+# 	fh.write("\nCalculated step:\n")
+# 	pre_step_list = pre_step.tolist()
 	
-	fh.write("-----------------------------------------------------------------------\n"
-			 "Center     Atomic                          Step (Bohr)\n"
-			 "Number     Number              X                Y                Z\n"
-			 "-----------------------------------------------------------------------\n")
-	for i in range(len(molecules[0])):
-		fh.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
-			   												i + 1, molecules[0][i]['na'], 
-			   			pre_step_list.pop(0), pre_step_list.pop(0), pre_step_list.pop(0)))
+# 	fh.write("-----------------------------------------------------------------------\n"
+# 			 "Center     Atomic                          Step (Bohr)\n"
+# 			 "Number     Number              X                Y                Z\n"
+# 			 "-----------------------------------------------------------------------\n")
+# 	for i in range(len(molecules[0])):
+# 		fh.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
+# 			   												i + 1, molecules[0][i]['na'], 
+# 			   			pre_step_list.pop(0), pre_step_list.pop(0), pre_step_list.pop(0)))
 	
-	fh.write("-----------------------------------------------------------------------\n")
+# 	fh.write("-----------------------------------------------------------------------\n")
 	
-	fh.write("Maximum step is {:>11.6}\n".format(maxstep))
-	fh.write("Scaling factor = {:>6.4f}\n".format(factor))
-	fh.write("\nFinal step (Bohr):\n")
-	step_list = step.tolist()
+# 	fh.write("Maximum step is {:>11.6}\n".format(maxstep))
+# 	fh.write("Scaling factor = {:>6.4f}\n".format(factor))
+# 	fh.write("\nFinal step (Bohr):\n")
+# 	step_list = step.tolist()
 	
-	fh.write("-----------------------------------------------------------------------\n"
-			 "Center     Atomic                          Step (Bohr)\n"
-			 "Number     Number              X                Y                Z\n"
-			 "-----------------------------------------------------------------------\n")
-	for i in range(len(molecules[0])):
-		fh.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
-			   												i + 1, molecules[0][i]['na'], 
-			   						step_list.pop(0), step_list.pop(0), step_list.pop(0)))
+# 	fh.write("-----------------------------------------------------------------------\n"
+# 			 "Center     Atomic                          Step (Bohr)\n"
+# 			 "Number     Number              X                Y                Z\n"
+# 			 "-----------------------------------------------------------------------\n")
+# 	for i in range(len(molecules[0])):
+# 		fh.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
+# 			   												i + 1, molecules[0][i]['na'], 
+# 			   						step_list.pop(0), step_list.pop(0), step_list.pop(0)))
 	
-	fh.write("-----------------------------------------------------------------------\n")
+# 	fh.write("-----------------------------------------------------------------------\n")
 	
-	step_max = np.amax(np.absolute(step))
-	step_rms = np.sqrt(np.mean(np.square(step)))
+# 	step_max = np.amax(np.absolute(step))
+# 	step_rms = np.sqrt(np.mean(np.square(step)))
 	
-	fh.write("  Max Step = {:>14.9f}      RMS Step = {:>14.9f}\n\n".format(
-																	  step_max, step_rms))
+# 	fh.write("  Max Step = {:>14.9f}      RMS Step = {:>14.9f}\n\n".format(
+# 																	  step_max, step_rms))
 	
-	return step
+# 	return step
 
 
 
@@ -236,21 +236,21 @@ def calculate_step(gradient, hessian, fh):
 
 
 
-def update_molecule(position, fh):
+# def update_molecule(position, fh):
 	
-	position_in_ang = (position * bohr2ang).tolist()
-	new_molecule = deepcopy(molecules[0])
-	for atom in new_molecule:
-		atom['rx'] = position_in_ang.pop(0)
-		atom['ry'] = position_in_ang.pop(0)
-		atom['rz'] = position_in_ang.pop(0)
+# 	position_in_ang = (position * bohr2ang).tolist()
+# 	new_molecule = deepcopy(molecules[0])
+# 	for atom in new_molecule:
+# 		atom['rx'] = position_in_ang.pop(0)
+# 		atom['ry'] = position_in_ang.pop(0)
+# 		atom['rz'] = position_in_ang.pop(0)
 	
-	rmsd, molecules[0] = rmsd_fit(new_molecule, molecules[0])
+# 	rmsd, molecules[0] = rmsd_fit(new_molecule, molecules[0])
 	
-	fh.write("\nProjected new conformation of reference molecule with RMSD fit\n")
-	fh.write("RMSD = {:>8.5f} Angstrom\n".format(rmsd))
+# 	fh.write("\nProjected new conformation of reference molecule with RMSD fit\n")
+# 	fh.write("RMSD = {:>8.5f} Angstrom\n".format(rmsd))
 		
-	return
+# 	return
 
 
 
@@ -266,7 +266,7 @@ def update_molecule(position, fh):
 	
 # 	return hessian
 
-
+### Antes de aplicar devemos aplicar a aplicação de Classes para Dice, Player e etc
 
 def populate_asec_vdw(cycle, fh):
 		
@@ -417,49 +417,49 @@ def populate_asec_vdw(cycle, fh):
 
 
 
-def print_geom(cycle, fh):
+# def print_geom(cycle, fh):
 	
-	fh.write("{}\n".format(len(molecules[0])))
-	fh.write("Cycle # {}\n".format(cycle))
-	for atom in molecules[0]:
-		symbol = atomsymb[atom['na']]
-		fh.write("{:<2s}    {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(symbol, 
-		                                              atom['rx'], atom['ry'], atom['rz']))
+# 	fh.write("{}\n".format(len(molecules[0])))
+# 	fh.write("Cycle # {}\n".format(cycle))
+# 	for atom in molecules[0]:
+# 		symbol = atomsymb[atom['na']]
+# 		fh.write("{:<2s}    {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(symbol, 
+# 		                                              atom['rx'], atom['ry'], atom['rz']))
 	
-	return
+# 	return
 
 
 
-def print_mol_info(molecule, fh):
+# def print_mol_info(molecule, fh):
 	
-	com = center_of_mass(molecule)
-	fh.write("    Center of mass = ( {:>10.4f} , {:>10.4f} , {:>10.4f} )\n".format(com[0], 
-	                                                                      com[1], com[2]))
-	inertia = inertia_tensor(molecule)
-	evals, evecs = principal_axes(inertia)
+# 	com = center_of_mass(molecule)
+# 	fh.write("    Center of mass = ( {:>10.4f} , {:>10.4f} , {:>10.4f} )\n".format(com[0], 
+# 	                                                                      com[1], com[2]))
+# 	inertia = inertia_tensor(molecule)
+# 	evals, evecs = principal_axes(inertia)
 	
-	fh.write("    Moments of inertia =  {:>9E}  {:>9E}  {:>9E}\n".format(evals[0], 
-	                                                                  evals[1], evals[2]))
+# 	fh.write("    Moments of inertia =  {:>9E}  {:>9E}  {:>9E}\n".format(evals[0], 
+# 	                                                                  evals[1], evals[2]))
 	
-	fh.write("    Major principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
-	                                                  evecs[0,0], evecs[1,0], evecs[2,0]))
-	fh.write("    Inter principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
-	                                                  evecs[0,1], evecs[1,1], evecs[2,1]))
-	fh.write("    Minor principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
-	                                                  evecs[0,2], evecs[1,2], evecs[2,2]))
+# 	fh.write("    Major principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
+# 	                                                  evecs[0,0], evecs[1,0], evecs[2,0]))
+# 	fh.write("    Inter principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
+# 	                                                  evecs[0,1], evecs[1,1], evecs[2,1]))
+# 	fh.write("    Minor principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
+# 	                                                  evecs[0,2], evecs[1,2], evecs[2,2]))
 	
-	sizes = sizes_of_molecule(molecule)
-	fh.write("    Characteristic lengths = ( {:>6.2f} , {:>6.2f} , {:>6.2f} )\n".format(
-	                                                        sizes[0], sizes[1], sizes[2]))
-	mol_mass = total_mass(molecule)
-	fh.write("    Total mass = {:>8.2f} au\n".format(mol_mass))
+# 	sizes = sizes_of_molecule(molecule)
+# 	fh.write("    Characteristic lengths = ( {:>6.2f} , {:>6.2f} , {:>6.2f} )\n".format(
+# 	                                                        sizes[0], sizes[1], sizes[2]))
+# 	mol_mass = total_mass(molecule)
+# 	fh.write("    Total mass = {:>8.2f} au\n".format(mol_mass))
 	
-	chg_dip = charges_and_dipole(molecule)
-	fh.write("    Total charge = {:>8.4f} e\n".format(chg_dip[0]))
-	fh.write("    Dipole moment = ( {:>9.4f} , {:>9.4f} , {:>9.4f} )     Total = {:>9.4f} Debye\n\n".format(
-	                                      chg_dip[1], chg_dip[2], chg_dip[3], chg_dip[4]))
+# 	chg_dip = charges_and_dipole(molecule)
+# 	fh.write("    Total charge = {:>8.4f} e\n".format(chg_dip[0]))
+# 	fh.write("    Dipole moment = ( {:>9.4f} , {:>9.4f} , {:>9.4f} )     Total = {:>9.4f} Debye\n\n".format(
+# 	                                      chg_dip[1], chg_dip[2], chg_dip[3], chg_dip[4]))
 	
-	return
+# 	return
 
 
 
@@ -533,71 +533,68 @@ def print_mol_info(molecule, fh):
 
 
 
-def rmsd_fit(projecting_mol, reference_mol):
+# def rmsd_fit(projecting_mol, reference_mol):
 	
-	if len(projecting_mol) != len(reference_mol):
-		sys.exit("Error in RMSD fit procedure: molecules have different number of atoms")
-	dim = len(projecting_mol)
+# 	if len(projecting_mol) != len(reference_mol):
+# 		sys.exit("Error in RMSD fit procedure: molecules have different number of atoms")
+# 	dim = len(projecting_mol)
 	
-	new_projecting_mol = deepcopy(projecting_mol)
-	new_reference_mol = deepcopy(reference_mol)
+# 	new_projecting_mol = deepcopy(projecting_mol)
+# 	new_reference_mol = deepcopy(reference_mol)
 	
-	center_of_mass_to_origin(new_projecting_mol)
-	center_of_mass_to_origin(new_reference_mol)
+# 	center_of_mass_to_origin(new_projecting_mol)
+# 	center_of_mass_to_origin(new_reference_mol)
 	
-	x = []
-	y = []
+# 	x = []
+# 	y = []
 	
-	for atom in new_projecting_mol:
-		x.extend([ atom['rx'], atom['ry'], atom['rz'] ])
+# 	for atom in new_projecting_mol:
+# 		x.extend([ atom['rx'], atom['ry'], atom['rz'] ])
 	
-	for atom in new_reference_mol:
-		y.extend([ atom['rx'], atom['ry'], atom['rz'] ])
+# 	for atom in new_reference_mol:
+# 		y.extend([ atom['rx'], atom['ry'], atom['rz'] ])
 	
-	x = np.array(x).reshape(dim, 3)
-	y = np.array(y).reshape(dim, 3)
+# 	x = np.array(x).reshape(dim, 3)
+# 	y = np.array(y).reshape(dim, 3)
 	
-	r = np.matmul(y.T, x)
-	rr = np.matmul(r.T, r)
+# 	r = np.matmul(y.T, x)
+# 	rr = np.matmul(r.T, r)
 	
-	try:
-		evals, evecs = linalg.eigh(rr)
-	except:
-		sys.exit("Error: diagonalization of RR matrix did not converge")
+# 	try:
+# 		evals, evecs = linalg.eigh(rr)
+# 	except:
+# 		sys.exit("Error: diagonalization of RR matrix did not converge")
 	
-	a1 = evecs[:,2].T
-	a2 = evecs[:,1].T
-	a3 = np.cross(a1, a2)
+# 	a1 = evecs[:,2].T
+# 	a2 = evecs[:,1].T
+# 	a3 = np.cross(a1, a2)
 	
-	A = np.array([ a1[0], a1[1], a1[2], a2[0], a2[1], a2[2], a3[0], a3[1], a3[2] ])
-	A = A.reshape(3,3)
+# 	A = np.array([ a1[0], a1[1], a1[2], a2[0], a2[1], a2[2], a3[0], a3[1], a3[2] ])
+# 	A = A.reshape(3,3)
 	
-	b1 = np.matmul(r, a1.T).T		# or np.dot(r, a1)
-	b1 /= linalg.norm(b1)
-	b2 = np.matmul(r, a2.T).T		# or np.dot(r, a2)
-	b2 /= linalg.norm(b2)
-	b3 = np.cross(b1, b2)
+# 	b1 = np.matmul(r, a1.T).T		# or np.dot(r, a1)
+# 	b1 /= linalg.norm(b1)
+# 	b2 = np.matmul(r, a2.T).T		# or np.dot(r, a2)
+# 	b2 /= linalg.norm(b2)
+# 	b3 = np.cross(b1, b2)
 	
-	B = np.array([ b1[0], b1[1], b1[2], b2[0], b2[1], b2[2], b3[0], b3[1], b3[2] ])
-	B = B.reshape(3,3).T
+# 	B = np.array([ b1[0], b1[1], b1[2], b2[0], b2[1], b2[2], b3[0], b3[1], b3[2] ])
+# 	B = B.reshape(3,3).T
 	
-	rot_matrix = np.matmul(B, A)
-	x = np.matmul(rot_matrix, x.T).T
+# 	rot_matrix = np.matmul(B, A)
+# 	x = np.matmul(rot_matrix, x.T).T
 	
-	rmsd = 0
-	for i in range(dim):
-		rmsd += (x[i,0] - y[i,0])**2 + (x[i,1] - y[i,1])**2 + (x[i,2] - y[i,2])**2
-	rmsd = math.sqrt(rmsd/dim)
+# 	rmsd = 0
+# 	for i in range(dim):
+# 		rmsd += (x[i,0] - y[i,0])**2 + (x[i,1] - y[i,1])**2 + (x[i,2] - y[i,2])**2
+# 	rmsd = math.sqrt(rmsd/dim)
 	
-	for i in range(dim):
-		new_projecting_mol[i]['rx'] = x[i,0]
-		new_projecting_mol[i]['ry'] = x[i,1]
-		new_projecting_mol[i]['rz'] = x[i,2]
+# 	for i in range(dim):
+# 		new_projecting_mol[i]['rx'] = x[i,0]
+# 		new_projecting_mol[i]['ry'] = x[i,1]
+# 		new_projecting_mol[i]['rz'] = x[i,2]
 	
-	tr_vector = center_of_mass(reference_mol)
-	projected_mol = translate(new_projecting_mol, tr_vector)
+# 	tr_vector = center_of_mass(reference_mol)
+# 	projected_mol = translate(new_projecting_mol, tr_vector)
 	
-	return rmsd, projected_mol
-
-
-
+# 	return rmsd, projected_mol

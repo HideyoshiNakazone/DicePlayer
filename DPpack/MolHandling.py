@@ -18,12 +18,14 @@ from DPpack.SetGlobals import *
 class System:
 
 	def __init__(self):
-
+		
 		self.molecule = []
+		self.nmols = []
 
-	def add_molecule(self, m):
-
+	def add_type(self,nmols, m):
+		
 		self.molecule.append(m)
+		self.nmols = nmols
 
 	# Função que calcula a distância entre dois centros de massa
 	# e por se tratar de uma função de dois atomos não deve ser
@@ -192,6 +194,7 @@ class Molecule:
 		self.gradient = None			# Array Numpy
 		self.hessian = None				# Array Numpy
 		self.total_mass = 0
+		self.com = None
 
 	def add_atom(self, a):
 
@@ -210,7 +213,7 @@ class Molecule:
 		
 		com = com / total_mass
 		
-		return com
+		self.com = com
 
 	def center_of_mass_to_origin(self):
 	
@@ -477,4 +480,3 @@ class Atom:
 		self.eps = eps                  # Double
 		self.sig = sig                  # Double
 		self.mass = atommass[self.na]   # Double
-

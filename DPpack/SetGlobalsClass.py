@@ -2,14 +2,21 @@ import os, sys
 import shutil
 import textwrap
 
+from DPpack.MolHandling import *
 from DPpack.PTable import *
 from DPpack.Misc import *
+
+env = ["OMP_STACKSIZE"]
+
+bohr2ang = 0.52917721092
+ang2bohr = 1/bohr2ang
 
 class Internal:
 
 	def __init__(self, infile):
 
 		self.infile = infile
+		self.system = System()
 
 		self.player = self.Player()
 		self.player_keywords = [a for a in dir(self.player) if not a.startswith('__') and not callable(getattr(self.player, a))]
@@ -20,8 +27,8 @@ class Internal:
 		self.gaussian = self.Gaussian()
 		self.gaussian_keywords = [a for a in dir(self.gaussian) if not a.startswith('__') and not callable(getattr(self.gaussian, a))]
 
-		self.molcas = self.Molcas()
-		self.molcas_keywords = [a for a in dir(self.molcas) if not a.startswith('__') and not callable(getattr(self.molcas, a))]
+		# self.molcas = self.Molcas()
+		# self.molcas_keywords = [a for a in dir(self.molcas) if not a.startswith('__') and not callable(getattr(self.molcas, a))]
 
 		## Constanst that shall be set for global use
 
@@ -189,7 +196,7 @@ class Internal:
 			elif key in self.molcas_keywords and len(value) != 0:  ##  'value' is not empty!
 				
 				if key == 'root': # If defined, must be well defined (only positive integer values)
-					err = "Error: expected a positive integer for keyword {} in file {}".format(key, infile)
+					err = "Error: expected a positive integer for keyword {} in file {}".format(key, self.infile)
 					if not value[0].isdigit():
 						sys.exit(err)
 					new_value = int(value[0])
@@ -204,12 +211,276 @@ class Internal:
 			
 			#### End
 
+		
+	def check_keywords(self):
+		
+		min_steps = 20000
+		
+		if self.dice.ljname == None:
+			sys.exit("Error: 'ljname' keyword not specified in file {}".format(self.infile))
+		
+		if self.dice.outname == None:
+			sys.exit("Error: 'outname' keyword not specified in file {}".format(self.infile))
+		
+		if self.dice.dens == None:
+			sys.exit("Error: 'dens' keyword not specified in file {}".format(self.infile))
+		
+		if len(self.dice.nmol) == 0:
+			sys.exit("Error: 'nmol' keyword not defined appropriately in file {}".format(self.infile))
+		
+		if len(self.dice.nstep) == 0:
+			sys.exit("Error: 'nstep' keyword not defined appropriately in file {}".format(self.infile))
+		
+		## Check only if QM program is Gaussian:
+		if self.player.qmprog in ("g03", "g09", "g16"):
+
+			if self.gaussian.level == None:
+				sys.exit("Error: 'level' keyword not specified in file {}".format(self.infile))
+		
+			if self.gaussian.gmiddle != None:
+				if not os.path.isfile(self.gaussian.gmiddle):
+					sys.exit("Error: file {} not found".format(self.gaussian.gmiddle))
+
+			if self.gaussian.gbottom != None:
+				if not os.path.isfile(self.gaussian.gbottom):
+					sys.exit("Error: file {} not found".format(self.gaussian.gbottom))
+			
+			if self.gaussian.pop != "chelpg" and (self.player.ghosts == "yes" or self.player.lps == "yes"):
+				sys.exit("Error: ghost atoms or lone pairs only available with 'pop = chelpg')")
+			
+			if self.gaussian.chglevel == None:
+				self.gaussian.chglevel = self.gaussian.level
+		
+		## Check only if QM program is Molcas:
+		# if self.player.qmprog == "molcas":
+			
+		# 	if self.molcas.mbottom == None:
+		# 		sys.exit("Error: 'mbottom' keyword not specified in file {}".format(self.infile))
+		# 	else:
+		# 		if not os.path.isfile(self.molcas.mbottom):
+		# 			sys.exit("Error: file {} not found".format(self.molcas.mbottom))
+			
+		# 	if self.molcas.basis == None:
+		# 		sys.exit("Error: 'basis' keyword not specified in file {}".format(self.infile))
+		
+		
+		if self.player.altsteps != 0:
+			
+			### Verifica se tem mais de 1 molecula QM
+			### (No futuro usar o RMSD fit para poder substituir todas as moleculas QM
+			### no arquivo outname.xy - Need to change the make_init_file!!)
+			if self.dice.nmol[0] > 1:
+				sys.exit("Error: altsteps > 0 only possible with 1 QM molecule (nmol = 1 n2 n3 n4)")
+						
+			# if not zero, altsteps cannot be less than min_steps
+			self.player.altsteps = max(min_steps, self.player.altsteps)
+			# altsteps value is always the nearest multiple of 1000
+			self.player.altsteps = round(self.player.altsteps / 1000) * 1000
+		
+		
+		for i in range(len(self.dice.nstep)):
+			# nstep can never be less than min_steps
+			self.dice.nstep[i] = max(min_steps, self.dice.nstep[i])
+			# nstep values are always the nearest multiple of 1000
+			self.dice.nstep[i] = round(self.dice.nstep[i] / 1000) * 1000
+		
+		# isave must be between 100 and 2000
+		self.dice.isave = max(100, self.dice.isave)
+		self.dice.isave = min(2000, self.dice.isave)
+		# isave value is always the nearest multiple of 100
+		self.dice.isave = round(self.dice.isave / 100) * 100
+
+	def print_keywords(self, fh):
+		
+		fh.write("##########################################################################################\n"
+				"#############               Welcome to DICEPLAYER version 1.0                #############\n"
+				"##########################################################################################\n"
+				"\n")
+		fh.write("Your python version is {}\n".format(sys.version))
+		fh.write("\n")
+		fh.write("Program started on {}\n".format(weekday_date_time()))
+		fh.write("\n")
+		fh.write("Environment variables:\n")
+		for var in env:
+			fh.write("{} = {}\n".format(var, 
+									(os.environ[var] if var in os.environ else "Not set")))
+		
+		fh.write("\n==========================================================================================\n"
+				"                         CONTROL variables being used in this run:\n"
+				"------------------------------------------------------------------------------------------\n"
+				"\n")
+
+		for key in sorted(self.player_keywords):
+			if getattr(self.player,key) != None:
+				if isinstance(getattr(self.player,key), list):
+					string = " ".join(str(x) for x in getattr(self.player,key))
+					fh.write("{} = {}\n".format(key, string))
+				else:	
+					fh.write("{} = {}\n".format(key, getattr(self.player,key)))
+		
+		fh.write("\n")
+
+		fh.write("------------------------------------------------------------------------------------------\n"
+				"                         DICE variables being used in this run:\n"
+				"------------------------------------------------------------------------------------------\n"
+				"\n")
+
+		for key in sorted(self.dice_keywords):
+			if getattr(self.dice,key) != None:
+				if isinstance(getattr(self.dice,key), list):
+					string = " ".join(str(x) for x in getattr(self.dice,key))
+					fh.write("{} = {}\n".format(key, string))
+				else:	
+					fh.write("{} = {}\n".format(key, getattr(self.dice,key)))
+		
+		fh.write("\n")
+		
+		if self.player.qmprog in ("g03", "g09", "g16"):
+
+			fh.write("------------------------------------------------------------------------------------------\n"
+					"                         GAUSSIAN variables being used in this run:\n"
+					"------------------------------------------------------------------------------------------\n"
+					"\n")
+			
+			for key in sorted(self.gaussian_keywords):
+				if getattr(self.gaussian,key) != None:
+					if isinstance(getattr(self.gaussian,key), list):
+						string = " ".join(str(x) for x in getattr(self.gaussian,key))
+						fh.write("{} = {}\n".format(key, string))
+					else:	
+						fh.write("{} = {}\n".format(key, getattr(self.gaussian,key)))
+			
+			fh.write("\n")
+		
+		# elif self.player.qmprog == "molcas":
+
+		# 	fh.write("------------------------------------------------------------------------------------------\n"
+		# 			"                         MOLCAS variables being used in this run:\n"
+		# 			"------------------------------------------------------------------------------------------\n"
+		# 			"\n")
+			
+		# 	for key in sorted(molcas):
+		# 		if molcas[key] != None:
+		# 			if isinstance(molcas[key], list):
+		# 				string = " ".join(str(x) for x in molcas[key])
+		# 				fh.write("{} = {}\n".format(key, string))
+		# 			else:	
+		# 				fh.write("{} = {}\n".format(key, molcas[key]))
+			
+		# 	fh.write("\n")
+
+	def read_potential(self): # Deve ser atualizado para o uso de 
+		
+		try:
+			with open(self.dice.ljname) as file:
+				ljfile = file.readlines()
+		except EnvironmentError as err:
+			sys.exit(err)
+		
+		combrule = ljfile.pop(0).split()[0]
+		if combrule not in ("*", "+"):
+			sys.exit("Error: expected a '*' or a '+' sign in 1st line of file {}".format(self.dice.ljname))
+		self.dice.combrule = combrule
+		
+		ntypes = ljfile.pop(0).split()[0]
+		if not ntypes.isdigit():
+			sys.exit("Error: expected an integer in the 2nd line of file {}".format(self.dice.ljname))
+		ntypes = int(ntypes)
+		
+		if ntypes != len(self.dice.nmol):
+			sys.exit("Error: number of molecule types in file {} must match that of 'nmol' keyword in file {}".format(
+																	self.dice.ljname, self.infile))
+		
+		line = 2
+		for i in range(ntypes):
+
+			line += 1
+			nsites = ljfile.pop(0).split()[0]
+			if not nsites.isdigit():
+				sys.exit("Error: expected an integer in line {} of file {}".format(line, self.dice.ljname))
+			
+			nsites = int(nsites)
+			self.system.add_type(Molecule())
+			
+			for j in range(nsites):
+
+				line += 1
+				new_atom = ljfile.pop(0).split()
+				
+				if len(new_atom) < 8:
+					sys.exit("Error: expected at least 8 fields in line {} of file {}".format(line, dice['ljname']))
+				
+				self.system.molecule[i].add_atom()
+				
+				if not new_atom[0].isdigit():
+					sys.exit("Error: expected an integer in field 1, line {} of file {}".format(line, dice['ljname']))
+				lbl = int(new_atom[0])
+				
+				if not new_atom[1].isdigit():
+					sys.exit("Error: expected an integer in field 2, line {} of file {}".format(line, dice['ljname']))
+				
+				atnumber = int(new_atom[1])
+				if atnumber == ghost_number and i == 0:  # Ghost atom not allowed in the QM molecule
+					sys.exit("Error: found a ghost atom in line {} of file {}".format(line, dice['ljname']))
+				na = atnumber
+				
+				try:
+					rx = float(new_atom[2])
+				except:
+					sys.exit("Error: expected a float in field 3, line {} of file {}".format(line, dice['ljname']))
+				
+				try:
+					ry = float(new_atom[3])
+				except:
+					sys.exit("Error: expected a float in field 4, line {} of file {}".format(line, dice['ljname']))
+				
+				try:
+					rz = float(new_atom[4])
+				except:
+					sys.exit("Error: expected a float in field 5, line {} of file {}".format(line, dice['ljname']))
+				
+				try:
+					chg = float(new_atom[5])
+				except:
+					sys.exit("Error: expected a float in field 6, line {} of file {}".format(line, dice['ljname']))
+				
+				try:
+					eps = float(new_atom[6])
+				except:
+					sys.exit("Error: expected a float in field 7, line {} of file {}".format(line, dice['ljname']))
+				
+				try:
+					sig = float(new_atom[7])
+				except:
+					sys.exit("Error: expected a float in field 8, line {} of file {}".format(line, dice['ljname']))
+				
+				mass = atommass[na]
+				
+				if len(new_atom) > 8:
+					masskey, mass = new_atom[8].partition("=")[::2]
+					if masskey.lower() == 'mass' and len(mass) !=0:
+						try:
+							new_mass = float(mass)
+							if new_mass > 0:
+								mass = new_mass
+						except:
+							sys.exit(
+							"Error: expected a positive float after 'mass=' in field 9, line {} of file {}".format(
+																							line, dice['ljname']))
+
+				self.system.molecule[i].add_atom(Atom(lbl,na,rx,ry,rz,chg,eps,sig,mass))
+				
+		to_delete = ['lbl','na','rx','ry','rz','chg','eps','sig','mass']
+		for _var in to_delete:
+			if _var in locals() or _var in globals():
+				exec(f'del {_var}')
+
 	class Player:
 
 		def __init__(self):
 
 			self.maxcyc = None
-			self.initcyc = 1
+			# self.initcyc = 1 Eliminated
 			self.nprocs = 1
 			self.switchcyc = 3
 			self.altsteps = 20000
@@ -237,7 +508,7 @@ class Internal:
 			self.ncores = 1
 
 			self.dens = None		# Investigate the possibility of using 'box = Lx Ly Lz' instead.
-			#dice['box'] = None		# So 'geom' would be set by diceplayer and 'cutoff' would be
+			# self.box = None		# So 'geom' would be set by diceplayer and 'cutoff' would be
 									# switched off. One of them must be given.
 			self.ljname = None
 			self.outname = None
@@ -261,12 +532,12 @@ class Internal:
 
 			self.level = None
 
-	class Molcas:
+	# class Molcas:
 
-		def __init(self):
+	# 	def __init(self):
 
-			self.orbfile = "input.exporb"
-			self.root = 1
+	# 		self.orbfile = "input.exporb"
+	# 		self.root = 1
 
-			self.mbottom = None
-			self.basis = None
+	# 		self.mbottom = None
+	# 		self.basis = None

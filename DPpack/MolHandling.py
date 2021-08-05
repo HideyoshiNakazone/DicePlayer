@@ -480,3 +480,5 @@ class Atom:
 		self.eps = eps                  # Double
 		self.sig = sig                  # Double
 		self.mass = atommass[self.na]   # Double
+
+		

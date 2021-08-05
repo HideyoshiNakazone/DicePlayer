@@ -408,51 +408,51 @@ class Internal:
 				new_atom = ljfile.pop(0).split()
 				
 				if len(new_atom) < 8:
-					sys.exit("Error: expected at least 8 fields in line {} of file {}".format(line, dice['ljname']))
+					sys.exit("Error: expected at least 8 fields in line {} of file {}".format(line, self.dice.ljname))
 				
 				self.system.molecule[i].add_atom()
 				
 				if not new_atom[0].isdigit():
-					sys.exit("Error: expected an integer in field 1, line {} of file {}".format(line, dice['ljname']))
+					sys.exit("Error: expected an integer in field 1, line {} of file {}".format(line, self.dice.ljname))
 				lbl = int(new_atom[0])
 				
 				if not new_atom[1].isdigit():
-					sys.exit("Error: expected an integer in field 2, line {} of file {}".format(line, dice['ljname']))
+					sys.exit("Error: expected an integer in field 2, line {} of file {}".format(line, self.dice.ljname))
 				
 				atnumber = int(new_atom[1])
 				if atnumber == ghost_number and i == 0:  # Ghost atom not allowed in the QM molecule
-					sys.exit("Error: found a ghost atom in line {} of file {}".format(line, dice['ljname']))
+					sys.exit("Error: found a ghost atom in line {} of file {}".format(line, self.dice.ljname))
 				na = atnumber
 				
 				try:
 					rx = float(new_atom[2])
 				except:
-					sys.exit("Error: expected a float in field 3, line {} of file {}".format(line, dice['ljname']))
+					sys.exit("Error: expected a float in field 3, line {} of file {}".format(line, self.dice.ljname))
 				
 				try:
 					ry = float(new_atom[3])
 				except:
-					sys.exit("Error: expected a float in field 4, line {} of file {}".format(line, dice['ljname']))
+					sys.exit("Error: expected a float in field 4, line {} of file {}".format(line, self.dice.ljname))
 				
 				try:
 					rz = float(new_atom[4])
 				except:
-					sys.exit("Error: expected a float in field 5, line {} of file {}".format(line, dice['ljname']))
+					sys.exit("Error: expected a float in field 5, line {} of file {}".format(line, self.dice.ljname))
 				
 				try:
 					chg = float(new_atom[5])
 				except:
-					sys.exit("Error: expected a float in field 6, line {} of file {}".format(line, dice['ljname']))
+					sys.exit("Error: expected a float in field 6, line {} of file {}".format(line, self.dice.ljname))
 				
 				try:
 					eps = float(new_atom[6])
 				except:
-					sys.exit("Error: expected a float in field 7, line {} of file {}".format(line, dice['ljname']))
+					sys.exit("Error: expected a float in field 7, line {} of file {}".format(line, self.dice.ljname))
 				
 				try:
 					sig = float(new_atom[7])
 				except:
-					sys.exit("Error: expected a float in field 8, line {} of file {}".format(line, dice['ljname']))
+					sys.exit("Error: expected a float in field 8, line {} of file {}".format(line, self.dice.ljname))
 				
 				mass = atommass[na]
 				
@@ -466,7 +466,7 @@ class Internal:
 						except:
 							sys.exit(
 							"Error: expected a positive float after 'mass=' in field 9, line {} of file {}".format(
-																							line, dice['ljname']))
+																							line, self.dice.ljname))
 
 				self.system.molecule[i].add_atom(Atom(lbl,na,rx,ry,rz,chg,eps,sig,mass))
 				
@@ -481,7 +481,7 @@ class Internal:
 		formatstr = "{:<3d} {:>3d}  {:>10.5f} {:>10.5f} {:>10.5f}  {:>10.6f} {:>9.5f} {:>7.4f} {:>9.4f}\n"
 		fh.write("\n"
 				"==========================================================================================\n")
-		fh.write("                    Potential parameters from file {}:\n".format(dice['ljname']))
+		fh.write("                    Potential parameters from file {}:\n".format(self.dice.ljname))
 		fh.write("------------------------------------------------------------------------------------------\n"
 				"\n")
 		
@@ -566,7 +566,7 @@ class Internal:
 		fh.write(90 * "=")
 		fh.write("\n\n")
 		
-		dice_path = shutil.which(dice['progname'])
+		dice_path = shutil.which(self.dice.progname)
 		if dice_path != None:
 			fh.write("Program {} found at {}\n".format(self.dice.progname, dice_path))
 			self.dice.path = dice_path

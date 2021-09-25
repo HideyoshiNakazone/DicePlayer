@@ -5,7 +5,7 @@
 Your python version is 3.8.8 (default, Apr 13 2021, 19:58:26) 
 [GCC 7.3.0]
 
-Program started on Saturday, 25 Sep 2021 at 15:24:31
+Program started on Saturday, 25 Sep 2021 at 15:23:44
 
 Environment variables:
 OMP_STACKSIZE = Not set
@@ -176,3 +176,5 @@ Molecule type 2:
     Dipole moment = (    1.8148 ,    1.4689 ,   -0.0016 )     Total =    2.3347 Debye
 
 ==========================================================================================
+
+Starting the iterative process.

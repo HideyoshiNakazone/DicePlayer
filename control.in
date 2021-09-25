@@ -1,5 +1,5 @@
 # diceplayer
-initcyc = 1 
+initcyc = 1
 maxcyc = 3
 opt = NO
 nprocs = 2
@@ -10,8 +10,8 @@ altsteps = 20000
 
 # dice
 ncores = 1
-nmol = 1 100 
-dens = 0.75 
+nmol = 1 100
+dens = 0.75
 nstep = 40000 60000 50000
 isave = 1000
 ljname = phb.pot

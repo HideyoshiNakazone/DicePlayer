@@ -1,4 +1,3 @@
-from DPpack.MolHandling import total_mass
 import os, sys
 import math
 import shutil
@@ -11,7 +10,11 @@ from numpy import linalg
 
 from DPpack.Misc import *
 from DPpack.PTable import *
-from DPpack.SetGlobals import *
+
+env = ["OMP_STACKSIZE"]
+
+bohr2ang = 0.52917721092
+ang2bohr = 1/bohr2ang
 
 # Usaremos uma nova classe que ira conter toda interação entre moleculas
 
@@ -173,9 +176,9 @@ class System:
 
 	def print_geom(self, cycle, fh):
 	
-		fh.write("{}\n".format(len(self.molecule[0])))
+		fh.write("{}\n".format(len(self.molecule[0].atom)))
 		fh.write("Cycle # {}\n".format(cycle))
-		for atom in self.molecule[0].atoms:
+		for atom in self.molecule[0].atom:
 			symbol = atomsymb[atom.na]
 			fh.write("{:<2s}    {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(symbol, 
 														atom.rx, atom.ry, atom.rz))
@@ -201,6 +204,8 @@ class Molecule:
 		self.atom.append(a)			# Inserção de um novo atomo
 		self.total_mass += a.mass
 
+		self.center_of_mass()
+
 	def center_of_mass(self):
 	
 		com = np.zeros(3)
@@ -221,9 +226,9 @@ class Molecule:
 
 		for atom in self.atom:
 
-			atom.rx -= com[0]
-			atom.ry -= com[1]
-			atom.rz -= com[2]
+			atom.rx -= self.com[0]
+			atom.ry -= self.com[1]
+			atom.rz -= self.com[2]
 	
 	def charges_and_dipole(self):
 	
@@ -285,15 +290,14 @@ class Molecule:
 
 	def inertia_tensor(self):
 	
-		com = self.center_of_mass()
 		Ixx = Ixy = Ixz = Iyy = Iyz = Izz = 0.0
 
 		for atom in self.atom:
 
 			####  Obtain the displacement from the center of mass
-			dx = atom.rx - com[0]
-			dy = atom.ry - com[1]
-			dz = atom.rz - com[2]
+			dx = atom.rx - self.com[0]
+			dy = atom.ry - self.com[1]
+			dz = atom.rz - self.com[2]
 			####  Update the diagonal components of the tensor
 			Ixx += atom.mass * (dy**2 + dz**2)
 			Iyy += atom.mass * (dz**2 + dx**2)
@@ -332,7 +336,7 @@ class Molecule:
 		
 		mat1 = 1/np.dot(dif_gradient, step) * np.matmul(dif_gradient.T, dif_gradient)
 		mat2 = 1/np.dot(step, np.matmul(self.hessian, step.T).T)
-		mat2 *= np.matmul( np.matmul(self.hessian, step.T), np.matmul(step, hessian) )
+		mat2 *= np.matmul( np.matmul(self.hessian, step.T), np.matmul(step, self.hessian) )
 		
 		self.hessian += mat1 - mat2
 
@@ -393,10 +397,9 @@ class Molecule:
 		return new_molecule
 
 	def print_mol_info(self, fh):
-	
-		com = self.center_of_mass()
-		fh.write("    Center of mass = ( {:>10.4f} , {:>10.4f} , {:>10.4f} )\n".format(com[0], 
-																			com[1], com[2]))
+
+		fh.write("    Center of mass = ( {:>10.4f} , {:>10.4f} , {:>10.4f} )\n".format(self.com[0], 
+																			self.com[1], self.com[2]))
 		inertia = self.inertia_tensor()
 		evals, evecs = self.principal_axes()
 		
@@ -413,59 +416,12 @@ class Molecule:
 		sizes = self.sizes_of_molecule()
 		fh.write("    Characteristic lengths = ( {:>6.2f} , {:>6.2f} , {:>6.2f} )\n".format(
 																sizes[0], sizes[1], sizes[2]))
-		mol_mass = self.total_mass()
-		fh.write("    Total mass = {:>8.2f} au\n".format(mol_mass))
+		fh.write("    Total mass = {:>8.2f} au\n".format(self.total_mass))
 		
 		chg_dip = self.charges_and_dipole()
 		fh.write("    Total charge = {:>8.4f} e\n".format(chg_dip[0]))
 		fh.write("    Dipole moment = ( {:>9.4f} , {:>9.4f} , {:>9.4f} )     Total = {:>9.4f} Debye\n\n".format(
 											chg_dip[1], chg_dip[2], chg_dip[3], chg_dip[4]))
-
-	def calculate_step(self, fh):
-		
-		invhessian = linalg.inv(self.hessian)
-		pre_step = -1 * np.matmul(invhessian, self.gradient.T).T
-		maxstep = np.amax(np.absolute(pre_step))
-		factor = min(1, player['maxstep']/maxstep)
-		step = factor * pre_step
-		
-		fh.write("\nCalculated step:\n")
-		pre_step_list = pre_step.tolist()
-		
-		fh.write("-----------------------------------------------------------------------\n"
-				"Center     Atomic                          Step (Bohr)\n"
-				"Number     Number              X                Y                Z\n"
-				"-----------------------------------------------------------------------\n")
-		for i in range(len(molecules[0])):
-			fh.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
-																i + 1, molecules[0][i]['na'], 
-							pre_step_list.pop(0), pre_step_list.pop(0), pre_step_list.pop(0)))
-		
-		fh.write("-----------------------------------------------------------------------\n")
-		
-		fh.write("Maximum step is {:>11.6}\n".format(maxstep))
-		fh.write("Scaling factor = {:>6.4f}\n".format(factor))
-		fh.write("\nFinal step (Bohr):\n")
-		step_list = step.tolist()
-		
-		fh.write("-----------------------------------------------------------------------\n"
-				"Center     Atomic                          Step (Bohr)\n"
-				"Number     Number              X                Y                Z\n"
-				"-----------------------------------------------------------------------\n")
-		for i in range(len(molecules[0])):
-			fh.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
-																i + 1, molecules[0][i]['na'], 
-										step_list.pop(0), step_list.pop(0), step_list.pop(0)))
-		
-		fh.write("-----------------------------------------------------------------------\n")
-		
-		step_max = np.amax(np.absolute(step))
-		step_rms = np.sqrt(np.mean(np.square(step)))
-		
-		fh.write("  Max Step = {:>14.9f}      RMS Step = {:>14.9f}\n\n".format(
-																		step_max, step_rms))
-		
-		return step
 
 class Atom:
 

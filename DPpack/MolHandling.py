@@ -28,7 +28,7 @@ class System:
 	def add_type(self,nmols, m):
 		
 		self.molecule.append(m)
-		self.nmols = nmols
+		self.nmols.append(nmols)
 
 	# Função que calcula a distância entre dois centros de massa
 	# e por se tratar de uma função de dois atomos não deve ser
@@ -208,21 +208,17 @@ class Molecule:
 
 	def center_of_mass(self):
 	
-		com = np.zeros(3)
-		total_mass = 0.0
+		self.com = np.zeros(3)
 
 		for atom in self.atom:
 			
-			total_mass += atom.mass
-			com += atom.mass * np.array([atom.rx, atom.ry, atom.rz])
+			self.com += atom.mass * np.array([atom.rx, atom.ry, atom.rz])
 		
-		com = com / total_mass
-		
-		self.com = com
+		self.com = self.com / self.total_mass
 
 	def center_of_mass_to_origin(self):
 	
-		com = self.center_of_mass()
+		self.center_of_mass()
 
 		for atom in self.atom:
 
@@ -260,6 +256,30 @@ class Molecule:
 		
 		return np.array(distances).reshape(dim, dim)
 
+	def inertia_tensor(self):
+		
+		self.center_of_mass()
+		Ixx = Ixy = Ixz = Iyy = Iyz = Izz = 0.0
+
+		for atom in self.atom:
+
+			####  Obtain the displacement from the center of mass
+			dx = atom.rx - self.com[0]
+			dy = atom.ry - self.com[1]
+			dz = atom.rz - self.com[2]
+			####  Update the diagonal components of the tensor
+			Ixx += atom.mass * (dy**2 + dz**2)
+			Iyy += atom.mass * (dz**2 + dx**2)
+			Izz += atom.mass * (dx**2 + dy**2)
+			####  Update the off-diagonal components of the tensor
+			Ixy += atom.mass * dx * dy * -1
+			Ixz += atom.mass * dx * dz * -1
+			Iyz += atom.mass * dy * dz * -1
+			
+		return np.array([[Ixx, Ixy, Ixz],
+					 	[Ixy, Iyy, Iyz],
+					 	[Ixz, Iyz, Izz]])
+
 	def eixos(self):
 	
 		eixos = np.zeros(3)
@@ -288,36 +308,13 @@ class Molecule:
 		
 		return eixos
 
-	def inertia_tensor(self):
-	
-		Ixx = Ixy = Ixz = Iyy = Iyz = Izz = 0.0
-
-		for atom in self.atom:
-
-			####  Obtain the displacement from the center of mass
-			dx = atom.rx - self.com[0]
-			dy = atom.ry - self.com[1]
-			dz = atom.rz - self.com[2]
-			####  Update the diagonal components of the tensor
-			Ixx += atom.mass * (dy**2 + dz**2)
-			Iyy += atom.mass * (dz**2 + dx**2)
-			Izz += atom.mass * (dx**2 + dy**2)
-			####  Update the off-diagonal components of the tensor
-			Ixy += atom.mass * dx * dy * -1
-			Ixz += atom.mass * dx * dz * -1
-			Iyz += atom.mass * dy * dz * -1
-			
-		return np.array([	[Ixx, Ixy, Ixz],
-							[Ixy, Iyy, Iyz],
-							[Ixz, Iyz, Izz]	])
-
 	def principal_axes(self):
 		
 		try:
 			evals, evecs = linalg.eigh(self.inertia_tensor())
 		except:
 			sys.exit("Error: diagonalization of inertia tensor did not converge")
-		
+	
 		return evals, evecs
 
 	def read_position(self):
@@ -366,7 +363,6 @@ class Molecule:
 	def standard_orientation(self):
 		
 		self.center_of_mass_to_origin()
-		tensor = self.inertia_tensor()
 		evals, evecs = self.principal_axes()
 
 		if round(linalg.det(evecs)) == -1:
@@ -436,5 +432,3 @@ class Atom:
 		self.eps = eps                  # Double
 		self.sig = sig                  # Double
 		self.mass = atommass[self.na]   # Double
-
-		

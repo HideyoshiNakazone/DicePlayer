@@ -1,6 +1,7 @@
 import os, sys
 import shutil
 import textwrap
+import types
 
 from DPpack.MolHandling import *
 from DPpack.PTable import *
@@ -179,8 +180,8 @@ class Internal:
 						except ValueError:
 							sys.exit(err)
 				
-				elif key in ('level', 'chglevel'):
-					setattr(self.gaussian, key, value[0])
+				elif key == 'level':
+					setattr(self.gaussian, key, value)
 				
 				elif key in ('gmiddle', 'gbottom'):
 					setattr(self.gaussian, key, value[0])
@@ -243,9 +244,6 @@ class Internal:
 			
 			if self.gaussian.pop != "chelpg" and (self.player.ghosts == "yes" or self.player.lps == "yes"):
 				sys.exit("Error: ghost atoms or lone pairs only available with 'pop = chelpg')")
-			
-			if self.gaussian.chglevel == None:
-				self.gaussian.chglevel = self.gaussian.level
 		
 		## Check only if QM program is Molcas:
 		# if self.player.qmprog == "molcas":
@@ -636,7 +634,7 @@ class Internal:
 
 			pass
 
-		
+	### I still have to talk with Herbet about 
 	def populate_asec_vdw(self, cycle):
 			
 		asec_charges = []  	# (rx, ry, rz, chg)
@@ -651,17 +649,17 @@ class Internal:
 		
 		nsitesref = len(self.system.molecule[0]) + len(ghost_atoms) + len(lp_atoms)
 		
-		nsites_total = dice['nmol'][0] * nsitesref
-		for i in range(1, len(dice['nmol'])):
-			nsites_total += dice['nmol'][i] * len(molecules[i])
+		nsites_total = self.dice.nmol[0] * nsitesref
+		for i in range(1, len(self.dice.nmol)):
+			nsites_total += self.dice.nmol[i] * len(self.system.molecule[i])
 		
 		thickness = []
 		picked_mols = []
 			
-		for proc in range(1, player['nprocs'] + 1):  ## Run over folders
+		for proc in range(1, self.player.nprocs + 1):  ## Run over folders
 			
 			path = "step{:02d}".format(cycle) + os.sep + "p{:02d}".format(proc)
-			file = path + os.sep + dice['outname'] + ".xyz" 
+			file = path + os.sep + self.dice.outname + ".xyz" 
 			if not os.path.isfile(file):
 				sys.exit("Error: cannot find file {}".format(file))
 			try:
@@ -677,23 +675,23 @@ class Internal:
 				
 				box = xyzfile.pop(0).split()[-3:]
 				box = [ float(box[0]), float(box[1]), float(box[2]) ]
-				sizes = sizes_of_molecule(molecules[0])
+				sizes = self.system.molecule[0].sizes_of_molecule()
 				thickness.append( min([ (box[0] - sizes[0])/2, (box[1] - sizes[1])/2, 
 															(box[2] - sizes[2])/2 ]) )
 				
 				xyzfile = xyzfile[nsitesref:]  ## Skip the first (reference) molecule
 				mol_count = 0
-				for type in range(len(dice['nmol'])):  ## Run over types of molecules
+				for type in range(len(self.dice.nmol)):  ## Run over types of molecules
 					
 					if type == 0:
-						nmols = dice['nmol'][0] - 1
+						nmols = self.dice.nmol[0] - 1
 					else:
-						nmols = dice['nmol'][type]
+						nmols = self.dice.nmol[type]
 					
 					for mol in range(nmols):  ## Run over molecules of each type
 					
 						new_molecule = []
-						for site in range(len(molecules[type])):  ## Run over sites of each molecule
+						for site in range(len(self.system.molecule[types].atoms)):  ## Run over sites of each molecule
 						
 							new_molecule.append({})
 							line = xyzfile.pop(0).split()
@@ -831,8 +829,6 @@ class Internal:
 			self.gmiddle = None   # In each case, if a filename is given, its content will be 
 			self.gbottom = None   # inserted in the gaussian input
 			self.pop = "chelpg"
-			self.chglevel = None
-
 			self.level = None
 
 	# class Molcas:

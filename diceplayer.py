@@ -95,6 +95,7 @@ if __name__ == '__main__':
 ####  Bring the molecules to standard orientation and prints info about them
 
 	for i in range(len(internal.system.molecule)):
+		
 		internal.outfile.write("\nMolecule type {}:\n\n".format(i + 1))
 		internal.system.molecule[i].print_mol_info(internal.outfile)
 		internal.outfile.write("    Translating and rotating molecule to standard orientation...")
@@ -134,9 +135,9 @@ if __name__ == '__main__':
 	# 		#Molcas.read_forces("grad_hessian.dat")
 	# 		#Molcas.read_hessian("grad_hessian.dat")
 	
-	# ####
-	# ####  Start the iterative process
-	# ####
+	####
+	####  Start the iterative process
+	####
 	
 # 	for cycle in range(internal.player.cyc, internal.player.cyc + internal.player.maxcyc):
 	

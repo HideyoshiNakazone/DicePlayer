@@ -2,10 +2,10 @@
 #############               Welcome to DICEPLAYER version 1.0                #############
 ##########################################################################################
 
-Your python version is 3.8.8 (default, Apr 13 2021, 19:58:26) 
-[GCC 7.3.0]
+Your python version is 3.8.12 (default, Oct  7 2021, 05:40:48) 
+[GCC 11.1.0]
 
-Program started on Saturday, 25 Sep 2021 at 15:23:44
+Program started on Sunday, 24 Oct 2021 at 00:44:02
 
 Environment variables:
 OMP_STACKSIZE = Not set
@@ -50,7 +50,6 @@ title = Diceplayer run
                          GAUSSIAN variables being used in this run:
 ------------------------------------------------------------------------------------------
 
-chglevel = MP2/aug-cc-pVTZ
 chgmult = 0 1
 level = MP2/aug-cc-pVTZ
 pop = chelpg
@@ -176,5 +175,3 @@ Molecule type 2:
     Dipole moment = (    1.8148 ,    1.4689 ,   -0.0016 )     Total =    2.3347 Debye
 
 ==========================================================================================
-
-Starting the iterative process.

@@ -78,7 +78,7 @@ if __name__ == '__main__':
 
 # ####  Check whether the executables are in the path
 
-	# internal.check_executables()
+	internal.check_executables()
 
 # ####  Read the potential, store the info in 'molecules' and prints the info in OUTFILE
 

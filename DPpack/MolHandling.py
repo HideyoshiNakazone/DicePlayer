@@ -21,11 +21,11 @@ ang2bohr = 1/bohr2ang
 class System:
 
 	def __init__(self):
-		
+
 		self.molecule = []
 		self.nmols = []
 
-	def add_type(self,nmols, m):
+	def add_type(self, nmols, m):
 		
 		self.molecule.append(m)
 		self.nmols.append(nmols)
@@ -189,20 +189,29 @@ class System:
 
 class Molecule:
 
-	def __init__(self):
+	def __init__(self, molname):
+
+		self.molname = molname
 
 		self.atom = []					# Lista de instancias de Atom
 		self.position = None			# Array Numpy
 		self.energy = None				# Array Numpy
 		self.gradient = None			# Array Numpy
 		self.hessian = None				# Array Numpy
+
 		self.total_mass = 0
 		self.com = None
+		self.ghost_atoms = [] # Stores the index of the ghost atoms in the atoms array
+		self.lp_atoms = []
 
 	def add_atom(self, a):
 
 		self.atom.append(a)			# Inserção de um novo atomo
 		self.total_mass += a.mass
+
+		if (a.na == ghost_number):
+
+			self.ghost_atoms.append(self.atom.index(a))
 
 		self.center_of_mass()
 

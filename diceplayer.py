@@ -96,7 +96,7 @@ if __name__ == '__main__':
 
 	for i in range(len(internal.system.molecule)):
 		
-		internal.outfile.write("\nMolecule type {}:\n\n".format(i + 1))
+		internal.outfile.write("\nMolecule type {} - {}:\n\n".format(i + 1, internal.system.molecule[i].molname))
 		internal.system.molecule[i].print_mol_info(internal.outfile)
 		internal.outfile.write("    Translating and rotating molecule to standard orientation...")
 		internal.system.molecule[i].standard_orientation()
@@ -120,82 +120,83 @@ if __name__ == '__main__':
 		except EnvironmentError as err:
 			sys.exit(err)
 
-	# internal.outfile.write("\nStarting the iterative process.\n")
+	internal.outfile.write("\nStarting the iterative process.\n")
 	
-	# ## Initial position (in Bohr)
-	# position = internal.system.molecule[0].read_position()
+	## Initial position (in Bohr)
+	position = internal.system.molecule[0].read_position()
 	
-	# ## If restarting, read the last gradient and hessian
-	# if internal.player.cyc > 1:
-	# 	if internal.player.qmprog in ("g03", "g09", "g16"):
-	# 		Gaussian.read_forces("grad_hessian.dat")
-	# 		Gaussian.read_hessian_fchk("grad_hessian.dat")
+	## If restarting, read the last gradient and hessian
+	if internal.player.cyc > 1:
+		if internal.player.qmprog in ("g03", "g09", "g16"):
+			Gaussian.read_forces("grad_hessian.dat")
+			Gaussian.read_hessian_fchk("grad_hessian.dat")
 	
-	# 	#if player['qmprog'] == "molcas":
-	# 		#Molcas.read_forces("grad_hessian.dat")
-	# 		#Molcas.read_hessian("grad_hessian.dat")
+		#if player['qmprog'] == "molcas":
+			#Molcas.read_forces("grad_hessian.dat")
+			#Molcas.read_hessian("grad_hessian.dat")
 	
-	####
-	####  Start the iterative process
-	####
+	###
+	###  Start the iterative process
+	###
 	
-# 	for cycle in range(internal.player.cyc, internal.player.cyc + internal.player.maxcyc):
+	for cycle in range(internal.player.cyc, internal.player.cyc + internal.player.maxcyc):
 	
-# 		internal.outfile.write("\n" + 90 * "-" + "\n")
-# 		internal.outfile.write("{} Step # {}\n".format(40 * " ", cycle))
-# 		internal.outfile.write(90 * "-" + "\n\n")
+		internal.outfile.write("\n" + 90 * "-" + "\n")
+		internal.outfile.write("{} Step # {}\n".format(40 * " ", cycle))
+		internal.outfile.write(90 * "-" + "\n\n")
+		internal.outfile.flush()
 	
-# 		make_step_dir(cycle)
+		make_step_dir(cycle)
 	
-# 		if internal.player.altsteps == 0 or cycle == 1:
-# 			internal.dice.randominit = True
-# 		else:
-# 			internal.dice.randominit = False
+		if internal.player.altsteps == 0 or internal.player.cyc == 1:
+			internal.dice.randominit = True
+		else:
+			internal.dice.randominit = False
 	
-# 		####
-# 		####  Start block of parallel simulations
-# 		####
+		####
+		####  Start block of parallel simulations
+		####
 		
-# 		procs = []
-# 		sentinels = []
-# 		for proc in range(1, internal.player.nprocs + 1):
+		procs = []
+		sentinels = []
+		for proc in range(1, internal.player.nprocs + 1):
 		
-# 			p = Process(target=Dice.simulation_process, args=(cycle, proc, internal.outfile))
-# 			p.start()
-# 			procs.append(p)
-# 			sentinels.append(p.sentinel)
+			p = Process(target=internal.simulation_process, args=(cycle, proc))
+			p.start()
+			procs.append(p)
+			sentinels.append(p.sentinel)
 			
-# 		while procs:
-# 			finished = connection.wait(sentinels)
-# 			for proc_sentinel in finished:
-# 				i = sentinels.index(proc_sentinel)
-# 				status = procs[i].exitcode
-# 				procs.pop(i)
-# 				sentinels.pop(i)
-# 				if status != 0:
-# 					for p in procs:
-# 						p.terminate()
-# 					sys.exit(status)
+		while procs:
+			finished = connection.wait(sentinels)
+			for proc_sentinel in finished:
+				i = sentinels.index(proc_sentinel)
+				status = procs[i].exitcode
+				procs.pop(i)
+				sentinels.pop(i)
+				if status != 0:
+					for p in procs:
+						p.terminate()
+					sys.exit(status)
+
+		for proc in range(1, internal.player.nprocs + 1):
+			internal.print_last_config(cycle, proc)
 		
-# 		for proc in range(1, internal.player.nprocs + 1):
-# 			Dice.print_last_config(cycle, proc)
+		####
+		####  End of parallel simulations block
+		####	
 		
-# 		####
-# 		####  End of parallel simulations block
-# 		####	
+		# ## Make ASEC
+		# internal.outfile.write("\nBuilding the ASEC and vdW meanfields... ")
+		# asec_charges = internal.populate_asec_vdw(cycle)
 		
-# 		## Make ASEC
-# 		internal.outfile.write("\nBuilding the ASEC and vdW meanfields... ")
-# 		asec_charges = internal.populate_asec_vdw(cycle)
+		# ## After ASEC is built, compress files bigger than 1MB
+		# for proc in range(1, internal.player.nprocs + 1):
+		# 	path = "step{:02d}".format(cycle) + os.sep + "p{:02d}".format(proc)
+		# 	compress_files_1mb(path)
 		
-# 		## After ASEC is built, compress files bigger than 1MB
-# 		for proc in range(1, internal.player.nprocs + 1):
-# 			path = "step{:02d}".format(cycle) + os.sep + "p{:02d}".format(proc)
-# 			compress_files_1mb(path)
-		
-# 		####
-# 		####  Start QM calculation
-# 		####
+		####
+		####  Start QM calculation
+		####
 		
 # 		make_qm_dir(cycle)
 		

@@ -2,10 +2,10 @@
 #############               Welcome to DICEPLAYER version 1.0                #############
 ##########################################################################################
 
-Your python version is 3.8.12 (default, Oct  7 2021, 05:40:48) 
-[GCC 11.1.0]
+Your python version is 3.6.9 (default, Jan 26 2021, 15:33:00) 
+[GCC 8.4.0]
 
-Program started on Sunday, 24 Oct 2021 at 00:46:13
+Program started on Friday, 05 Nov 2021 at 04:36:09
 
 Environment variables:
 OMP_STACKSIZE = Not set
@@ -21,9 +21,9 @@ ghosts = no
 lps = no
 maxcyc = 3
 maxstep = 0.3
-nprocs = 2
+nprocs = 4
 opt = no
-qmprog = g09
+qmprog = g16
 readhessian = no
 switchcyc = 3
 tol_factor = 1.2
@@ -35,9 +35,10 @@ vdwforces = no
 
 combrule = *
 dens = 0.75
+init = yes
 isave = 1000
 ljname = phb.pot
-ncores = 1
+ncores = 3
 nmol = 1 100
 nstep = 40000 60000 50000
 outname = phb
@@ -45,6 +46,7 @@ press = 1.0
 progname = dice
 temp = 300.0
 title = Diceplayer run
+upbuf = 360
 
 ------------------------------------------------------------------------------------------
                          GAUSSIAN variables being used in this run:
@@ -53,8 +55,14 @@ title = Diceplayer run
 chgmult = 0 1
 level = MP2/aug-cc-pVTZ
 pop = chelpg
-qmprog = g09
+qmprog = g16
 
+
+==========================================================================================
+
+Program dice found at /usr/local/bin/dice
+Program g16 found at /usr/local/g16/g16
+Program formchk found at /usr/local/g16/formchk
 
 ==========================================================================================
                     Potential parameters from file phb.pot:
@@ -123,7 +131,7 @@ Lbl  AN       X          Y          Z         Charge    Epsilon   Sigma     Mass
 
 ==========================================================================================
 
-Molecule type 1:
+Molecule type 1 - PHENOL:
 
     Center of mass = (    -0.0000 ,     0.0000 ,     0.0000 )
     Moments of inertia =  3.144054E+02  2.801666E+03  3.027366E+03
@@ -149,7 +157,7 @@ Molecule type 1:
     Dipole moment = (    9.8432 ,    0.6168 ,    0.8120 )     Total =    9.8959 Debye
 
 
-Molecule type 2:
+Molecule type 2 - PLACEHOLDER:
 
     Center of mass = (     1.6067 ,    -1.0929 ,     0.0026 )
     Moments of inertia =  1.205279E+02  2.859254E+02  4.033761E+02
@@ -166,12 +174,65 @@ Molecule type 2:
     New values:
     Center of mass = (     0.0000 ,    -0.0000 ,     0.0000 )
     Moments of inertia =  1.205279E+02  2.859254E+02  4.033761E+02
-    Major principal axis = (   1.000000 ,  -0.000000 ,   0.000000 )
-    Inter principal axis = (   0.000000 ,   1.000000 ,  -0.000000 )
-    Minor principal axis = (  -0.000000 ,   0.000000 ,   1.000000 )
+    Major principal axis = (  -1.000000 ,   0.000000 ,   0.000000 )
+    Inter principal axis = (   0.000000 ,   1.000000 ,   0.000000 )
+    Minor principal axis = (   0.000000 ,   0.000000 ,   1.000000 )
     Characteristic lengths = (   5.67 ,   5.13 ,   1.51 )
     Total mass =   112.20 au
     Total charge =  -0.0000 e
     Dipole moment = (    1.7575 ,    1.5369 ,   -0.0000 )     Total =    2.3347 Debye
 
 ==========================================================================================
+
+Starting the iterative process.
+
+------------------------------------------------------------------------------------------
+                                         Step # 1
+------------------------------------------------------------------------------------------
+
+Simulation process step01/p01 initiated with pid 7039
+Simulation process step01/p02 initiated with pid 7040
+Simulation process step01/p03 initiated with pid 7041
+Simulation process step01/p04 initiated with pid 7042
+p03> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 04:36:09
+p03> NPT thermalization initiated on 05 Nov 2021 at 04:42:40
+p01> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 04:36:09
+p01> NPT thermalization initiated on 05 Nov 2021 at 04:42:40
+p04> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 04:36:09
+p04> NPT thermalization initiated on 05 Nov 2021 at 04:42:52
+p02> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 04:36:09
+p02> NPT thermalization initiated on 05 Nov 2021 at 04:42:54
+
+------------------------------------------------------------------------------------------
+                                         Step # 2
+------------------------------------------------------------------------------------------
+
+Simulation process step02/p01 initiated with pid 7127
+Simulation process step02/p02 initiated with pid 7128
+Simulation process step02/p03 initiated with pid 7129
+Simulation process step02/p04 initiated with pid 7130
+p02> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 05:04:04
+p02> NPT thermalization initiated on 05 Nov 2021 at 05:10:41
+p01> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 05:04:04
+p01> NPT thermalization initiated on 05 Nov 2021 at 05:10:49
+p03> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 05:04:04
+p03> NPT thermalization initiated on 05 Nov 2021 at 05:10:51
+p04> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 05:04:04
+p04> NPT thermalization initiated on 05 Nov 2021 at 05:10:57
+
+------------------------------------------------------------------------------------------
+                                         Step # 3
+------------------------------------------------------------------------------------------
+
+Simulation process step03/p01 initiated with pid 7182
+Simulation process step03/p02 initiated with pid 7183
+Simulation process step03/p03 initiated with pid 7184
+Simulation process step03/p04 initiated with pid 7185
+p04> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 05:32:04
+p04> NPT thermalization initiated on 05 Nov 2021 at 05:38:40
+p01> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 05:32:04
+p01> NPT thermalization initiated on 05 Nov 2021 at 05:38:46
+p03> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 05:32:04
+p03> NPT thermalization initiated on 05 Nov 2021 at 05:38:51
+p02> NVT thermalization initiated (from random configuration) on 05 Nov 2021 at 05:32:04
+p02> NPT thermalization initiated on 05 Nov 2021 at 05:38:51

@@ -2,10 +2,10 @@
 #############               Welcome to DICEPLAYER version 1.0                #############
 ##########################################################################################
 
-Your python version is 3.8.12 (default, Oct  7 2021, 05:40:48) 
-[GCC 11.1.0]
+Your python version is 3.6.9 (default, Jan 26 2021, 15:33:00) 
+[GCC 8.4.0]
 
-Program started on Sunday, 24 Oct 2021 at 00:44:02
+Program started on Friday, 05 Nov 2021 at 04:35:58
 
 Environment variables:
 OMP_STACKSIZE = Not set
@@ -21,9 +21,9 @@ ghosts = no
 lps = no
 maxcyc = 3
 maxstep = 0.3
-nprocs = 2
+nprocs = 4
 opt = no
-qmprog = g09
+qmprog = g16
 readhessian = no
 switchcyc = 3
 tol_factor = 1.2
@@ -35,9 +35,10 @@ vdwforces = no
 
 combrule = *
 dens = 0.75
+init = yes
 isave = 1000
 ljname = phb.pot
-ncores = 1
+ncores = 3
 nmol = 1 100
 nstep = 40000 60000 50000
 outname = phb
@@ -45,6 +46,7 @@ press = 1.0
 progname = dice
 temp = 300.0
 title = Diceplayer run
+upbuf = 360
 
 ------------------------------------------------------------------------------------------
                          GAUSSIAN variables being used in this run:
@@ -53,8 +55,14 @@ title = Diceplayer run
 chgmult = 0 1
 level = MP2/aug-cc-pVTZ
 pop = chelpg
-qmprog = g09
+qmprog = g16
 
+
+==========================================================================================
+
+Program dice found at /usr/local/bin/dice
+Program g16 found at /usr/local/g16/g16
+Program formchk found at /usr/local/g16/formchk
 
 ==========================================================================================
                     Potential parameters from file phb.pot:
@@ -123,7 +131,7 @@ Lbl  AN       X          Y          Z         Charge    Epsilon   Sigma     Mass
 
 ==========================================================================================
 
-Molecule type 1:
+Molecule type 1 - PHENOL:
 
     Center of mass = (    -0.0000 ,     0.0000 ,     0.0000 )
     Moments of inertia =  3.144054E+02  2.801666E+03  3.027366E+03
@@ -138,18 +146,18 @@ Molecule type 1:
     Translating and rotating molecule to standard orientation... Done
 
     New values:
-    Center of mass = (    -0.0000 ,     0.0000 ,     0.0000 )
+    Center of mass = (    -0.0000 ,    -0.0000 ,    -0.0000 )
     Moments of inertia =  3.144054E+02  2.801666E+03  3.027366E+03
     Major principal axis = (   1.000000 ,   0.000000 ,   0.000000 )
     Inter principal axis = (  -0.000000 ,   1.000000 ,  -0.000000 )
-    Minor principal axis = (  -0.000000 ,   0.000000 ,   1.000000 )
+    Minor principal axis = (   0.000000 ,   0.000000 ,   1.000000 )
     Characteristic lengths = (  11.97 ,   5.27 ,   2.99 )
     Total mass =   226.28 au
     Total charge =  -0.0000 e
     Dipole moment = (    9.8432 ,    0.6168 ,    0.8120 )     Total =    9.8959 Debye
 
 
-Molecule type 2:
+Molecule type 2 - PLACEHOLDER:
 
     Center of mass = (     1.6067 ,    -1.0929 ,     0.0026 )
     Moments of inertia =  1.205279E+02  2.859254E+02  4.033761E+02
@@ -164,14 +172,21 @@ Molecule type 2:
     Translating and rotating molecule to standard orientation... Done
 
     New values:
-    Center of mass = (     1.6067 ,    -1.0929 ,     0.0026 )
-    Moments of inertia =  1.561638E+02  6.739391E+02  8.270247E+02
-    Major principal axis = (   0.899747 ,  -0.436411 ,   0.000541 )
-    Inter principal axis = (   0.436411 ,   0.899747 ,  -0.001219 )
-    Minor principal axis = (   0.000045 ,   0.001333 ,   0.999999 )
-    Characteristic lengths = (   5.67 ,   5.05 ,   1.51 )
+    Center of mass = (     0.0000 ,    -0.0000 ,     0.0000 )
+    Moments of inertia =  1.205279E+02  2.859254E+02  4.033761E+02
+    Major principal axis = (  -1.000000 ,   0.000000 ,   0.000000 )
+    Inter principal axis = (   0.000000 ,   1.000000 ,   0.000000 )
+    Minor principal axis = (   0.000000 ,   0.000000 ,   1.000000 )
+    Characteristic lengths = (   5.67 ,   5.13 ,   1.51 )
     Total mass =   112.20 au
     Total charge =  -0.0000 e
-    Dipole moment = (    1.8148 ,    1.4689 ,   -0.0016 )     Total =    2.3347 Debye
+    Dipole moment = (    1.7575 ,    1.5369 ,   -0.0000 )     Total =    2.3347 Debye
 
 ==========================================================================================
+
+Starting the iterative process.
+
+------------------------------------------------------------------------------------------
+                                         Step # 1
+------------------------------------------------------------------------------------------
+

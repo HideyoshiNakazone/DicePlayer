@@ -3,9 +3,22 @@ import shutil
 import textwrap
 import types
 
+from numpy.core.fromnumeric import partition
+
 from DPpack.MolHandling import *
 from DPpack.PTable import *
 from DPpack.Misc import *
+
+from numpy import random
+import subprocess
+
+
+dice_end_flag = "End of simulation"		## The normal end flag
+dice_flag_line = -2    					## must be in the line before the last
+umaAng3_to_gcm3 = 1.6605				## Conversion between uma/Ang3 to g/cm3
+
+max_seed = 4294967295					## Maximum allowed value for a seed (numpy)
+
 
 class Internal:
 
@@ -38,7 +51,7 @@ class Internal:
 
 		## Dice:
 		self.combrule = None
-		self.randominit = None
+		self.randominit = True
 
 	def read_keywords(self):
 
@@ -60,7 +73,16 @@ class Internal:
 			if key in self.player_keywords and len(value) != 0:  ##  'value' is not empty!
 				
 				if key == 'qmprog' and value[0].lower() in ("g03", "g09", "g16", "molcas"):
+					
 					setattr(self.player, key, value[0].lower())
+
+					if self.player.qmprog in ("g03","g09","g16"):
+
+						self.gaussian.qmprog = self.player.qmprog
+
+					# if self.player.qmprog == "molcas":
+
+					# 	pass
 				
 				elif key == 'opt' and value[0].lower() in ("yes", "no", "ts"):
 					setattr(self.player, key, value[0].lower())
@@ -208,7 +230,6 @@ class Internal:
 			
 			# #### End
 
-		
 	def check_keywords(self):
 		
 		min_steps = 20000
@@ -388,13 +409,15 @@ class Internal:
 		for i in range(ntypes):
 
 			line += 1
-			nsites = ljfile.pop(0).split()[0]
+			nsites, molname = ljfile.pop(0).split()[:2]
+
 			if not nsites.isdigit():
 				sys.exit("Error: expected an integer in line {} of file {}".format(line, self.dice.ljname))
 			
 			nsites = int(nsites)
-			self.system.add_type(nsites,Molecule())
-			
+
+			self.system.add_type(nsites, Molecule(molname))
+
 			for j in range(nsites):
 
 				line += 1
@@ -466,7 +489,6 @@ class Internal:
 			if _var in locals() or _var in globals():
 				exec(f'del {_var}')
 
-	
 	def print_potential(self):
 		
 		formatstr = "{:<3d} {:>3d}  {:>10.5f} {:>10.5f} {:>10.5f}  {:>10.6f} {:>9.5f} {:>7.4f} {:>9.4f}\n"
@@ -575,7 +597,6 @@ class Internal:
 			else:
 				sys.exit("Error: cannot find formchk executable")
 
-
 	def calculate_step(self):
 		
 		invhessian = linalg.inv(self.system.molecule[0].hessian)
@@ -634,7 +655,7 @@ class Internal:
 
 			pass
 
-	### I still have to talk with Herbet about 
+	### I still have to talk with Herbet about this function
 	def populate_asec_vdw(self, cycle):
 			
 		asec_charges = []  	# (rx, ry, rz, chg)
@@ -647,11 +668,11 @@ class Internal:
 		
 		norm_factor = nconfigs * self.player.nprocs
 		
-		nsitesref = len(self.system.molecule[0]) + len(ghost_atoms) + len(lp_atoms)
+		nsitesref = len(self.system.molecule[0].atom) + len(self.system.molecule[0].ghost_atoms) + len(self.system.molecule[0].lp_atoms)
 		
 		nsites_total = self.dice.nmol[0] * nsitesref
 		for i in range(1, len(self.dice.nmol)):
-			nsites_total += self.dice.nmol[i] * len(self.system.molecule[i])
+			nsites_total += self.dice.nmol[i] * len(self.system.molecule[i].atom)
 		
 		thickness = []
 		picked_mols = []
@@ -691,7 +712,7 @@ class Internal:
 					for mol in range(nmols):  ## Run over molecules of each type
 					
 						new_molecule = []
-						for site in range(len(self.system.molecule[types].atoms)):  ## Run over sites of each molecule
+						for site in range(len(self.system.molecule[types].atom)):  ## Run over sites of each molecule
 						
 							new_molecule.append({})
 							line = xyzfile.pop(0).split()
@@ -771,6 +792,333 @@ class Internal:
 		
 		return asec_charges
 
+	## Dice related Upper fuctions
+
+	def print_last_config(self, cycle, proc):
+			
+		step_dir = "step{:02d}".format(cycle)
+		proc_dir = "p{:02d}".format(proc)
+		path = step_dir + os.sep + proc_dir
+		file = path + os.sep + self.dice.outname + ".xyz"
+		if not os.path.isfile(file):
+			sys.exit("Error: cannot find the xyz file {}".format(file))
+		try:
+			with open(file) as fh:
+				xyzfile = fh.readlines()
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		nsites = len(self.system.molecule[0].atom) * self.dice.nmol[0]	
+		for i in range(1, len(self.dice.nmol)):
+			nsites += self.dice.nmol[i] * len(self.system.molecule[i].atom)
+		
+		nsites += 2  ## To include the comment line and the number of atoms (xyz file format)
+		
+		nsites *= -1  ## Become an index to count from the end of xyzfile (list)
+		xyzfile = xyzfile[nsites :]  ## Take the last configuration
+		
+		
+		file = self.dice.outname + ".xyz.last-" + proc_dir
+		fh = open(file, "w")
+		for line in xyzfile:
+			fh.write(line)
+
+	def new_density(self, proc):
+		
+		file = self.dice.outname + ".xyz.last-" + "p{:02d}".format(proc)
+		if not os.path.isfile(file):
+			sys.exit("Error: cannot find the xyz file {} in main directory".format(file))
+		try:
+			with open(file) as fh:
+				xyzfile = fh.readlines()
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		box = xyzfile[1].split()
+		volume = float(box[-3]) * float(box[-2]) * float(box[-1])
+		
+		total_mass = 0
+		for i in range(len(self.system.molecule)):
+			
+			total_mass += self.system.molecule[i].total_mass * self.dice.nmol[i]
+		
+		density = (total_mass / volume) * umaAng3_to_gcm3
+		
+		return density
+
+	def simulation_process(self, cycle, proc):
+		
+		try:
+			self.dice.make_proc_dir(cycle, proc)
+			self.make_inputs(cycle, proc)
+			self.dice.run_dice(cycle, proc, self.outfile)
+		except Exception as err:
+			sys.exit(err)
+		
+	def make_inputs(self, cycle, proc):
+		
+		step_dir = "step{:02d}".format(cycle)
+		proc_dir = "p{:02d}".format(proc)
+		path = step_dir + os.sep + proc_dir
+		
+		num = time.time()					##  Take the decimal places 7 to 12 of the 
+		num = (num - int(num)) * 1e6		##  time in seconds as a floating point
+		num = int((num - int(num)) * 1e6)	##  to make an integer in the range 1-1e6
+		random.seed( (os.getpid() * num) % (max_seed + 1) )
+
+		if self.randominit == False or self.player.cyc > 1:
+			xyzfile = self.dice.outname + ".xyz.last-" + "p{:02d}".format(proc)
+			self.make_init_file(path, xyzfile)
+		
+		if len(self.dice.nstep) == 2:  ## Means NVT simulation
+			
+			self.make_nvt_ter(path)
+			self.make_nvt_eq(path)
+			
+		elif len(self.dice.nstep) == 3:  ## Means NPT simulation
+			
+			if self.randominit:
+				self.make_nvt_ter(path)
+			else:
+				self.dens = self.new_density(proc)
+			
+			self.make_npt_ter(path)
+			self.make_npt_eq(path)
+		
+		else:
+			sys.exit("Error: bad number of entries for 'nstep'")
+		
+		self.make_potential(path)
+
+	def make_nvt_ter(self,path):
+		
+		file = path + os.sep + "NVT.ter"
+		try:
+			fh = open(file, "w")
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		fh.write("title = {} - NVT Thermalization\n".format(self.dice.title))
+		fh.write("ncores = {}\n".format(self.dice.ncores))
+		fh.write("ljname = {}\n".format(self.dice.ljname))
+		fh.write("outname = {}\n".format(self.dice.outname))
+		
+		string = " ".join(str(x) for x in self.dice.nmol)
+		fh.write("nmol = {}\n".format(string))
+		
+		fh.write("dens = {}\n".format(self.dice.dens))
+		fh.write("temp = {}\n".format(self.dice.temp))
+		
+		if self.randominit:
+			fh.write("init = yes\n")
+			fh.write("nstep = {}\n".format(self.dice.nstep[0]))
+		else:
+			fh.write("init = yesreadxyz\n")
+			fh.write("nstep = {}\n".format(self.player.altsteps))
+		
+		fh.write("vstep = 0\n")
+		fh.write("mstop = 1\n")
+		fh.write("accum = no\n")
+		fh.write("iprint = 1\n")
+		fh.write("isave = 0\n")
+		fh.write("irdf = 0\n")
+		
+		seed = int(1e6 * random.random())
+		fh.write("seed = {}\n".format(seed))
+		fh.write("upbuf = {}".format(self.dice.upbuf))
+
+		
+		fh.close()
+
+	def make_nvt_eq(self, path):
+		
+		file = path + os.sep + "NVT.eq" 	
+		try:
+			fh = open(file, "w")
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		fh.write("title = {} - NVT Production\n".format(self.dice.title))
+		fh.write("ncores = {}\n".format(self.dice.ncores))
+		fh.write("ljname = {}\n".format(self.dice.ljname))
+		fh.write("outname = {}\n".format(self.dice.outname))
+		
+		string = " ".join(str(x) for x in self.dice.nmol)
+		fh.write("nmol = {}\n".format(string))
+		
+		fh.write("dens = {}\n".format(self.dice.dens))
+		fh.write("temp = {}\n".format(self.dice.temp))
+		fh.write("init = no\n")
+		fh.write("nstep = {}\n".format(self.dice.nstep[1]))
+		fh.write("vstep = 0\n")
+		fh.write("mstop = 1\n")
+		fh.write("accum = no\n")
+		fh.write("iprint = 1\n")
+		fh.write("isave = {}\n".format(self.isave))
+		fh.write("irdf = {}\n".format(10 * self.player.nprocs))
+		
+		seed = int(1e6 * random.random())
+		fh.write("seed = {}\n".format(seed))
+		
+		fh.close()
+
+	def make_npt_ter(self,path):
+		
+		file = path + os.sep + "NPT.ter"
+		try:
+			fh = open(file, "w")
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		fh.write("title = {} - NPT Thermalization\n".format(self.dice.title))
+		fh.write("ncores = {}\n".format(self.dice.ncores))
+		fh.write("ljname = {}\n".format(self.dice.ljname))
+		fh.write("outname = {}\n".format(self.dice.outname))
+		
+		string = " ".join(str(x) for x in self.dice.nmol)
+		fh.write("nmol = {}\n".format(string))
+		
+		fh.write("press = {}\n".format(self.dice.press))
+		fh.write("temp = {}\n".format(self.dice.temp))
+		
+		if self.dice.randominit == True:
+			fh.write("init = no\n")   ## Because there will be a previous NVT simulation
+			fh.write("vstep = {}\n".format(int(self.dice.nstep[1] / 5)))
+		else:
+			fh.write("init = yesreadxyz\n")
+			fh.write("dens = {:<8.4f}\n".format(self.dice.dens))
+			fh.write("vstep = {}\n".format(int(self.player.altsteps / 5)))
+		
+		fh.write("nstep = 5\n")
+		fh.write("mstop = 1\n")
+		fh.write("accum = no\n")
+		fh.write("iprint = 1\n")
+		fh.write("isave = 0\n")
+		fh.write("irdf = 0\n")
+		
+		seed = int(1e6 * random.random())
+		fh.write("seed = {}\n".format(seed))
+		
+		fh.close()
+
+	def make_npt_eq(self, path):
+		
+		file = path + os.sep + "NPT.eq"
+		try:
+			fh = open(file, "w")
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		fh.write("title = {} - NPT Production\n".format(self.dice.title))
+		fh.write("ncores = {}\n".format(self.dice.ncores))
+		fh.write("ljname = {}\n".format(self.dice.ljname))
+		fh.write("outname = {}\n".format(self.dice.outname))
+		
+		string = " ".join(str(x) for x in self.dice.nmol)
+		fh.write("nmol = {}\n".format(string))
+		
+		fh.write("press = {}\n".format(self.dice.press))
+		fh.write("temp = {}\n".format(self.dice.temp))
+		
+		fh.write("nstep = 5\n")
+		
+		fh.write("vstep = {}\n".format(int(self.dice.nstep[2] / 5)))
+		fh.write("init = no\n")
+		fh.write("mstop = 1\n")
+		fh.write("accum = no\n")
+		fh.write("iprint = 1\n")
+		fh.write("isave = {}\n".format(self.dice.isave))
+		fh.write("irdf = {}\n".format(10 * self.player.nprocs))
+		
+		seed = int(1e6 * random.random())
+		fh.write("seed = {}\n".format(seed))
+		
+		fh.close()
+
+	def make_init_file(self, path, file):
+		
+		if not os.path.isfile(file):
+			sys.exit("Error: cannot find the xyz file {} in main directory".format(file))
+		try:
+			with open(file) as fh:
+				xyzfile = fh.readlines()
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		nsites_mm = 0
+		for i in range(1, len(self.dice.nmol)):
+			nsites_mm += self.dice.nmol[i] * len(self.system.molecule[i].atom)
+		
+		nsites_mm *= -1  ## Become an index to count from the end of xyzfile (list)
+		xyzfile = xyzfile[nsites_mm :]  ## Only the MM atoms of the last configuration remains
+		
+		file = path + os.sep + self.dice.outname + ".xy"
+		
+		try:
+			fh = open(file, "w")
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		for atom in self.system.molecule[0].atom:
+			fh.write("{:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(atom.rx, atom.ry, atom.rz))
+		
+		for i in self.system.molecule[0].ghost_atoms:
+			with self.system.molecule[0].atom[i] as ghost:
+				fh.write("{:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(ghost.rx, ghost.ry, ghost.rz))
+		
+		for i in self.system.molecule[0].lp_atoms:
+			with self.system.molecule[0].atom[i] as lp:
+				fh.write("{:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(lp.rx, lp.ry, lp.rz))
+		
+		for line in xyzfile:
+			atom = line.split()
+			rx = float(atom[1])
+			ry = float(atom[2])
+			rz = float(atom[3])
+			fh.write("{:>10.5f}  {:>10.5f}  {:>10.5f}\n".format(rx, ry, rz))
+		
+		fh.write("$end")
+		
+		fh.close()
+
+	def make_potential(self, path):
+		
+		fstr = "{:<3d} {:>3d}  {:>10.5f} {:>10.5f} {:>10.5f}  {:>10.6f} {:>9.5f} {:>7.4f}\n"
+		
+		file = path + os.sep + self.dice.ljname
+		try:
+			fh = open(file, "w")
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		fh.write("{}\n".format(self.dice.combrule))
+		fh.write("{}\n".format(len(self.dice.nmol)))
+		
+		nsites_qm = len(self.system.molecule[0].atom) + len(self.system.molecule[0].ghost_atoms) + len(self.system.molecule[0].lp_atoms)
+		
+		## Print the sites of the QM molecule
+		fh.write("{} {}\n".format(nsites_qm, self.system.molecule[0].molname))
+		for atom in self.system.molecule[0].atom:
+			fh.write(fstr.format(atom.lbl, atom.na, atom.rx, atom.ry, atom.rz, 
+													atom.chg, atom.eps, atom.sig))
+		
+		ghost_label = self.system.molecule[0].atom[-1].lbl + 1
+		for i in self.system.molecule[0].ghost_atoms:
+			fh.write(fstr.format(ghost_label, ghost_number, self.system.molecule[0].atom[i].rx, self.system.molecule[0].atom[i].ry, 
+															self.system.molecule[0].atom[i].rz, self.system.molecule[0].atom[i].chg, 0, 0))
+		
+		ghost_label += 1
+		for lp in self.system.molecule[0].lp_atoms:
+			fh.write(fstr.format(ghost_label, ghost_number, lp['rx'], lp['ry'], lp['rz'], 
+																			lp['chg'], 0, 0))
+		
+		## Print the sites of the other molecules
+		for mol in self.system.molecule[1:]:
+			fh.write("{} {}\n".format(len(mol.atom), mol.molname))
+			for atom in mol.atom:
+				fh.write(fstr.format(atom.lbl, atom.na, atom.rx, atom.ry, 
+										atom.rz, atom.chg, atom.eps, atom.sig))
+
 	class Player:
 
 		def __init__(self):
@@ -799,6 +1147,7 @@ class Internal:
 			self.progname = "dice"
 			self.path = None
 
+			self.init = "yes"
 			self.temp = 300.0
 			self.press = 1.0
 			self.isave = 1000         # ASEC construction will take this into account
@@ -814,7 +1163,162 @@ class Internal:
 			self.nstep = []    # 2 or 3 integer values related to 2 or 3 simulations
 								# (NVT th + NVT eq) or (NVT th + NPT th + NPT eq).
 								# This will control the 'nstep' keyword of Dice
+			self.upbuf = 360
 
+		def make_proc_dir(self, cycle, proc):
+			
+			step_dir = "step{:02d}".format(cycle)
+			proc_dir = "p{:02d}".format(proc)
+			path = step_dir + os.sep + proc_dir
+			try:
+				os.makedirs(path)
+			except:
+				sys.exit("Error: cannot make directory {}".format(path))
+			
+			return
+
+		def run_dice(self, cycle, proc, fh):
+			
+			step_dir = "step{:02d}".format(cycle)
+			proc_dir = "p{:02d}".format(proc)
+
+			try:
+				fh.write("Simulation process {} initiated with pid {}\n".format(step_dir+'/'+proc_dir, os.getpid()))
+				fh.flush()
+			except Exception as err:
+				print("I/O error({0}): {1}".format(err))
+
+			path = step_dir + os.sep + proc_dir
+			working_dir = os.getcwd()
+			os.chdir(path)
+			
+			if len(self.nstep) == 2:  ## Means NVT simulation
+				
+				## NVT thermalization
+				string = "(from " + ("random" if self.randominit else "previous") + " configuration)"
+				fh.write("p{:02d}> NVT thermalization initiated {} on {}\n".format(proc, string, 
+																					date_time()))
+				
+				infh = open("NVT.ter")
+				outfh = open("NVT.ter.out", "w")
+				
+				exit_status = subprocess.call(self.progname, stdin=infh, stdout=outfh)
+				infh.close()
+				outfh.close()
+				
+				if os.getppid() == 1:	## Parent process is dead
+					sys.exit()
+				
+				if exit_status != 0:
+					sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+				else:
+					outfh = open("NVT.ter.out")          ## Open again to seek the normal end flag
+					flag = outfh.readlines()[dice_flag_line].strip()
+					outfh.close()
+					if flag != dice_end_flag:
+						sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+				
+				## NVT production
+				fh.write("p{:02d}> NVT production initiated on {}\n".format(proc, date_time()))
+				
+				infh = open("NVT.eq")
+				outfh = open("NVT.eq.out", "w")
+				
+				exit_status = subprocess.call(self.progname, stdin=infh, stdout=outfh)
+				infh.close()
+				outfh.close()
+				
+				if os.getppid() == 1:	## Parent process is dead
+					sys.exit()
+				
+				if exit_status != 0:
+					sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+				else:
+					outfh = open("NVT.eq.out")           ## Open again to seek the normal end flag
+					flag = outfh.readlines()[dice_flag_line].strip()
+					outfh.close()
+					if flag != dice_end_flag:
+						sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+				
+				fh.write("p{:02d}> ----- NVT production finished on {}\n".format(proc, 
+																					date_time()))
+			
+			elif len(self.nstep) == 3:  ## Means NPT simulation
+				
+				## NVT thermalization if randominit
+				if self.randominit:
+					string = "(from random configuration)"
+					fh.write("p{:02d}> NVT thermalization initiated {} on {}\n".format(proc, 
+																			string, date_time()))
+					infh = open("NVT.ter")
+					outfh = open("NVT.ter.out", "w")
+					
+					exit_status = subprocess.call(self.progname, stdin=infh, stdout=outfh)
+					infh.close()
+					outfh.close()
+					
+					if os.getppid() == 1:	## Parent process is dead
+						sys.exit()
+				
+					if exit_status != 0:
+						sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+					else:
+						outfh = open("NVT.ter.out")      ## Open again to seek the normal end flag
+						flag = outfh.readlines()[dice_flag_line].strip()
+						outfh.close()
+						if flag != dice_end_flag:
+							sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+				
+				## NPT thermalization
+				string = (" (from previous configuration) " if not self.randominit else " ")
+				fh.write("p{:02d}> NPT thermalization initiated{}on {}\n".format(proc, string, 
+																					date_time()))
+				fh.flush()
+				infh = open("NPT.ter")
+				outfh = open("NPT.ter.out", "w")
+				
+				exit_status = subprocess.call(self.progname, stdin=infh, stdout=outfh)
+				infh.close()
+				outfh.close()
+				
+				if os.getppid() == 1:	## Parent process is dead
+					sys.exit()
+				
+				if exit_status != 0:
+					sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+				else:
+					outfh = open("NPT.ter.out")          ## Open again to seek the normal end flag
+					flag = outfh.readlines()[dice_flag_line].strip()
+					outfh.close()
+					if flag != dice_end_flag:
+						sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+				
+				## NPT production
+				fh.write("p{:02d}> NPT production initiated on {}\n".format(proc, date_time()))
+				
+				infh = open("NPT.eq")
+				outfh = open("NPT.eq.out", "w")
+				
+				exit_status = subprocess.call(self.progname, stdin=infh, stdout=outfh)
+				infh.close()
+				outfh.close()
+				
+				if os.getppid() == 1:	## Parent process is dead
+					sys.exit()
+				
+				if exit_status != 0:
+					sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+				else:
+					outfh = open("NPT.eq.out")           ## Open again to seek the normal end flag
+					flag = outfh.readlines()[dice_flag_line].strip()
+					outfh.close()
+					if flag != dice_end_flag:
+						sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+				
+				fh.write("p{:02d}> ----- NPT production finished on {}\n".format(proc, 
+																					date_time()))
+				
+			os.chdir(working_dir)
 
 	class Gaussian:
 

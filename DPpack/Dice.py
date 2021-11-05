@@ -9,13 +9,6 @@ from DPpack.PTable import *
 from DPpack.SetGlobals import *
 from DPpack.Misc import *
 
-
-dice_end_flag = "End of simulation"		## The normal end flag
-dice_flag_line = -2    					## must be in the line before the last
-umaAng3_to_gcm3 = 1.6605				## Conversion between uma/Ang3 to g/cm3
-
-max_seed = 4294967295					## Maximum allowed value for a seed (numpy)
-
 #######################################  functions  ######################################
 
 def make_inputs(cycle, proc):

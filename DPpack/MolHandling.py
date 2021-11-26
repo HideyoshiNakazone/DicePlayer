@@ -375,16 +375,22 @@ class Molecule:
 		evals, evecs = self.principal_axes()
 
 		if round(linalg.det(evecs)) == -1:
+
 			evecs[0,2] *= -1
 			evecs[1,2] *= -1
 			evecs[2,2] *= -1
+
 		if round(linalg.det(evecs)) != 1:
+			
 			sys.exit("Error: could not make a rotation matrix while adopting the standard orientation")
 		
 		rot_matrix = evecs.T
+
 		for atom in self.atom:
+
 			position = np.array([ atom.rx, atom.ry, atom.rz ])
 			new_position = np.matmul(rot_matrix, position.T).T
+
 			atom.rx = new_position[0]
 			atom.ry = new_position[1]
 			atom.rz = new_position[2]

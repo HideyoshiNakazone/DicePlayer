@@ -1,11 +1,11 @@
 #!/export/apps/python/361/bin/python3
 
 import os, sys, time, signal
+import setproctitle
 import argparse
 import shutil
 from multiprocessing import Process, connection
 
-import DPpack.Dice as Dice
 import DPpack.Gaussian as Gaussian
 from DPpack.PTable import *
 from DPpack.SetGlobals import *
@@ -16,6 +16,8 @@ from DPpack.Misc import *
 if __name__ == '__main__':
 ####  Read and store the arguments passed to the program  ####
 ####  and set the usage and help messages                 ####
+
+	setproctitle.setproctitle("diceplayer-current")
 
 	parser = argparse.ArgumentParser(prog='Diceplayer')
 	parser.add_argument('--continue', dest='opt_continue' , default=False, action='store_true')
@@ -37,21 +39,28 @@ if __name__ == '__main__':
 			outfile = open(args.outfile,'r')
 			run_file = outfile.readlines()
 			control_sequence = '                                         Step # '
+			sucessfull_sequence = '+----------------------------------------------------------------------------------------+'
 			
 			for line in run_file:
 				if control_sequence in line:
-					cyc = int(line[-2]) + 1
+					cyc = int(line[-2])
+				if sucessfull_sequence in line:
+					cyc += 1
+
 
 			outfile.close()
-			os.rename(os.path.abspath(args.outfile),os.path.abspath(args.outfile)+".backup")
-			outfile = open(args.outfile,'w')
 
+			if os.path.isfile(args.outfile+".backup"):
+				os.remove(args.outfile+".backup")
 
-		if os.path.exists(args.outfile):		
-			os.rename(os.path.abspath(args.outfile),os.path.abspath(args.outfile)+".backup")
-			outfile = open(args.outfile,'w')
+			os.rename(args.outfile,args.outfile+".backup")
+			outfile = open(args.outfile,'w',1)
+
+		elif os.path.exists(args.outfile):		
+			os.rename(args.outfile, args.outfile+".backup")
+			outfile = open(args.outfile,'w',1)
 		else:
-			outfile = open(args.outfile,"w")
+			outfile = open(args.outfile,"w",1)
 
 	except EnvironmentError as err:
 		sys.exit(err)
@@ -71,7 +80,10 @@ if __name__ == '__main__':
 	internal.read_keywords()
 
 	if args.opt_continue:
-		internal.player.cyc = cyc
+		try:
+			internal.player.initcyc = cyc
+		except:
+			sys.exit("Error: There is no sutable run.log file to continue the previous process")
 
 	internal.check_keywords()
 	internal.print_keywords()
@@ -106,17 +118,27 @@ if __name__ == '__main__':
 	internal.outfile.write(90 * "=")
 	internal.outfile.write("\n")
 
+	if not args.opt_continue:
+		make_simulation_dir()
+	else:
+		simdir = "simfiles"
+		stepdir = "step{:02d}".format(internal.player.initcyc)
+		if os.path.exists(simdir+os.sep+stepdir):
+			shutil.rmtree(simdir+os.sep+stepdir)
+
 ####  Open the geoms.xyz file and prints the initial geometry if starting from zero
 
-	if internal.player.cyc == 1:
+	if internal.player.initcyc == 1:
 		try:
-			geomsfh = open("geoms.xyz", "w", 1)
+			path = "geoms.xyz"
+			geomsfh = open(path, "w", 1)
 		except EnvironmentError as err:
 			sys.exit(err)
 		internal.system.print_geom(0, geomsfh)
 	else:
 		try:
-			geomsfh = open("geoms.xyz", "A", 1)
+			path = "geoms.xyz"
+			geomsfh = open(path, "a", 1)
 		except EnvironmentError as err:
 			sys.exit(err)
 
@@ -126,10 +148,10 @@ if __name__ == '__main__':
 	position = internal.system.molecule[0].read_position()
 	
 	## If restarting, read the last gradient and hessian
-	if internal.player.cyc > 1:
-		if internal.player.qmprog in ("g03", "g09", "g16"):
-			Gaussian.read_forces("grad_hessian.dat")
-			Gaussian.read_hessian_fchk("grad_hessian.dat")
+	# if internal.player.initcyc > 1:
+	# 	if internal.player.qmprog in ("g03", "g09", "g16"):
+	# 		Gaussian.read_forces("grad_hessian.dat")
+	# 		Gaussian.read_hessian_fchk("grad_hessian.dat")
 	
 		#if player['qmprog'] == "molcas":
 			#Molcas.read_forces("grad_hessian.dat")
@@ -138,20 +160,15 @@ if __name__ == '__main__':
 	###
 	###  Start the iterative process
 	###
+
+	internal.outfile.write("\n" + 90 * "-" + "\n")
 	
-	for cycle in range(internal.player.cyc, internal.player.cyc + internal.player.maxcyc):
+	for cycle in range(internal.player.initcyc, internal.player.initcyc + internal.player.maxcyc):
 	
-		internal.outfile.write("\n" + 90 * "-" + "\n")
 		internal.outfile.write("{} Step # {}\n".format(40 * " ", cycle))
 		internal.outfile.write(90 * "-" + "\n\n")
-		internal.outfile.flush()
-	
+
 		make_step_dir(cycle)
-	
-		if internal.player.altsteps == 0 or internal.player.cyc == 1:
-			internal.dice.randominit = True
-		else:
-			internal.dice.randominit = False
 	
 		####
 		####  Start block of parallel simulations
@@ -180,6 +197,8 @@ if __name__ == '__main__':
 
 		for proc in range(1, internal.player.nprocs + 1):
 			internal.print_last_config(cycle, proc)
+
+		internal.outfile.write("\n+" + 88 * "-" + "+\n")
 		
 		####
 		####  End of parallel simulations block

@@ -1,5 +1,4 @@
 # diceplayer
-initcyc = 1
 maxcyc = 3
 opt = NO
 nprocs = 4
@@ -10,13 +9,13 @@ altsteps = 20000
 
 # dice
 ncores = 3
-nmol = 1 100
+nmol = 1 50
 dens = 0.75
 nstep = 40000 60000 50000
 isave = 1000
-ljname = phb.pot
+ljname = phb.ljc
 outname = phb
-init = yes
+randominit = first
 
 # Gaussian
 level = MP2/aug-cc-pVTZ

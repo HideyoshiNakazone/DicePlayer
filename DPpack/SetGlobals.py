@@ -1,3 +1,4 @@
+import setproctitle
 import os, sys
 import shutil
 import textwrap
@@ -19,11 +20,11 @@ umaAng3_to_gcm3 = 1.6605				## Conversion between uma/Ang3 to g/cm3
 
 max_seed = 4294967295					## Maximum allowed value for a seed (numpy)
 
-
 class Internal:
 
 	def __init__(self, infile, outfile):
 
+		self.cyc = 1
 		self.infile = infile
 		self.outfile = outfile
 
@@ -51,7 +52,6 @@ class Internal:
 
 		## Dice:
 		self.combrule = None
-		self.randominit = True
 
 	def read_keywords(self):
 
@@ -126,6 +126,10 @@ class Internal:
 				
 				elif key in ('ljname', 'outname', 'progname'):
 					setattr(self.dice, key, value[0])
+
+				elif key == 'randominit':
+					if value in ('always','first'):
+						setattr(self.dice,key,value)
 				
 				elif key in ('ncores', 'isave'):
 					err = "Error: expected a positive integer for keyword {} in file {}".format(key, self.infile)
@@ -414,6 +418,9 @@ class Internal:
 			if not nsites.isdigit():
 				sys.exit("Error: expected an integer in line {} of file {}".format(line, self.dice.ljname))
 			
+			if molname is None:
+				sys.exit("Error: expected a molecule name in line {} of file {}".format(line, self.dice.ljname))
+
 			nsites = int(nsites)
 
 			self.system.add_type(nsites, Molecule(molname))
@@ -679,7 +686,8 @@ class Internal:
 			
 		for proc in range(1, self.player.nprocs + 1):  ## Run over folders
 			
-			path = "step{:02d}".format(cycle) + os.sep + "p{:02d}".format(proc)
+			simdir = "simfiles"
+			path = simdir + os.sep + "step{:02d}".format(cycle) + os.sep + "p{:02d}".format(proc)
 			file = path + os.sep + self.dice.outname + ".xyz" 
 			if not os.path.isfile(file):
 				sys.exit("Error: cannot find file {}".format(file))
@@ -795,10 +803,11 @@ class Internal:
 	## Dice related Upper fuctions
 
 	def print_last_config(self, cycle, proc):
-			
+		
+		sim_dir = "simfiles"
 		step_dir = "step{:02d}".format(cycle)
 		proc_dir = "p{:02d}".format(proc)
-		path = step_dir + os.sep + proc_dir
+		path = sim_dir + os.sep + step_dir + os.sep + proc_dir
 		file = path + os.sep + self.dice.outname + ".xyz"
 		if not os.path.isfile(file):
 			sys.exit("Error: cannot find the xyz file {}".format(file))
@@ -818,14 +827,18 @@ class Internal:
 		xyzfile = xyzfile[nsites :]  ## Take the last configuration
 		
 		
-		file = self.dice.outname + ".xyz.last-" + proc_dir
+		file = path + os.sep + "last.xyz"
 		fh = open(file, "w")
 		for line in xyzfile:
 			fh.write(line)
 
-	def new_density(self, proc):
+	def new_density(self, cycle, proc):
 		
-		file = self.dice.outname + ".xyz.last-" + "p{:02d}".format(proc)
+		sim_dir = "simfiles"
+		step_dir = "step{:02d}".format(cycle-1)
+		proc_dir = "p{:02d}".format(proc)
+		path = sim_dir + os.sep + step_dir + os.sep + proc_dir
+		file = path + os.sep + "last.xyz"
 		if not os.path.isfile(file):
 			sys.exit("Error: cannot find the xyz file {} in main directory".format(file))
 		try:
@@ -847,6 +860,8 @@ class Internal:
 		return density
 
 	def simulation_process(self, cycle, proc):
+
+		setproctitle.setproctitle("diceplayer-step{:0d}-p{:0d}".format(cycle,proc))
 		
 		try:
 			self.dice.make_proc_dir(cycle, proc)
@@ -857,40 +872,49 @@ class Internal:
 		
 	def make_inputs(self, cycle, proc):
 		
+		sim_dir = "simfiles"
 		step_dir = "step{:02d}".format(cycle)
 		proc_dir = "p{:02d}".format(proc)
-		path = step_dir + os.sep + proc_dir
+		path = sim_dir + os.sep + step_dir + os.sep + proc_dir
 		
 		num = time.time()					##  Take the decimal places 7 to 12 of the 
 		num = (num - int(num)) * 1e6		##  time in seconds as a floating point
 		num = int((num - int(num)) * 1e6)	##  to make an integer in the range 1-1e6
 		random.seed( (os.getpid() * num) % (max_seed + 1) )
 
-		if self.randominit == False or self.player.cyc > 1:
-			xyzfile = self.dice.outname + ".xyz.last-" + "p{:02d}".format(proc)
+		if self.dice.randominit == 'first' and cycle > 1:
+			step_dir = "step{:02d}".format(cycle-1)
+			last_path = sim_dir + os.sep + step_dir + os.sep + proc_dir
+			xyzfile = last_path + os.sep + "last.xyz"
 			self.make_init_file(path, xyzfile)
 		
 		if len(self.dice.nstep) == 2:  ## Means NVT simulation
 			
-			self.make_nvt_ter(path)
+			self.make_nvt_ter(cycle, path)
 			self.make_nvt_eq(path)
 			
 		elif len(self.dice.nstep) == 3:  ## Means NPT simulation
 			
-			if self.randominit:
-				self.make_nvt_ter(path)
+			if self.dice.randominit == 'first' and cycle > 1:
+				self.dens = self.new_density(cycle, proc)
 			else:
-				self.dens = self.new_density(proc)
+				self.make_nvt_ter(cycle, path)				
 			
-			self.make_npt_ter(path)
+			self.make_npt_ter(cycle, path)
 			self.make_npt_eq(path)
 		
 		else:
 			sys.exit("Error: bad number of entries for 'nstep'")
-		
+
 		self.make_potential(path)
 
-	def make_nvt_ter(self,path):
+		# if (self.dice.randominit == 'first' and cycle > 1):
+			
+		# 	last_path = sim_dir + os.sep + "step{:02d}".format(cycle-1) + os.sep + proc_dir
+		# 	shutil.copyfile(last_path + os.sep + "phb.dat", path + os.sep + "phb.dat")
+		
+
+	def make_nvt_ter(self,cycle, path):
 		
 		file = path + os.sep + "NVT.ter"
 		try:
@@ -909,12 +933,12 @@ class Internal:
 		fh.write("dens = {}\n".format(self.dice.dens))
 		fh.write("temp = {}\n".format(self.dice.temp))
 		
-		if self.randominit:
-			fh.write("init = yes\n")
-			fh.write("nstep = {}\n".format(self.dice.nstep[0]))
-		else:
+		if self.dice.randominit == 'first' and cycle > 1:
 			fh.write("init = yesreadxyz\n")
 			fh.write("nstep = {}\n".format(self.player.altsteps))
+		else:
+			fh.write("init = yes\n")
+			fh.write("nstep = {}\n".format(self.dice.nstep[0]))
 		
 		fh.write("vstep = 0\n")
 		fh.write("mstop = 1\n")
@@ -962,7 +986,7 @@ class Internal:
 		
 		fh.close()
 
-	def make_npt_ter(self,path):
+	def make_npt_ter(self, cycle, path):
 		
 		file = path + os.sep + "NPT.ter"
 		try:
@@ -981,13 +1005,14 @@ class Internal:
 		fh.write("press = {}\n".format(self.dice.press))
 		fh.write("temp = {}\n".format(self.dice.temp))
 		
-		if self.dice.randominit == True:
-			fh.write("init = no\n")   ## Because there will be a previous NVT simulation
-			fh.write("vstep = {}\n".format(int(self.dice.nstep[1] / 5)))
-		else:
+		
+		if self.dice.randominit == 'first' and cycle > 1:
 			fh.write("init = yesreadxyz\n")
 			fh.write("dens = {:<8.4f}\n".format(self.dice.dens))
 			fh.write("vstep = {}\n".format(int(self.player.altsteps / 5)))
+		else:
+			fh.write("init = no\n")   ## Because there will be a previous NVT simulation
+			fh.write("vstep = {}\n".format(int(self.dice.nstep[1] / 5)))
 		
 		fh.write("nstep = 5\n")
 		fh.write("mstop = 1\n")
@@ -1055,27 +1080,27 @@ class Internal:
 		file = path + os.sep + self.dice.outname + ".xy"
 		
 		try:
-			fh = open(file, "w")
+			fh = open(file, "w", 1)
 		except:
 			sys.exit("Error: cannot open file {}".format(file))
 		
 		for atom in self.system.molecule[0].atom:
 			fh.write("{:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(atom.rx, atom.ry, atom.rz))
 		
-		for i in self.system.molecule[0].ghost_atoms:
-			with self.system.molecule[0].atom[i] as ghost:
-				fh.write("{:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(ghost.rx, ghost.ry, ghost.rz))
+		# for i in self.system.molecule[0].ghost_atoms:
+		# 	with self.system.molecule[0].atom[i] as ghost:
+		# 		fh.write("{:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(ghost.rx, ghost.ry, ghost.rz))
 		
-		for i in self.system.molecule[0].lp_atoms:
-			with self.system.molecule[0].atom[i] as lp:
-				fh.write("{:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(lp.rx, lp.ry, lp.rz))
+		# for i in self.system.molecule[0].lp_atoms:
+		# 	with self.system.molecule[0].atom[i] as lp:
+		# 		fh.write("{:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(lp.rx, lp.ry, lp.rz))
 		
 		for line in xyzfile:
 			atom = line.split()
 			rx = float(atom[1])
 			ry = float(atom[2])
 			rz = float(atom[3])
-			fh.write("{:>10.5f}  {:>10.5f}  {:>10.5f}\n".format(rx, ry, rz))
+			fh.write("{:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(rx, ry, rz))
 		
 		fh.write("$end")
 		
@@ -1137,7 +1162,7 @@ class Internal:
 			self.tol_factor = 1.2
 			self.qmprog = "g16"
 
-			self.cyc = 1
+			self.initcyc = 1
 	
 	class Dice:
 
@@ -1147,7 +1172,8 @@ class Internal:
 			self.progname = "dice"
 			self.path = None
 
-			self.init = "yes"
+			
+			self.randominit = 'first'
 			self.temp = 300.0
 			self.press = 1.0
 			self.isave = 1000         # ASEC construction will take this into account
@@ -1167,42 +1193,51 @@ class Internal:
 
 		def make_proc_dir(self, cycle, proc):
 			
+			sim_dir = "simfiles"
 			step_dir = "step{:02d}".format(cycle)
 			proc_dir = "p{:02d}".format(proc)
-			path = step_dir + os.sep + proc_dir
+			path = sim_dir + os.sep + step_dir + os.sep + proc_dir
 			try:
 				os.makedirs(path)
 			except:
 				sys.exit("Error: cannot make directory {}".format(path))
-			
-			return
 
 		def run_dice(self, cycle, proc, fh):
 			
+			sim_dir = "simfiles"
 			step_dir = "step{:02d}".format(cycle)
 			proc_dir = "p{:02d}".format(proc)
 
 			try:
-				fh.write("Simulation process {} initiated with pid {}\n".format(step_dir+'/'+proc_dir, os.getpid()))
-				fh.flush()
+				fh.write("Simulation process {} initiated with pid {}\n".format(sim_dir + os.sep + step_dir + os.sep + proc_dir, os.getpid()))
+				
 			except Exception as err:
 				print("I/O error({0}): {1}".format(err))
 
-			path = step_dir + os.sep + proc_dir
+			path = sim_dir + os.sep + step_dir + os.sep + proc_dir
 			working_dir = os.getcwd()
 			os.chdir(path)
 			
 			if len(self.nstep) == 2:  ## Means NVT simulation
+
+				if self.randominit == 'no' or (self.randominit == 'first' and cycle > 1):
+					string_tmp = 'previous'
+				else:
+					string_tmp = 'random'
 				
 				## NVT thermalization
-				string = "(from " + ("random" if self.randominit else "previous") + " configuration)"
-				fh.write("p{:02d}> NVT thermalization initiated {} on {}\n".format(proc, string, 
+				string = "(from " + string_tmp + " configuration)"
+				fh.write("p{:02d}> NVT thermalization finished {} on {}\n".format(proc, string, 
 																					date_time()))
 				
 				infh = open("NVT.ter")
 				outfh = open("NVT.ter.out", "w")
 				
-				exit_status = subprocess.call(self.progname, stdin=infh, stdout=outfh)
+				if shutil.which("bash") != None:
+					exit_status = subprocess.call(["bash","-c","exec -a dice-step{}-p{} {} < {} > {}".format(cycle, proc, self.progname, infh.name, outfh.name)])
+				else:
+					exit_status = subprocess.call(self.progname, stin=infh.name, stout=outfh.name)
+
 				infh.close()
 				outfh.close()
 				
@@ -1224,7 +1259,11 @@ class Internal:
 				infh = open("NVT.eq")
 				outfh = open("NVT.eq.out", "w")
 				
-				exit_status = subprocess.call(self.progname, stdin=infh, stdout=outfh)
+				if shutil.which("bash") != None:
+					exit_status = subprocess.call(["bash","-c","exec -a dice-step{}-p{} {} < {} > {}".format(cycle, proc, self.progname, infh.name, outfh.name)])
+				else:
+					exit_status = subprocess.call(self.progname, stin=infh.name, stout=outfh.name)
+
 				infh.close()
 				outfh.close()
 				
@@ -1246,14 +1285,18 @@ class Internal:
 			elif len(self.nstep) == 3:  ## Means NPT simulation
 				
 				## NVT thermalization if randominit
-				if self.randominit:
+				if self.randominit == 'always' or (self.randominit == 'first' and cycle == 1):
 					string = "(from random configuration)"
 					fh.write("p{:02d}> NVT thermalization initiated {} on {}\n".format(proc, 
 																			string, date_time()))
 					infh = open("NVT.ter")
 					outfh = open("NVT.ter.out", "w")
 					
-					exit_status = subprocess.call(self.progname, stdin=infh, stdout=outfh)
+					if shutil.which("bash") != None:
+						exit_status = subprocess.call(["bash","-c","exec -a dice-step{}-p{} {} < {} > {}".format(cycle, proc, self.progname, infh.name, outfh.name)])
+					else:
+						exit_status = subprocess.call(self.progname, stin=infh.name, stout=outfh.name)
+
 					infh.close()
 					outfh.close()
 					
@@ -1270,14 +1313,21 @@ class Internal:
 							sys.exit("Dice process p{:02d} did not exit properly".format(proc))
 				
 				## NPT thermalization
-				string = (" (from previous configuration) " if not self.randominit else " ")
-				fh.write("p{:02d}> NPT thermalization initiated{}on {}\n".format(proc, string, 
+				if not self.randominit == 'always' or (self.randominit == 'first' and cycle == 1):
+					string = " (from previous configuration) " 
+				else:
+					string = " "
+				fh.write("p{:02d}> NPT thermalization finished {} on {}\n".format(proc, string, 
 																					date_time()))
-				fh.flush()
+				
 				infh = open("NPT.ter")
 				outfh = open("NPT.ter.out", "w")
 				
-				exit_status = subprocess.call(self.progname, stdin=infh, stdout=outfh)
+				if shutil.which("bash") != None:
+					exit_status = subprocess.call(["bash","-c","exec -a dice-step{}-p{} {} < {} > {}".format(cycle, proc, self.progname, infh.name, outfh.name)])
+				else:
+					exit_status = subprocess.call(self.progname, stin=infh.name, stout=outfh.name)
+
 				infh.close()
 				outfh.close()
 				
@@ -1299,7 +1349,11 @@ class Internal:
 				infh = open("NPT.eq")
 				outfh = open("NPT.eq.out", "w")
 				
-				exit_status = subprocess.call(self.progname, stdin=infh, stdout=outfh)
+				if shutil.which("bash") != None:
+					exit_status = subprocess.call(["bash","-c","exec -a dice-step{}-p{} {} < {} > {}".format(cycle, proc, self.progname, infh.name, outfh.name)])
+				else:
+					exit_status = subprocess.call(self.progname, stin=infh.name, stout=outfh.name)
+
 				infh.close()
 				outfh.close()
 				

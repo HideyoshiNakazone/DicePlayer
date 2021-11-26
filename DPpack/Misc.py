@@ -1,4 +1,5 @@
 import os, sys, time
+from posixpath import sep
 import shutil, gzip
 
 #######################################  functions  ######################################
@@ -33,31 +34,34 @@ def compress_files_1mb(path):
 	
 	return
 
+def make_simulation_dir():
+
+	sim_dir = "simfiles"
+	if os.path.exists(sim_dir):
+		sys.exit("Error: a file or a directory {} already exists, move or delete de simfiles directory to continue.".format(sim_dir))
+	try:
+		os.makedirs(sim_dir)
+	except:
+		sys.exit("Error: cannot make directory {}".format(sim_dir))
 
 def make_step_dir(cycle):
 	
+	sim_dir = "simfiles"
 	step_dir = "step{:02d}".format(cycle)
-	if os.path.exists(step_dir):
+	path = sim_dir + os.sep + step_dir
+	if os.path.exists(path):
 		sys.exit("Error: a file or directory {} already exists".format(step_dir))
 	try:
-		os.makedirs(step_dir)
+		os.makedirs(path)
 	except:
 		sys.exit("Error: cannot make directory {}".format(step_dir))
-	
-	return
-
-
 
 def make_qm_dir(cycle):
-	
+
+	sim_dir = "simfiles"
 	step_dir = "step{:02d}".format(cycle)
-	path = step_dir + os.sep + "qm"
+	path = sim_dir + os.sep + step_dir + os.sep + "qm"
 	try:
 		os.makedirs(path)
 	except:
 		sys.exit("Error: cannot make directory {}".format(path))
-	
-	return
-
-
-

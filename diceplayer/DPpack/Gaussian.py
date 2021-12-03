@@ -148,7 +148,7 @@ def print_grad_hessian(cycle, cur_gradient, hessian):
 	return
 
 
-
+## Change the name to make_gaussian_input
 def make_force_input(cycle, asec_charges):
 	
 	path = "step{:02d}".format(cycle) + os.sep + "qm"
@@ -241,92 +241,92 @@ def make_force_input(cycle, asec_charges):
 
 
 
-def make_charge_input(cycle, asec_charges):
+# def make_charge_input(cycle, asec_charges):
 	
-	path = "step{:02d}".format(cycle) + os.sep + "qm"
-	file = path + os.sep + "asec2.gjf"
-	try:
-		fh = open(file, "w")
-	except:
-		sys.exit("Error: cannot open file {}".format(file))
+# 	path = "step{:02d}".format(cycle) + os.sep + "qm"
+# 	file = path + os.sep + "asec2.gjf"
+# 	try:
+# 		fh = open(file, "w")
+# 	except:
+# 		sys.exit("Error: cannot open file {}".format(file))
 	
-	fh.write("%Chk=asec.chk\n")
-	if gaussian['mem'] != None:
-		fh.write("%Mem={}MB\n".format(gaussian['mem']))
-	fh.write("%Nprocs={}\n".format(player['nprocs'] * dice['ncores']))
+# 	fh.write("%Chk=asec.chk\n")
+# 	if gaussian['mem'] != None:
+# 		fh.write("%Mem={}MB\n".format(gaussian['mem']))
+# 	fh.write("%Nprocs={}\n".format(player['nprocs'] * dice['ncores']))
 	
-	kword_line = "#P " + gaussian['chglevel'] + " " + gaussian['keywords'] + " Charge NoSymm"
+# 	kword_line = "#P " + gaussian['chglevel'] + " " + gaussian['keywords'] + " Charge NoSymm"
 	
-	if player['opt'] != "no" or cycle > 1:
-		kword_line += " Guess=Read"
+# 	if player['opt'] != "no" or cycle > 1:
+# 		kword_line += " Guess=Read"
 	
-	kword_line += " Pop={} Density=Current\n".format(gaussian['pop'])
+# 	kword_line += " Pop={} Density=Current\n".format(gaussian['pop'])
 	
-	fh.write(textwrap.fill(kword_line, 90))
-	fh.write("\n")
+# 	fh.write(textwrap.fill(kword_line, 90))
+# 	fh.write("\n")
 	
-	fh.write("\nCharge calculation - Cycle number {}\n".format(cycle))
-	fh.write("\n")
-	fh.write("{},{}\n".format(gaussian['chgmult'][0], gaussian['chgmult'][1]))
+# 	fh.write("\nCharge calculation - Cycle number {}\n".format(cycle))
+# 	fh.write("\n")
+# 	fh.write("{},{}\n".format(gaussian['chgmult'][0], gaussian['chgmult'][1]))
 	
-	for atom in molecules[0]:
-		symbol = atomsymb[atom['na']]
-		fh.write("{:<2s}    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(symbol, 
-													  atom['rx'], atom['ry'], atom['rz']))
+# 	for atom in molecules[0]:
+# 		symbol = atomsymb[atom['na']]
+# 		fh.write("{:<2s}    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(symbol, 
+# 													  atom['rx'], atom['ry'], atom['rz']))
 	
-	if cycle >= player['switchcyc']:
-		for ghost in ghost_atoms:
-			fh.write("Bq    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(
-												   ghost['rx'], ghost['ry'], ghost['rz']))
+# 	if cycle >= player['switchcyc']:
+# 		for ghost in ghost_atoms:
+# 			fh.write("Bq    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(
+# 												   ghost['rx'], ghost['ry'], ghost['rz']))
 		
-		for lp in lp_atoms:
-			fh.write("Bq    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(
-															lp['rx'], lp['ry'], lp['rz']))
+# 		for lp in lp_atoms:
+# 			fh.write("Bq    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(
+# 															lp['rx'], lp['ry'], lp['rz']))
 	
-	fh.write("\n")
+# 	fh.write("\n")
 	
-	## If gmiddle file was informed, write its contents in asec.gjf
-	if gaussian['gmiddle'] != None:
-		if not os.path.isfile(gaussian['gmiddle']):
-			sys.exit("Error: cannot find file {} in main directory".format(
-																	 gaussian['gmiddle']))
-		try:
-			with open(gaussian['gmiddle']) as gmiddlefile:
-				gmiddle = gmiddlefile.readlines()
-		except:
-			sys.exit("Error: cannot open file {}".format(gaussian['gmiddle']))
+# 	## If gmiddle file was informed, write its contents in asec.gjf
+# 	if gaussian['gmiddle'] != None:
+# 		if not os.path.isfile(gaussian['gmiddle']):
+# 			sys.exit("Error: cannot find file {} in main directory".format(
+# 																	 gaussian['gmiddle']))
+# 		try:
+# 			with open(gaussian['gmiddle']) as gmiddlefile:
+# 				gmiddle = gmiddlefile.readlines()
+# 		except:
+# 			sys.exit("Error: cannot open file {}".format(gaussian['gmiddle']))
 		
-		for line in gmiddle:
-			fh.write(line)
+# 		for line in gmiddle:
+# 			fh.write(line)
 		
-		fh.write("\n")
+# 		fh.write("\n")
 	
-	## Write the ASEC:
-	for charge in asec_charges:
-		fh.write("{:>10.5f}   {:>10.5f}   {:>10.5f}     {:>11.8f}\n".format(
-								 charge['rx'], charge['ry'], charge['rz'], charge['chg']))
+# 	## Write the ASEC:
+# 	for charge in asec_charges:
+# 		fh.write("{:>10.5f}   {:>10.5f}   {:>10.5f}     {:>11.8f}\n".format(
+# 								 charge['rx'], charge['ry'], charge['rz'], charge['chg']))
 	
-	fh.write("\n")
+# 	fh.write("\n")
 	
-	## If gbottom file was informed, write its contents in asec.gjf
-	if gaussian['gbottom'] != None:
-		if not os.path.isfile(gaussian['gbottom']):
-			sys.exit("Error: cannot find file {} in main directory".format(
-																	 gaussian['gbottom']))
-		try:
-			with open(gaussian['gbottom']) as gbottomfile:
-				gbottom = gbottomfile.readlines()
-		except:
-			sys.exit("Error: cannot open file {}".format(gaussian['gbottom']))
+# 	## If gbottom file was informed, write its contents in asec.gjf
+# 	if gaussian['gbottom'] != None:
+# 		if not os.path.isfile(gaussian['gbottom']):
+# 			sys.exit("Error: cannot find file {} in main directory".format(
+# 																	 gaussian['gbottom']))
+# 		try:
+# 			with open(gaussian['gbottom']) as gbottomfile:
+# 				gbottom = gbottomfile.readlines()
+# 		except:
+# 			sys.exit("Error: cannot open file {}".format(gaussian['gbottom']))
 		
-		for line in gbottom:
-			fh.write(line)
+# 		for line in gbottom:
+# 			fh.write(line)
 		
-		fh.write("\n")
+# 		fh.write("\n")
 	
-	fh.close()
+# 	fh.close()
 	
-	return
+# 	return
 
 
 
@@ -371,50 +371,3 @@ def read_charges(file, fh):
 	fh.write("------------------------------------\n")
 		
 	return
-
-
-
-def run_gaussian(cycle, type, fh):
-	
-	path = "step{:02d}".format(cycle) + os.sep + "qm"
-	work_dir = os.getcwd()
-	os.chdir(path)
-	
-	if type == "force":
-		infile = "asec.gjf"
-	elif type == "charge":
-		infile = "asec2.gjf"
-	
-	fh.write("\nCalculation of {}s initiated with Gaussian on {}\n".format(type, date_time()))
-	
-	exit_status = subprocess.call([player['qmprog'], infile])
-	
-	if exit_status != 0:
-		sys.exit("Gaussian process did not exit properly")
-	
-	fh.write("Calculation of {}s finished on {}\n".format(type, date_time()))
-	
-	os.chdir(work_dir)
-	
-	return
-
-
-
-def run_formchk(cycle, fh):
-	
-	path = "step{:02d}".format(cycle) + os.sep + "qm"
-	work_dir = os.getcwd()
-	os.chdir(path)
-		
-	fh.write("Formatting the checkpoint file... ")
-	
-	exit_status = subprocess.call(["formchk", "asec.chk"])
-	
-	fh.write("Done\n")
-	
-	os.chdir(work_dir)
-	
-	return
-
-
-

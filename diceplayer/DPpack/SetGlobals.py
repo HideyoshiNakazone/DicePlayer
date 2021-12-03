@@ -6,9 +6,9 @@ import types
 
 from numpy.core.fromnumeric import partition
 
-from DPpack.MolHandling import *
-from DPpack.PTable import *
-from DPpack.Misc import *
+from diceplayer.DPpack.MolHandling import *
+from diceplayer.DPpack.PTable import *
+from diceplayer.DPpack.Misc import *
 
 from numpy import random
 import subprocess
@@ -129,7 +129,7 @@ class Internal:
 
 				elif key == 'randominit':
 					if value in ('always','first'):
-						setattr(self.dice,key,value)
+						setattr(self.dice,key,value[0])
 				
 				elif key in ('ncores', 'isave'):
 					err = "Error: expected a positive integer for keyword {} in file {}".format(key, self.infile)
@@ -207,7 +207,7 @@ class Internal:
 							sys.exit(err)
 				
 				elif key == 'level':
-					setattr(self.gaussian, key, value)
+					setattr(self.gaussian, key, value[0])
 				
 				elif key in ('gmiddle', 'gbottom'):
 					setattr(self.gaussian, key, value[0])
@@ -664,9 +664,11 @@ class Internal:
 
 	### I still have to talk with Herbet about this function
 	def populate_asec_vdw(self, cycle):
+
+		## Both asec_charges and vdw_meanfield will utilize the Molecule() class and Atoms() with some None elements
 			
-		asec_charges = []  	# (rx, ry, rz, chg)
-		vdw_meanfield = [] 	# (rx, ry, rz, eps, sig)
+		asec_charges = Molecule()  	# (lbl=None, na=None, rx, ry, rz, chg, eps=None, sig=None)
+		vdw_meanfield = Molecule() 	# (lbl=None, na=None, rx, ry, rz, chg=None, eps, sig)
 		
 		if self.dice.nstep[-1] % self.dice.isave == 0:
 			nconfigs = round(self.dice.nstep[-1] / self.dice.isave)
@@ -719,24 +721,25 @@ class Internal:
 					
 					for mol in range(nmols):  ## Run over molecules of each type
 					
-						new_molecule = []
+						new_molecule = Molecule(self.system.molecule[type].molnale)
 						for site in range(len(self.system.molecule[types].atom)):  ## Run over sites of each molecule
 						
 							new_molecule.append({})
 							line = xyzfile.pop(0).split()
 							
-							if line[0].title() != atomsymb[molecules[type][site]['na']].strip():
+							if line[0].title() != atomsymb[self.system.molecule[type].atom[site].na.strip()]:
 								sys.exit("Error reading file {}".format(file))
 							
-							new_molecule[site]['na'] = molecules[type][site]['na']
-							new_molecule[site]['rx'] = float(line[1])
-							new_molecule[site]['ry'] = float(line[2])
-							new_molecule[site]['rz'] = float(line[3])
-							new_molecule[site]['chg'] = molecules[type][site]['chg']
-							new_molecule[site]['eps'] = molecules[type][site]['eps']
-							new_molecule[site]['sig'] = molecules[type][site]['sig']
+							new_molecule.add_atom(Atom(self.system.molecule[type].atom[site].lbl,
+													   self.system.molecule[type].atom[site].na,
+													   self.system.molecule[type].atom[site].float(line[1]),
+													   self.system.molecule[type].atom[site].float(line[2]),
+													   self.system.molecule[type].atom[site].float(line[3]),
+													   self.system.molecule[type].atom[site].chg,
+													   self.system.molecule[type].atom[site].eps,
+													   self.system.molecule[type].atom[site].sig))
 							
-						dist = minimum_distance(molecules[0], new_molecule)
+						dist = self.system.molecule[0].minimum_distance(new_molecule)
 						if dist < thickness[-1]:
 							mol_count += 1
 							for atom in new_molecule:
@@ -748,37 +751,37 @@ class Internal:
 								asec_charges[-1]['rz'] = atom['rz']
 								asec_charges[-1]['chg'] = atom['chg'] / norm_factor
 								
-								if player['vdwforces'] == "yes":
+								if self.player.vdwforces == "yes":
 									vdw_meanfield[-1]['rx'] = atom['rx']
 									vdw_meanfield[-1]['ry'] = atom['ry']
 									vdw_meanfield[-1]['rz'] = atom['rz']
 									vdw_meanfield[-1]['eps'] = atom['eps']
 									vdw_meanfield[-1]['sig'] = atom['sig']
 						
-						####  Read lines with ghosts or lps in molecules of type 0 (reference)
-						####  and, if dist < thickness, appends to asec
-						if type == 0:
-							for ghost in ghost_atoms:
-								line = xyzfile.pop(0).split()
-								if line[0] != dice_ghost_label:
-									sys.exit("Error reading file {}".format(file))
-								if dist < thickness[-1]:
-									asec_charges.append({})
-									asec_charges[-1]['rx'] = float(line[1])
-									asec_charges[-1]['ry'] = float(line[2])
-									asec_charges[-1]['rz'] = float(line[3])
-									asec_charges[-1]['chg'] = ghost['chg'] / norm_factor
+						# ####  Read lines with ghosts or lps in molecules of type 0 (reference)
+						# ####  and, if dist < thickness, appends to asec
+						# if type == 0:
+						# 	for ghost in ghost_atoms:
+						# 		line = xyzfile.pop(0).split()
+						# 		if line[0] != dice_ghost_label:
+						# 			sys.exit("Error reading file {}".format(file))
+						# 		if dist < thickness[-1]:
+						# 			asec_charges.append({})
+						# 			asec_charges[-1]['rx'] = float(line[1])
+						# 			asec_charges[-1]['ry'] = float(line[2])
+						# 			asec_charges[-1]['rz'] = float(line[3])
+						# 			asec_charges[-1]['chg'] = ghost['chg'] / norm_factor
 							
-							for lp in lp_atoms:
-								line = xyzfile.pop(0).split()
-								if line[0] != dice_ghost_label:
-									sys.exit("Error reading file {}".format(file))
-								if dist < thickness[-1]:
-									asec_charges.append({})
-									asec_charges[-1]['rx'] = float(line[1])
-									asec_charges[-1]['ry'] = float(line[2])
-									asec_charges[-1]['rz'] = float(line[3])
-									asec_charges[-1]['chg'] = lp['chg'] / norm_factor
+						# 	for lp in lp_atoms:
+						# 		line = xyzfile.pop(0).split()
+						# 		if line[0] != dice_ghost_label:
+						# 			sys.exit("Error reading file {}".format(file))
+						# 		if dist < thickness[-1]:
+						# 			asec_charges.append({})
+						# 			asec_charges[-1]['rx'] = float(line[1])
+						# 			asec_charges[-1]['ry'] = float(line[2])
+						# 			asec_charges[-1]['rz'] = float(line[3])
+						# 			asec_charges[-1]['chg'] = lp['chg'] / norm_factor
 				
 				picked_mols.append(mol_count)
 		
@@ -865,12 +868,12 @@ class Internal:
 		
 		try:
 			self.dice.make_proc_dir(cycle, proc)
-			self.make_inputs(cycle, proc)
+			self.make_dice_inputs(cycle, proc)
 			self.dice.run_dice(cycle, proc, self.outfile)
 		except Exception as err:
 			sys.exit(err)
 		
-	def make_inputs(self, cycle, proc):
+	def make_dice_inputs(self, cycle, proc):
 		
 		sim_dir = "simfiles"
 		step_dir = "step{:02d}".format(cycle)
@@ -978,7 +981,7 @@ class Internal:
 		fh.write("mstop = 1\n")
 		fh.write("accum = no\n")
 		fh.write("iprint = 1\n")
-		fh.write("isave = {}\n".format(self.isave))
+		fh.write("isave = {}\n".format(self.dice.isave))
 		fh.write("irdf = {}\n".format(10 * self.player.nprocs))
 		
 		seed = int(1e6 * random.random())
@@ -1144,6 +1147,286 @@ class Internal:
 				fh.write(fstr.format(atom.lbl, atom.na, atom.rx, atom.ry, 
 										atom.rz, atom.chg, atom.eps, atom.sig))
 
+	# Gaussian related methods
+
+	def read_forces_fchk(self, file, fh):
+		
+		forces = []
+		try:
+			with open(file) as tmpfh:
+				fchkfile = tmpfh.readlines()
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		start = fchkfile.pop(0).strip()
+		while  start.find("Cartesian Gradient") != 0:	##  expression in begining of line
+			start = fchkfile.pop(0).strip()
+		
+		degrees = 3 * len(self.system.molecule[0])
+		count = 0
+		while True:
+			values = fchkfile.pop(0).split()
+			forces.extend([ float(x) for x in values ])
+			count += len(values)
+			if count >= degrees:
+				forces = forces[:degrees]
+				break
+		
+		gradient = np.array(forces)
+		
+		fh.write("\nGradient read from file {}:\n".format(file))
+		fh.write("-----------------------------------------------------------------------\n"
+				"Center     Atomic                     Forces (Hartree/Bohr)\n"
+				"Number     Number              X                Y                Z\n"
+				"-----------------------------------------------------------------------\n")
+		for i in range(len(self.system.molecule[0])):
+			fh.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
+				i + 1, self.system.molecule[0][i]['na'], forces.pop(0), forces.pop(0), forces.pop(0)))
+		
+		fh.write("-----------------------------------------------------------------------\n")
+		
+		force_max = np.amax(np.absolute(gradient))
+		force_rms = np.sqrt(np.mean(np.square(gradient)))
+		
+		fh.write("  Max Force = {:>14.9f}      RMS Force = {:>14.9f}\n\n".format(
+																		force_max, force_rms))
+		
+		return gradient
+
+
+
+	def read_hessian_fchk(self, file):
+		
+		force_const = []
+		try:
+			with open(file) as tmpfh:
+				fchkfile = tmpfh.readlines()
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		start = fchkfile.pop(0).strip()
+		while  start.find("Cartesian Force Constants") != 0:
+			start = fchkfile.pop(0).strip()
+		
+		degrees = 3 * len(self.system.molecule[0])
+		last = round(degrees * (degrees + 1) / 2)
+		count = 0
+		while True:
+			values = fchkfile.pop(0).split()
+			force_const.extend([ float(x) for x in values ])
+			count += len(values)
+			if count >= last:
+				force_const = force_const[:last]
+				break
+		
+		hessian = np.zeros((degrees, degrees))
+		for i in range(degrees):
+			for j in range(i + 1):
+				hessian[i,j] = force_const.pop(0)
+				hessian[j,i] = hessian[i,j]
+		
+		return hessian
+
+
+
+	def read_hessian_log(self, file):
+		
+		try:
+			with open(file) as tmpfh:
+				logfile = tmpfh.readlines()
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		start = logfile.pop(0).strip()
+		while  start.find("The second derivative matrix:") != 0:
+			start = logfile.pop(0).strip()
+		
+		degrees = 3 * len(self.system.molecule[0])
+		hessian = np.zeros((degrees, degrees))
+		
+		k = 0
+		while k < degrees:
+			logfile.pop(0)
+			for i in range(k, degrees):
+				values = logfile.pop(0).split()[1:]
+				for j in range(k, min(i + 1, k + 5)):
+					hessian[i,j] = float(values.pop(0))
+					hessian[j,i] = hessian[i,j]
+			k += 5
+		
+		return hessian
+
+
+
+	def print_grad_hessian(self, cycle, cur_gradient, hessian):
+		
+		try:
+			fh = open("grad_hessian.dat", "w")
+		except:
+			sys.exit("Error: cannot open file grad_hessian.dat")
+		
+		fh.write("Optimization cycle: {}\n".format(cycle))
+		fh.write("Cartesian Gradient\n")
+		degrees = 3 * len(self.system.molecule[0])
+		for i in range(degrees):
+			fh.write(" {:>11.8g}".format(cur_gradient[i]))
+			if (i + 1) % 5 == 0 or i == degrees - 1:
+				fh.write("\n")
+		
+		fh.write("Cartesian Force Constants\n")
+		last = degrees * (degrees + 1) / 2
+		count = 0
+		for i in range(degrees):
+			for j in range(i + 1):
+				count += 1
+				fh.write(" {:>11.8g}".format(hessian[i,j]))
+				if count % 5 == 0 or count == last:
+					fh.write("\n")
+		
+		fh.close()
+		
+		return
+
+
+	## Change the name to make_gaussian_input
+	def make_gaussian_input(self, cycle, asec_charges=None):
+
+		simdir="simfiles"
+		stepdir="step{:02d}".format(cycle)
+		path = simdir + os.sep + stepdir + os.sep + "qm"
+
+		file = path + os.sep + "asec.gjf"
+
+		try:
+			fh = open(file, "w")
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		fh.write("%Chk=asec.chk\n")
+		if self.gaussian.mem != None:
+			fh.write("%Mem={}MB\n".format(self.gaussian.mem))
+		fh.write("%Nprocs={}\n".format(self.player.nprocs * self.dice.ncores))
+		
+		kword_line = "#P " + str(self.gaussian.level)
+		
+		if self.gaussian.keywords != None:
+			kword_line += " " + self.gaussian.keywords
+		
+		if self.player.opt == 'yes':
+			kword_line += " Force"
+		
+		# kword_line += " Charge"
+		kword_line += " NoSymm"
+		kword_line += " Pop={} Density=Current".format(self.gaussian.pop)
+		
+		if cycle > 1:
+			kword_line += " Guess=Read"
+		
+		fh.write(textwrap.fill(kword_line, 90))
+		fh.write("\n")
+		
+		fh.write("\nForce calculation - Cycle number {}\n".format(cycle))
+		fh.write("\n")
+		fh.write("{},{}\n".format(self.gaussian.chgmult[0], self.gaussian.chgmult[1]))
+		
+		for atom in self.system.molecule[0].atom:
+			symbol = atomsymb[atom.na]
+			fh.write("{:<2s}    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(symbol, 
+														atom.rx, atom.ry, atom.rz))
+		
+		# ## If also performing charge fit in the same calculation
+		# if cycle >= self.player.switchcyc:
+		# 	for ghost in ghost_atoms:
+		# 		fh.write("Bq    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(
+		# 											ghost['rx'], ghost['ry'], ghost['rz']))
+			
+		# 	for lp in lp_atoms:
+		# 		fh.write("Bq    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(
+		# 														lp['rx'], lp['ry'], lp['rz']))
+		
+		# fh.write("\n")
+		
+		## If gmiddle file was informed, write its contents in asec.gjf
+		# if self.gaussian.gmiddle != None:
+		# 	if not os.path.isfile(self.gaussian.gmiddle):
+		# 		sys.exit("Error: cannot find file {} in main directory".format(
+		# 																self.gaussian.gmiddle))
+		# 	try:
+		# 		with open(self.gaussian.gmiddle) as gmiddlefile:
+		# 			gmiddle = gmiddlefile.readlines()
+		# 	except:
+		# 		sys.exit("Error: cannot open file {}".format(self.gaussian.gmiddle))
+			
+		# 	for line in gmiddle:
+		# 		fh.write(line)
+			
+		# 	fh.write("\n")
+		
+		# ## Write the ASEC:
+		# for charge in asec_charges:
+		# 	fh.write("{:>10.5f}   {:>10.5f}   {:>10.5f}     {:>11.8f}\n".format(
+		# 							charge['rx'], charge['ry'], charge['rz'], charge['chg']))
+		
+		fh.write("\n")
+		
+		# ## If gbottom file was informed, write its contents in asec.gjf
+		# if self.gaussian.gbottom != None:
+		# 	if not os.path.isfile(self.gaussian.gbottom):
+		# 		sys.exit("Error: cannot find file {} in main directory".format(
+		# 																self.gaussian.gbottom))
+		# 	try:
+		# 		with open(self.gaussian.gbottom) as gbottomfile:
+		# 			gbottom = gbottomfile.readlines()
+		# 	except:
+		# 		sys.exit("Error: cannot open file {}".format(self.gaussian.gbottom))
+			
+		# 	for line in gbottom:
+		# 		fh.write(line)
+			
+			# fh.write("\n")
+		
+		# fh.close()
+		
+	def read_charges(self, file, fh):
+		
+		try:
+			with open(file) as tmpfh:
+				glogfile = tmpfh.readlines()
+		except:
+			sys.exit("Error: cannot open file {}".format(file))
+		
+		start = glogfile.pop(0).strip()
+		while  start != "Fitting point charges to electrostatic potential":
+			start = glogfile.pop(0).strip()
+		
+		glogfile = glogfile[3:]		## Consume 3 more lines
+		
+		fh.write("\nAtomic charges:\n")
+		fh.write("------------------------------------\n")
+		for atom in self.system.molecule[0].atom:
+			line = glogfile.pop(0).split()
+			atom_str = line[1]
+			charge = float(line[2])
+			atom.chg = charge
+			fh.write(" {:<2s}      {:>10.6f}\n".format(atom_str, charge))
+		
+		# if self.gaussian.pop == "chelpg":
+		# 	for ghost in ghost_atoms:
+		# 		line = glogfile.pop(0).split()
+		# 		atom_str = line[1]
+		# 		charge = float(line[2])
+		# 		ghost['chg'] = charge
+		# 		fh.write(" {:<2s}      {:>10.6f}\n".format(atom_str, charge))
+			
+		# 	for lp in lp_atoms:
+		# 		line = glogfile.pop(0).split()
+		# 		atom_str = line[1]
+		# 		charge = float(line[2])
+		# 		lp['chg'] = charge
+		# 		fh.write(" {:<2s}      {:>10.6f}\n".format(atom_str, charge))
+		
+		fh.write("------------------------------------\n")
+	
 	class Player:
 
 		def __init__(self):
@@ -1388,6 +1671,52 @@ class Internal:
 			self.gbottom = None   # inserted in the gaussian input
 			self.pop = "chelpg"
 			self.level = None
+
+		def run_gaussian(self, cycle, type, fh):
+			
+			simdir="simfiles"
+			stepdir="step{:02d}".format(cycle)
+			path = simdir + os.sep + stepdir + os.sep + "qm"
+			work_dir = os.getcwd()
+			os.chdir(path)
+			
+			# if type == "force":
+			# 	infile = "asec.gjf"
+			# elif type == "charge":
+			# 	infile = "asec2.gjf"
+
+			infile = "asec.gjf"
+			
+			fh.write("\nCalculation of {}s initiated with Gaussian on {}\n".format(type, date_time()))
+			
+			if shutil.which("bash") != None:
+				exit_status = subprocess.call(["bash","-c","exec -a {}-step{} {} {}".format(self.qmprog, cycle, self.qmprog, infile)])
+			else:
+				exit_status = subprocess.call([self.qmprog, infile])
+			
+			if exit_status != 0:
+				sys.exit("Gaussian process did not exit properly")
+			
+			fh.write("Calculation of {}s finished on {}\n".format(type, date_time()))
+			
+			os.chdir(work_dir)
+
+		def run_formchk(self, cycle, fh):
+			
+			simdir="simfiles"
+			stepdir="step{:02d}".format(cycle)
+			path = simdir + os.sep + stepdir + os.sep + "qm"
+			
+			work_dir = os.getcwd()
+			os.chdir(path)
+				
+			fh.write("Formatting the checkpoint file... ")
+			
+			exit_status = subprocess.call(["formchk", "asec.chk"])
+			
+			fh.write("Done\n")
+			
+			os.chdir(work_dir)
 
 	# class Molcas:
 

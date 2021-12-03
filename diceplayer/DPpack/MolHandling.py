@@ -8,8 +8,8 @@ from copy import deepcopy
 import numpy as np
 from numpy import linalg
 
-from DPpack.Misc import *
-from DPpack.PTable import *
+from diceplayer.DPpack.Misc import *
+from diceplayer.DPpack.PTable import *
 
 env = ["OMP_STACKSIZE"]
 
@@ -43,20 +43,6 @@ class System:
 		distance = math.sqrt(dx**2 + dy**2 + dz**2)
 		
 		return distance
-
-	def minimum_distance(self, index1, index2):
-	
-		distances = []
-		for atom1 in self.molecule[index1]:
-			if atom1.na != ghost_number:
-				for atom2 in self.molecule[index2]:
-					if atom2.na != ghost_number:
-						dx = atom1.rx - atom2.rx
-						dy = atom1.ry - atom2.ry
-						dz = atom1.rz - atom2.rz
-						distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
-		
-		return min(distances)
 
 	def rmsd_fit(self, index_p, index_r):
 
@@ -433,6 +419,20 @@ class Molecule:
 		fh.write("    Total charge = {:>8.4f} e\n".format(chg_dip[0]))
 		fh.write("    Dipole moment = ( {:>9.4f} , {:>9.4f} , {:>9.4f} )     Total = {:>9.4f} Debye\n\n".format(
 											chg_dip[1], chg_dip[2], chg_dip[3], chg_dip[4]))
+
+	def minimum_distance(self, molec):
+	
+		distances = []
+		for atom1 in self.atom:
+			if atom1.na != ghost_number:
+				for atom2 in molec.atom:
+					if atom2.na != ghost_number:
+						dx = atom1.rx - atom2.rx
+						dy = atom1.ry - atom2.ry
+						dz = atom1.rz - atom2.rz
+						distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
+		
+		return min(distances)
 
 class Atom:
 

@@ -5,7 +5,7 @@
 Your python version is 3.6.9 (default, Jan 26 2021, 15:33:00) 
 [GCC 8.4.0]
 
-Program started on Saturday, 20 Nov 2021 at 13:29:59
+Program started on Friday, 03 Dec 2021 at 21:18:49
 
 Environment variables:
 OMP_STACKSIZE = Not set
@@ -19,10 +19,10 @@ freq = no
 ghosts = no
 initcyc = 1
 lps = no
-maxcyc = 4
+maxcyc = 3
 maxstep = 0.3
 nprocs = 4
-opt = no
+opt = yes
 qmprog = g16
 readhessian = no
 switchcyc = 3
@@ -39,7 +39,7 @@ isave = 1000
 ljname = phb.ljc
 ncores = 3
 nmol = 1 50
-nstep = 40000 60000 50000
+nstep = 20000 20000
 outname = phb
 press = 1.0
 progname = dice
@@ -115,8 +115,8 @@ Lbl  AN       X          Y          Z         Charge    Epsilon   Sigma     Mass
 1     6     2.07203   -2.82345    0.00263   -0.115000   0.07000  3.5500   12.0110
 1     6     2.76823   -1.61764    0.00263   -0.115000   0.07000  3.5500   12.0110
 1     6     2.06824   -0.40521    0.00264   -0.115000   0.07000  3.5500   12.0110
-1    14     0.67589   -0.40522    0.00264    0.150000   0.07000  3.5500   28.0860
-1   104    -0.02420   -1.61760    0.00263   -0.115000   0.07000  3.5500    0.0000
+1     6     0.67589   -0.40522    0.00264    0.150000   0.07000  3.5500   12.0110
+1     6    -0.02420   -1.61760    0.00263   -0.115000   0.07000  3.5500   12.0110
 2     1     0.13203   -3.75875    0.00263    0.115000   0.03000  2.4200    1.0079
 2     1     2.61203   -3.75875    0.00263    0.115000   0.03000  2.4200    1.0079
 2     1     2.60824    0.53010    0.00264    0.115000   0.03000  2.4200    1.0079
@@ -159,13 +159,13 @@ Molecule type 1 - PHENOL_BLUE:
 
 Molecule type 2 - PLACEHOLDER:
 
-    Center of mass = (     1.6067 ,    -1.0929 ,     0.0026 )
-    Moments of inertia =  1.205279E+02  2.859254E+02  4.033761E+02
-    Major principal axis = (   0.795913 ,  -0.605411 ,  -0.000001 )
-    Inter principal axis = (   0.605411 ,   0.795913 ,   0.000001 )
+    Center of mass = (     1.5639 ,    -1.2534 ,     0.0026 )
+    Moments of inertia =  1.394830E+02  2.777126E+02  4.141185E+02
+    Major principal axis = (   0.865900 ,  -0.500217 ,  -0.000001 )
+    Inter principal axis = (   0.500217 ,   0.865900 ,   0.000001 )
     Minor principal axis = (   0.000000 ,  -0.000002 ,   1.000000 )
     Characteristic lengths = (   5.74 ,   5.26 ,   1.51 )
-    Total mass =   112.20 au
+    Total mass =   108.14 au
     Total charge =  -0.0000 e
     Dipole moment = (    2.3293 ,    0.1593 ,   -0.0000 )     Total =    2.3347 Debye
 
@@ -173,14 +173,14 @@ Molecule type 2 - PLACEHOLDER:
 
     New values:
     Center of mass = (     0.0000 ,    -0.0000 ,     0.0000 )
-    Moments of inertia =  1.205279E+02  2.859254E+02  4.033761E+02
-    Major principal axis = (  -1.000000 ,   0.000000 ,   0.000000 )
+    Moments of inertia =  1.394830E+02  2.777126E+02  4.141185E+02
+    Major principal axis = (   1.000000 ,  -0.000000 ,  -0.000000 )
     Inter principal axis = (   0.000000 ,   1.000000 ,   0.000000 )
-    Minor principal axis = (   0.000000 ,   0.000000 ,   1.000000 )
-    Characteristic lengths = (   5.67 ,   5.13 ,   1.51 )
-    Total mass =   112.20 au
+    Minor principal axis = (   0.000000 ,  -0.000000 ,   1.000000 )
+    Characteristic lengths = (   5.65 ,   4.95 ,   1.51 )
+    Total mass =   108.14 au
     Total charge =  -0.0000 e
-    Dipole moment = (    1.7575 ,    1.5369 ,   -0.0000 )     Total =    2.3347 Debye
+    Dipole moment = (    1.9373 ,    1.3031 ,   -0.0000 )     Total =    2.3347 Debye
 
 ==========================================================================================
 
@@ -190,19 +190,11 @@ Starting the iterative process.
                                          Step # 1
 ------------------------------------------------------------------------------------------
 
-Simulation process simfiles/step01/p01 initiated with pid 14014
-p01> NVT thermalization initiated (from random configuration) on 20 Nov 2021 at 13:29:59
-Simulation process simfiles/step01/p02 initiated with pid 14015
-p02> NVT thermalization initiated (from random configuration) on 20 Nov 2021 at 13:29:59
-Simulation process simfiles/step01/p03 initiated with pid 14016
-p03> NVT thermalization initiated (from random configuration) on 20 Nov 2021 at 13:29:59
-Simulation process simfiles/step01/p04 initiated with pid 14017
-p04> NVT thermalization initiated (from random configuration) on 20 Nov 2021 at 13:29:59
-p03> NPT thermalization finished  (from previous configuration)  on 20 Nov 2021 at 13:31:50
-p01> NPT thermalization finished  (from previous configuration)  on 20 Nov 2021 at 13:31:51
-p04> NPT thermalization finished  (from previous configuration)  on 20 Nov 2021 at 13:31:52
-p02> NPT thermalization finished  (from previous configuration)  on 20 Nov 2021 at 13:31:52
-p03> NPT production initiated on 20 Nov 2021 at 13:34:53
-p02> NPT production initiated on 20 Nov 2021 at 13:34:57
-p01> NPT production initiated on 20 Nov 2021 at 13:34:58
-p04> NPT production initiated on 20 Nov 2021 at 13:35:00
+Simulation process simfiles/step01/p01 initiated with pid 7513
+p01> NVT thermalization finished (from random configuration) on 03 Dec 2021 at 21:18:49
+Simulation process simfiles/step01/p02 initiated with pid 7514
+p02> NVT thermalization finished (from random configuration) on 03 Dec 2021 at 21:18:49
+Simulation process simfiles/step01/p03 initiated with pid 7515
+p03> NVT thermalization finished (from random configuration) on 03 Dec 2021 at 21:18:49
+Simulation process simfiles/step01/p04 initiated with pid 7516
+p04> NVT thermalization finished (from random configuration) on 03 Dec 2021 at 21:18:49

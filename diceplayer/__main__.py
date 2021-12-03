@@ -1,4 +1,4 @@
-#!/export/apps/python/361/bin/python3
+#!/usr/bin/python3
 
 import os, sys, time, signal
 import setproctitle
@@ -6,18 +6,17 @@ import argparse
 import shutil
 from multiprocessing import Process, connection
 
-import DPpack.Gaussian as Gaussian
-from DPpack.PTable import *
-from DPpack.SetGlobals import *
-from DPpack.MolHandling import *
-from DPpack.Misc import *
+from diceplayer.DPpack.PTable import *
+from diceplayer.DPpack.SetGlobals import *
+from diceplayer.DPpack.MolHandling import *
+from diceplayer.DPpack.Misc import *
 
+_version = 'dev'
+setproctitle.setproctitle("diceplayer-{}".format(_version))
 
 if __name__ == '__main__':
 ####  Read and store the arguments passed to the program  ####
 ####  and set the usage and help messages                 ####
-
-	setproctitle.setproctitle("diceplayer-current")
 
 	parser = argparse.ArgumentParser(prog='Diceplayer')
 	parser.add_argument('--continue', dest='opt_continue' , default=False, action='store_true')
@@ -200,11 +199,11 @@ if __name__ == '__main__':
 
 		internal.outfile.write("\n+" + 88 * "-" + "+\n")
 		
-		####
-		####  End of parallel simulations block
-		####	
+		###
+		###  End of parallel simulations block
+		###	
 		
-		# ## Make ASEC
+		## Make ASEC
 		# internal.outfile.write("\nBuilding the ASEC and vdW meanfields... ")
 		# asec_charges = internal.populate_asec_vdw(cycle)
 		
@@ -213,31 +212,26 @@ if __name__ == '__main__':
 		# 	path = "step{:02d}".format(cycle) + os.sep + "p{:02d}".format(proc)
 		# 	compress_files_1mb(path)
 		
-		####
-		####  Start QM calculation
-		####
+		###
+		###  Start QM calculation
+		###
 		
-# 		make_qm_dir(cycle)
-		
-# 		if internal.player.opt == "yes":
+		make_qm_dir(cycle)
+
+		if internal.player.qmprog in ("g03", "g09", "g16"):
 			
-# 			##
-# 			##  Gaussian block
-# 			##
-# 			if internal.player.qmprog in ("g03", "g09", "g16"):
-				
-# 				if cycle > 1:
-# 					src = "step{:02d}".format(cycle - 1) + os.sep + "qm" + os.sep + "asec.chk"
-# 					dst = "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.chk"
-# 					shutil.copyfile(src, dst)
-				
-# 				Gaussian.make_force_input(cycle, asec_charges)
-# 				Gaussian.run_gaussian(cycle, "force", internal.outfile)
-# 				Gaussian.run_formchk(cycle, internal.outfile)
+			if cycle > 1:
+				src = "simfiles" + os.sep + "step{:02d}".format(cycle - 1) + os.sep + "qm" + os.sep + "asec.chk"
+				dst = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.chk"
+				shutil.copyfile(src, dst)
+			
+			internal.make_gaussian_input(cycle)
+			internal.gaussian.run_gaussian(cycle, "force", internal.outfile)
+# 				internal.gaussian.run_formchk(cycle, internal.outfile)
 				
 # 				## Read the gradient
-# 				file = "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.fchk"
-# 				gradient = Gaussian.read_forces(file, internal.outfile)
+# 				file = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.fchk"
+# 				gradient = internal.read_forces(file, internal.outfile)
 # 				if len(cur_gradient) > 0:
 # 					old_gradient = cur_gradient
 # 				cur_gradient = gradient
@@ -247,9 +241,9 @@ if __name__ == '__main__':
 # 					if internal.player.readhessian == "yes":
 # 						file = "grad_hessian.dat"
 # 						internal.outfile.write("\nReading the hessian matrix from file {}\n".format(file))
-# 						hessian = Gaussian.read_hessian_fchk(file)
+# 						hessian = internal.read_hessian_fchk(file)
 # 					else:
-# 						file = "step01" + os.sep + "qm" + os.sep + "asec.fchk"
+# 						file = "simfiles" + os.sep + "step01" + os.sep + "qm" + os.sep + "asec.fchk"
 # 						internal.outfile.write("\nReading the hessian matrix from file {}\n".format(file))
 # 						hessian = internal.gaussian.read_hessian(file)
 				
@@ -272,15 +266,15 @@ if __name__ == '__main__':
 # 				## If needed, calculate the charges
 # 				if cycle < internal.player.switchcyc:
 					
-# 					internal.gaussian.make_charge_input(cycle, asec_charges)
+# 					# internal.gaussian.make_charge_input(cycle, asec_charges)
 # 					internal.gaussian.run_gaussian(cycle, "charge", internal.outfile)
 				
 # 				## Read the new charges and update molecules[0]
 # 				if cycle < internal.player.switchcyc:
-# 					file = "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec2.log"
+# 					file = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec2.log"
 # 					internal.gaussian.read_charges(file, internal.outfile)
 # 				else:
-# 					file = "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.log"
+# 					file = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.log"
 # 					internal.gaussian.read_charges(file, internal.outfile)
 				
 # 				## Print new info for molecule[0]
@@ -316,15 +310,15 @@ if __name__ == '__main__':
 # 			if internal.player.qmprog in ("g03", "g09", "g16"):
 				
 # 				if cycle > 1:
-# 					src = "step{:02d}".format(cycle - 1) + os.sep + "qm" + os.sep + "asec.chk"
-# 					dst = "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.chk"
+# 					src = "simfiles" + os.sep + "step{:02d}".format(cycle - 1) + os.sep + "qm" + os.sep + "asec.chk"
+# 					dst = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.chk"
 # 					shutil.copyfile(src, dst)
 				
-# 				Gaussian.make_charge_input(cycle, asec_charges)
-# 				Gaussian.run_gaussian(cycle, "charge", internal.outfile)
+# 				# internal.gaussian.make_charge_input(cycle, asec_charges)
+# 				internal.gaussian.run_gaussian(cycle, "charge", internal.outfile)
 				
-# 				file = "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec2.log"
-# 				Gaussian.read_charges(file)
+# 				file = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec2.log"
+# 				internal.read_charges(file)
 				
 # 				## Print new info for molecule[0]
 # 				internal.outfile.write("\nNew values for molecule type 1:\n\n")
@@ -338,11 +332,11 @@ if __name__ == '__main__':
 # 	####  End of the iterative process
 # 	####
 
-# ## imprimir ultimas mensagens, criar um arquivo de potencial para ser usado em eventual
-# ## continuacao, fechar arquivos (geoms.xyz, run.log, ...)
+# # ## imprimir ultimas mensagens, criar um arquivo de potencial para ser usado em eventual
+# # ## continuacao, fechar arquivos (geoms.xyz, run.log, ...)
 
-# 	internal.outfile.write("\nDiceplayer finished normally!\n")
-# 	internal.outfile.close()
-# ####
-# ####  End of the program
-# ####
+# # 	internal.outfile.write("\nDiceplayer finished normally!\n")
+# # 	internal.outfile.close()
+# # ####
+# # ####  End of the program
+# # ####

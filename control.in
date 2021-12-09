@@ -1,6 +1,6 @@
 # diceplayer
 maxcyc = 3
-opt = YES
+opt = no
 nprocs = 4
 qmprog = g16
 lps = no
@@ -18,4 +18,5 @@ outname = phb
 randominit = first
 
 # Gaussian
-level = MP2/aug-cc-pVTZ
+level = MP2/aug-cc-pVDZ
+keywords = freq=intmodes

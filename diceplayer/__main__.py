@@ -2,6 +2,7 @@
 
 import os, sys, time, signal
 import setproctitle
+import numpy as np
 import argparse
 import shutil
 from multiprocessing import Process, connection
@@ -134,6 +135,7 @@ if __name__ == '__main__':
 		except EnvironmentError as err:
 			sys.exit(err)
 		internal.system.print_geom(0, geomsfh)
+		geomsfh.write(40 * "-"+"\n")
 	else:
 		try:
 			path = "geoms.xyz"
@@ -196,8 +198,6 @@ if __name__ == '__main__':
 
 		for proc in range(1, internal.player.nprocs + 1):
 			internal.print_last_config(cycle, proc)
-
-		internal.outfile.write("\n+" + 88 * "-" + "+\n")
 		
 		###
 		###  End of parallel simulations block
@@ -221,47 +221,62 @@ if __name__ == '__main__':
 		if internal.player.qmprog in ("g03", "g09", "g16"):
 			
 			if cycle > 1:
+
 				src = "simfiles" + os.sep + "step{:02d}".format(cycle - 1) + os.sep + "qm" + os.sep + "asec.chk"
 				dst = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.chk"
 				shutil.copyfile(src, dst)
 			
 			internal.make_gaussian_input(cycle)
 			internal.gaussian.run_gaussian(cycle, "force", internal.outfile)
-# 				internal.gaussian.run_formchk(cycle, internal.outfile)
+			internal.gaussian.run_formchk(cycle, internal.outfile)
 				
-# 				## Read the gradient
-# 				file = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.fchk"
-# 				gradient = internal.read_forces(file, internal.outfile)
-# 				if len(cur_gradient) > 0:
-# 					old_gradient = cur_gradient
-# 				cur_gradient = gradient
+			## Read the gradient
+			file = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.fchk"
+
+			try: 
+				gradient
+				old_gradient = gradient
+			except:
+				pass
+
+			gradient = internal.read_forces_fchk(file, internal.outfile)
+
+			print(type(gradient),"\n",gradient.shape,"\n",gradient)
 				
-# 				## If 1st step, read the hessian
-# 				if cycle == 1:
-# 					if internal.player.readhessian == "yes":
-# 						file = "grad_hessian.dat"
-# 						internal.outfile.write("\nReading the hessian matrix from file {}\n".format(file))
-# 						hessian = internal.read_hessian_fchk(file)
-# 					else:
-# 						file = "simfiles" + os.sep + "step01" + os.sep + "qm" + os.sep + "asec.fchk"
-# 						internal.outfile.write("\nReading the hessian matrix from file {}\n".format(file))
-# 						hessian = internal.gaussian.read_hessian(file)
+			# If 1st step, read the hessian
+			if cycle == 1:
+
+				if internal.player.readhessian == "yes":
+
+					file = "grad_hessian.dat"
+					internal.outfile.write("\nReading the hessian matrix from file {}\n".format(file))
+					hessian = internal.read_hessian_log(file)
+
+				else:
+
+					file = "simfiles" + os.sep + "step01" + os.sep + "qm" + os.sep + "asec.fchk"
+					internal.outfile.write("\nReading the hessian matrix from file {}\n".format(file))
+					hessian = internal.read_hessian_fchk(file)
+
+					print(type(hessian), "\n", hessian.shape, "\n", hessian)
 				
-# 				## From 2nd step on, update the hessian
-# 				else:
-# 					internal.outfile.write("\nUpdating the hessian matrix using the BFGS method... ")
-# 					hessian = internal.system.molecule[0].update_hessian(step, cur_gradient, old_gradient, hessian)
-# 					internal.outfile.write("Done\n")
+			# From 2nd step on, update the hessian
+			else:
+				internal.outfile.write("\nUpdating the hessian matrix using the BFGS method... ")
+				hessian = internal.system.molecule[0].update_hessian(step, gradient, old_gradient, hessian)
+				internal.outfile.write("Done\n")
 				
-# 				## Save gradient and hessian
-# 				internal.gaussian.print_grad_hessian(cycle, cur_gradient, hessian)
+			# Save gradient and hessian
+			internal.print_grad_hessian(cycle, gradient, hessian)
+
+			# Calculate the step and update the position
+			step = internal.calculate_step(cycle, gradient, hessian)
+
+			print(type(step), "\n", step.shape, "\n", step)
+			position += step
 				
-# 				## Calculate the step and update the position
-# 				step = internal.calculate_step(cur_gradient, hessian, internal.outfile)
-# 				position += step
-				
-# 				## Update the geometry of the reference molecule
-# 				internal.system.molecule[0].update_molecule(position, internal.outfile)
+			# ## Update the geometry of the reference molecule
+			internal.system.update_molecule(position, internal.outfile)
 				
 # 				## If needed, calculate the charges
 # 				if cycle < internal.player.switchcyc:
@@ -326,17 +341,19 @@ if __name__ == '__main__':
 				
 # 			#if player['qmprog'] == "molcas":
 				
-		
-	
-# 	####
-# 	####  End of the iterative process
-# 	####
+		internal.system.print_geom(cycle, geomsfh)
+		geomsfh.write(40 * "-"+"\n")
 
-# # ## imprimir ultimas mensagens, criar um arquivo de potencial para ser usado em eventual
-# # ## continuacao, fechar arquivos (geoms.xyz, run.log, ...)
+		internal.outfile.write("\n+" + 88 * "-" + "+\n")	
+	####
+	####  End of the iterative process
+	####
 
-# # 	internal.outfile.write("\nDiceplayer finished normally!\n")
-# # 	internal.outfile.close()
-# # ####
-# # ####  End of the program
-# # ####
+## imprimir ultimas mensagens, criar um arquivo de potencial para ser usado em eventual
+## continuacao, fechar arquivos (geoms.xyz, run.log, ...)
+
+	internal.outfile.write("\nDiceplayer finished normally!\n")
+	internal.outfile.close()
+####
+####  End of the program
+####

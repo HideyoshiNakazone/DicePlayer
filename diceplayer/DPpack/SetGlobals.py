@@ -1,17 +1,19 @@
-import setproctitle
-import os, sys
-import shutil
-import textwrap
-import types
-
-from numpy.core.fromnumeric import partition
-
 from diceplayer.DPpack.MolHandling import *
 from diceplayer.DPpack.PTable import *
 from diceplayer.DPpack.Misc import *
 
+
+from typing import IO, Tuple, List, TextIO, Union
+
+from numpy.core.numeric import partition
 from numpy import random
+
+import setproctitle
 import subprocess
+import os, sys
+import shutil
+import textwrap
+import types
 
 
 dice_end_flag = "End of simulation"		## The normal end flag
@@ -22,7 +24,7 @@ max_seed = 4294967295					## Maximum allowed value for a seed (numpy)
 
 class Internal:
 
-	def __init__(self, infile, outfile):
+	def __init__(self, infile: TextIO, outfile: TextIO) -> None:
 
 		self.cyc = 1
 		self.infile = infile
@@ -53,7 +55,7 @@ class Internal:
 		## Dice:
 		self.combrule = None
 
-	def read_keywords(self):
+	def read_keywords(self) -> None:
 
 		try:
 			controlfile = self.infile.readlines()
@@ -234,7 +236,7 @@ class Internal:
 			
 			# #### End
 
-	def check_keywords(self):
+	def check_keywords(self) -> None:
 		
 		min_steps = 20000
 		
@@ -309,7 +311,7 @@ class Internal:
 		# isave value is always the nearest multiple of 100
 		self.dice.isave = round(self.dice.isave / 100) * 100
 
-	def print_keywords(self):
+	def print_keywords(self) -> None:
 		
 		self.outfile.write("##########################################################################################\n"
 				"#############               Welcome to DICEPLAYER version 1.0                #############\n"
@@ -388,7 +390,7 @@ class Internal:
 			
 		# 	self.outfile.write("\n")
 
-	def read_potential(self): # Deve ser atualizado para o uso de 
+	def read_potential(self) -> None: # Deve ser atualizado para o uso de 
 		
 		try:
 			with open(self.dice.ljname) as file:
@@ -496,7 +498,7 @@ class Internal:
 			if _var in locals() or _var in globals():
 				exec(f'del {_var}')
 
-	def print_potential(self):
+	def print_potential(self) -> None:
 		
 		formatstr = "{:<3d} {:>3d}  {:>10.5f} {:>10.5f} {:>10.5f}  {:>10.6f} {:>9.5f} {:>7.4f} {:>9.4f}\n"
 		self.outfile.write("\n"
@@ -577,7 +579,7 @@ class Internal:
 		self.outfile.write("\n"
 				"==========================================================================================\n")
 
-	def check_executables(self):
+	def check_executables(self) -> None:
 	
 		self.outfile.write("\n")
 		self.outfile.write(90 * "=")
@@ -604,63 +606,52 @@ class Internal:
 			else:
 				sys.exit("Error: cannot find formchk executable")
 
-	def calculate_step(self):
-		
-		invhessian = linalg.inv(self.system.molecule[0].hessian)
-		pre_step = -1 * np.matmul(invhessian, self.system.molecule[0].gradient.T).T
+	def calculate_step(self, cycle: int, gradient: np.ndarray,
+					   hessian: np.ndarray) -> np.ndarray:
+
+		invhessian = np.linalg.inv(hessian)
+		pre_step = -1 * np.matmul(invhessian, gradient.T).T
 		maxstep = np.amax(np.absolute(pre_step))
 		factor = min(1, self.player.maxstep/maxstep)
 		step = factor * pre_step
 		
-		self.player.outfile.write("\nCalculated step:\n")
+		self.outfile.write("\nCalculated step-{}:\n".format(cycle))
 		pre_step_list = pre_step.tolist()
 		
-		self.player.outfile.write("-----------------------------------------------------------------------\n"
+		self.outfile.write("-----------------------------------------------------------------------\n"
 				"Center     Atomic                          Step (Bohr)\n"
 				"Number     Number              X                Y                Z\n"
 				"-----------------------------------------------------------------------\n")
 		for i in range(len(self.system.molecule[0].atom)):
-			self.player.outfile.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
+			self.outfile.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
 																i + 1, self.system.molecule[0].atom[i].na, 
 							pre_step_list.pop(0), pre_step_list.pop(0), pre_step_list.pop(0)))
 		
-		self.player.outfile.write("-----------------------------------------------------------------------\n")
+		self.outfile.write("-----------------------------------------------------------------------\n")
 		
-		self.player.outfile.write("Maximum step is {:>11.6}\n".format(maxstep))
-		self.player.outfile.write("Scaling factor = {:>6.4f}\n".format(factor))
-		self.player.outfile.write("\nFinal step (Bohr):\n")
+		self.outfile.write("Maximum step is {:>11.6}\n".format(maxstep))
+		self.outfile.write("Scaling factor = {:>6.4f}\n".format(factor))
+		self.outfile.write("\nFinal step (Bohr):\n")
 		step_list = step.tolist()
 		
-		self.player.outfile.write("-----------------------------------------------------------------------\n"
+		self.outfile.write("-----------------------------------------------------------------------\n"
 				"Center     Atomic                          Step (Bohr)\n"
 				"Number     Number              X                Y                Z\n"
 				"-----------------------------------------------------------------------\n")
 		for i in range(len(self.system.molecule[0].atom)):
-			self.player.outfile.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
+			self.outfile.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
 																i + 1, self.system.molecule[0].atom[i].na, 
 										step_list.pop(0), step_list.pop(0), step_list.pop(0)))
 		
-		self.player.outfile.write("-----------------------------------------------------------------------\n")
+		self.outfile.write("-----------------------------------------------------------------------\n")
 		
 		step_max = np.amax(np.absolute(step))
 		step_rms = np.sqrt(np.mean(np.square(step)))
 		
-		self.player.outfile.write("  Max Step = {:>14.9f}      RMS Step = {:>14.9f}\n\n".format(
+		self.outfile.write("  Max Step = {:>14.9f}      RMS Step = {:>14.9f}\n\n".format(
 																		step_max, step_rms))
 		
 		return step
-
-	def read_initial_cicle(self):
-	
-		try:
-			with open(self.infile) as self.outfile:
-				controlfile = self.outfile.readlines()
-		except EnvironmentError:
-			sys.exit("Error: cannot open file {}".format(self.infile))
-		
-		for line in controlfile:
-
-			pass
 
 	### I still have to talk with Herbet about this function
 	def populate_asec_vdw(self, cycle):
@@ -785,15 +776,15 @@ class Internal:
 				
 				picked_mols.append(mol_count)
 		
-		self.player.outfile.write("Done\n")
+		self.outfile.write("Done\n")
 		
 		string =  "In average, {:^7.2f} molecules ".format(sum(picked_mols)/norm_factor)
 		string += "were selected from each of the {} configurations ".format(len(picked_mols))
 		string += "of the production simulations to form the ASEC, comprising a shell with "
 		string += "minimum thickness of {:>6.2f} Angstrom\n".format(sum(thickness)/norm_factor)
 		
-		self.player.outfile.write(textwrap.fill(string, 86))
-		self.player.outfile.write("\n")
+		self.outfile.write(textwrap.fill(string, 86))
+		self.outfile.write("\n")
 		
 		otherfh = open("ASEC.dat", "w")
 		for charge in asec_charges:
@@ -805,7 +796,7 @@ class Internal:
 
 	## Dice related Upper fuctions
 
-	def print_last_config(self, cycle, proc):
+	def print_last_config(self, cycle: int, proc: int) -> None:
 		
 		sim_dir = "simfiles"
 		step_dir = "step{:02d}".format(cycle)
@@ -835,7 +826,7 @@ class Internal:
 		for line in xyzfile:
 			fh.write(line)
 
-	def new_density(self, cycle, proc):
+	def new_density(self, cycle: int, proc: int) -> float:
 		
 		sim_dir = "simfiles"
 		step_dir = "step{:02d}".format(cycle-1)
@@ -856,13 +847,13 @@ class Internal:
 		total_mass = 0
 		for i in range(len(self.system.molecule)):
 			
-			total_mass += self.system.molecule[i].total_mass * self.dice.nmol[i]
+			total_mass += self.system.molecule[i].total_mass * self.system.nmols[i]
 		
 		density = (total_mass / volume) * umaAng3_to_gcm3
 		
 		return density
 
-	def simulation_process(self, cycle, proc):
+	def simulation_process(self, cycle: int, proc: int) -> None:
 
 		setproctitle.setproctitle("diceplayer-step{:0d}-p{:0d}".format(cycle,proc))
 		
@@ -873,7 +864,7 @@ class Internal:
 		except Exception as err:
 			sys.exit(err)
 		
-	def make_dice_inputs(self, cycle, proc):
+	def make_dice_inputs(self, cycle: int, proc: int) -> None:
 		
 		sim_dir = "simfiles"
 		step_dir = "step{:02d}".format(cycle)
@@ -917,7 +908,7 @@ class Internal:
 		# 	shutil.copyfile(last_path + os.sep + "phb.dat", path + os.sep + "phb.dat")
 		
 
-	def make_nvt_ter(self,cycle, path):
+	def make_nvt_ter(self,cycle: int, path: str) -> None:
 		
 		file = path + os.sep + "NVT.ter"
 		try:
@@ -957,7 +948,7 @@ class Internal:
 		
 		fh.close()
 
-	def make_nvt_eq(self, path):
+	def make_nvt_eq(self, path: str) -> None:
 		
 		file = path + os.sep + "NVT.eq" 	
 		try:
@@ -989,7 +980,7 @@ class Internal:
 		
 		fh.close()
 
-	def make_npt_ter(self, cycle, path):
+	def make_npt_ter(self, cycle: int, path: str) -> None:
 		
 		file = path + os.sep + "NPT.ter"
 		try:
@@ -1029,7 +1020,7 @@ class Internal:
 		
 		fh.close()
 
-	def make_npt_eq(self, path):
+	def make_npt_eq(self, path: str) -> None:
 		
 		file = path + os.sep + "NPT.eq"
 		try:
@@ -1063,7 +1054,7 @@ class Internal:
 		
 		fh.close()
 
-	def make_init_file(self, path, file):
+	def make_init_file(self, path: str, file: TextIO) -> None:
 		
 		if not os.path.isfile(file):
 			sys.exit("Error: cannot find the xyz file {} in main directory".format(file))
@@ -1109,7 +1100,7 @@ class Internal:
 		
 		fh.close()
 
-	def make_potential(self, path):
+	def make_potential(self, path: str) -> None:
 		
 		fstr = "{:<3d} {:>3d}  {:>10.5f} {:>10.5f} {:>10.5f}  {:>10.6f} {:>9.5f} {:>7.4f}\n"
 		
@@ -1146,10 +1137,11 @@ class Internal:
 			for atom in mol.atom:
 				fh.write(fstr.format(atom.lbl, atom.na, atom.rx, atom.ry, 
 										atom.rz, atom.chg, atom.eps, atom.sig))
-
+	
+	#----------------------------------------------------------------------------------------------------------------------------------------
 	# Gaussian related methods
-
-	def read_forces_fchk(self, file, fh):
+	#----------------------------------------------------------------------------------------------------------------------------------------
+	def read_forces_fchk(self, file: str, fh: TextIO) -> np.ndarray:
 		
 		forces = []
 		try:
@@ -1162,9 +1154,9 @@ class Internal:
 		while  start.find("Cartesian Gradient") != 0:	##  expression in begining of line
 			start = fchkfile.pop(0).strip()
 		
-		degrees = 3 * len(self.system.molecule[0])
+		degrees = 3 * len(self.system.molecule[0].atom)
 		count = 0
-		while True:
+		while len(forces) < degrees:
 			values = fchkfile.pop(0).split()
 			forces.extend([ float(x) for x in values ])
 			count += len(values)
@@ -1179,9 +1171,9 @@ class Internal:
 				"Center     Atomic                     Forces (Hartree/Bohr)\n"
 				"Number     Number              X                Y                Z\n"
 				"-----------------------------------------------------------------------\n")
-		for i in range(len(self.system.molecule[0])):
+		for i in range(len(self.system.molecule[0].atom)):
 			fh.write("  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
-				i + 1, self.system.molecule[0][i]['na'], forces.pop(0), forces.pop(0), forces.pop(0)))
+				i + 1, self.system.molecule[0].atom[i].na, forces.pop(0), forces.pop(0), forces.pop(0)))
 		
 		fh.write("-----------------------------------------------------------------------\n")
 		
@@ -1193,9 +1185,7 @@ class Internal:
 		
 		return gradient
 
-
-
-	def read_hessian_fchk(self, file):
+	def read_hessian_fchk(self, file: str) -> np.ndarray:
 		
 		force_const = []
 		try:
@@ -1208,16 +1198,23 @@ class Internal:
 		while  start.find("Cartesian Force Constants") != 0:
 			start = fchkfile.pop(0).strip()
 		
-		degrees = 3 * len(self.system.molecule[0])
+		degrees = 3 * len(self.system.molecule[0].atom)
 		last = round(degrees * (degrees + 1) / 2)
 		count = 0
-		while True:
-			values = fchkfile.pop(0).split()
-			force_const.extend([ float(x) for x in values ])
-			count += len(values)
-			if count >= last:
-				force_const = force_const[:last]
-				break
+		
+		while len(force_const) < last:
+
+			value = fchkfile.pop(0).split()
+			force_const.extend([ float(x) for x in value ])
+
+		# while len(force_const) < last:
+
+		# 	values = fchkfile.pop(0).split()
+		# 	force_const.extend([ float(x) for x in values ])
+		# 	count += len(values)
+		# 	if count >= last:
+		# 		force_const = force_const[:last]
+		# 		break
 		
 		hessian = np.zeros((degrees, degrees))
 		for i in range(degrees):
@@ -1227,9 +1224,7 @@ class Internal:
 		
 		return hessian
 
-
-
-	def read_hessian_log(self, file):
+	def read_hessian_log(self, file: str) -> np.ndarray:
 		
 		try:
 			with open(file) as tmpfh:
@@ -1241,7 +1236,7 @@ class Internal:
 		while  start.find("The second derivative matrix:") != 0:
 			start = logfile.pop(0).strip()
 		
-		degrees = 3 * len(self.system.molecule[0])
+		degrees = 3 * len(self.system.molecule[0].atom)
 		hessian = np.zeros((degrees, degrees))
 		
 		k = 0
@@ -1256,9 +1251,9 @@ class Internal:
 		
 		return hessian
 
-
-
-	def print_grad_hessian(self, cycle, cur_gradient, hessian):
+	def print_grad_hessian(self, cycle: int, 
+						   cur_gradient: np.ndarray, hessian: np.ndarray
+						   ) -> None:
 		
 		try:
 			fh = open("grad_hessian.dat", "w")
@@ -1267,16 +1262,17 @@ class Internal:
 		
 		fh.write("Optimization cycle: {}\n".format(cycle))
 		fh.write("Cartesian Gradient\n")
-		degrees = 3 * len(self.system.molecule[0])
+		degrees = 3 * len(self.system.molecule[0].atom)
 		for i in range(degrees):
 			fh.write(" {:>11.8g}".format(cur_gradient[i]))
 			if (i + 1) % 5 == 0 or i == degrees - 1:
 				fh.write("\n")
 		
 		fh.write("Cartesian Force Constants\n")
+		n = int(np.sqrt(2*degrees))
 		last = degrees * (degrees + 1) / 2
 		count = 0
-		for i in range(degrees):
+		for i in range(n):
 			for j in range(i + 1):
 				count += 1
 				fh.write(" {:>11.8g}".format(hessian[i,j]))
@@ -1285,11 +1281,8 @@ class Internal:
 		
 		fh.close()
 		
-		return
-
-
 	## Change the name to make_gaussian_input
-	def make_gaussian_input(self, cycle, asec_charges=None):
+	def make_gaussian_input(self, cycle: int, asec_charges=None) -> None:
 
 		simdir="simfiles"
 		stepdir="step{:02d}".format(cycle)
@@ -1333,7 +1326,7 @@ class Internal:
 			symbol = atomsymb[atom.na]
 			fh.write("{:<2s}    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(symbol, 
 														atom.rx, atom.ry, atom.rz))
-		
+
 		# ## If also performing charge fit in the same calculation
 		# if cycle >= self.player.switchcyc:
 		# 	for ghost in ghost_atoms:
@@ -1387,7 +1380,7 @@ class Internal:
 		
 		# fh.close()
 		
-	def read_charges(self, file, fh):
+	def read_charges(self, file: str, fh: TextIO) -> None:
 		
 		try:
 			with open(file) as tmpfh:
@@ -1429,7 +1422,7 @@ class Internal:
 	
 	class Player:
 
-		def __init__(self):
+		def __init__(self) -> None:
 
 			self.maxcyc = None
 			self.nprocs = 1
@@ -1449,7 +1442,7 @@ class Internal:
 	
 	class Dice:
 
-		def __init__(self):
+		def __init__(self) -> None:
 
 			self.title = "Diceplayer run"
 			self.progname = "dice"
@@ -1468,13 +1461,13 @@ class Internal:
 			self.combrule = "*"
 			self.ljname = None
 			self.outname = None
-			self.nmol = []     # Up to 4 integer values related to up to 4 molecule types
-			self.nstep = []    # 2 or 3 integer values related to 2 or 3 simulations
+			self.nmol: List[int] = []     # Up to 4 integer values related to up to 4 molecule types
+			self.nstep: List[int] = []    # 2 or 3 integer values related to 2 or 3 simulations
 								# (NVT th + NVT eq) or (NVT th + NPT th + NPT eq).
 								# This will control the 'nstep' keyword of Dice
 			self.upbuf = 360
 
-		def make_proc_dir(self, cycle, proc):
+		def make_proc_dir(self, cycle: int, proc: int) -> None:
 			
 			sim_dir = "simfiles"
 			step_dir = "step{:02d}".format(cycle)
@@ -1485,7 +1478,7 @@ class Internal:
 			except:
 				sys.exit("Error: cannot make directory {}".format(path))
 
-		def run_dice(self, cycle, proc, fh):
+		def run_dice(self, cycle: int, proc: int, fh: str) -> None:
 			
 			sim_dir = "simfiles"
 			step_dir = "step{:02d}".format(cycle)
@@ -1528,13 +1521,13 @@ class Internal:
 					sys.exit()
 				
 				if exit_status != 0:
-					sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+					sys.exit("Dice process step{:02d}-p{:02d} did not exit properly".format(cycle,proc))
 				else:
 					outfh = open("NVT.ter.out")          ## Open again to seek the normal end flag
 					flag = outfh.readlines()[dice_flag_line].strip()
 					outfh.close()
 					if flag != dice_end_flag:
-						sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+						sys.exit("Dice process step{:02d}-p{:02d} did not exit properly".format(cycle,proc))
 				
 				## NVT production
 				fh.write("p{:02d}> NVT production initiated on {}\n".format(proc, date_time()))
@@ -1554,13 +1547,13 @@ class Internal:
 					sys.exit()
 				
 				if exit_status != 0:
-					sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+					sys.exit("Dice process step{:02d}-p{:02d} did not exit properly".format(cycle,proc))
 				else:
 					outfh = open("NVT.eq.out")           ## Open again to seek the normal end flag
 					flag = outfh.readlines()[dice_flag_line].strip()
 					outfh.close()
 					if flag != dice_end_flag:
-						sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+						sys.exit("Dice process step{:02d}-p{:02d} did not exit properly".format(cycle,proc))
 				
 				fh.write("p{:02d}> ----- NVT production finished on {}\n".format(proc, 
 																					date_time()))
@@ -1587,13 +1580,13 @@ class Internal:
 						sys.exit()
 				
 					if exit_status != 0:
-						sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+						sys.exit("Dice process step{:02d}-p{:02d} did not exit properly".format(cycle,proc))
 					else:
 						outfh = open("NVT.ter.out")      ## Open again to seek the normal end flag
 						flag = outfh.readlines()[dice_flag_line].strip()
 						outfh.close()
 						if flag != dice_end_flag:
-							sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+							sys.exit("Dice process step{:02d}-p{:02d} did not exit properly".format(cycle,proc))
 				
 				## NPT thermalization
 				if not self.randominit == 'always' or (self.randominit == 'first' and cycle == 1):
@@ -1618,13 +1611,13 @@ class Internal:
 					sys.exit()
 				
 				if exit_status != 0:
-					sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+					sys.exit("Dice process step{:02d}-p{:02d} did not exit properly".format(cycle,proc))
 				else:
 					outfh = open("NPT.ter.out")          ## Open again to seek the normal end flag
 					flag = outfh.readlines()[dice_flag_line].strip()
 					outfh.close()
 					if flag != dice_end_flag:
-						sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+						sys.exit("Dice process step{:02d}-p{:02d} did not exit properly".format(cycle,proc))
 				
 				## NPT production
 				fh.write("p{:02d}> NPT production initiated on {}\n".format(proc, date_time()))
@@ -1644,13 +1637,13 @@ class Internal:
 					sys.exit()
 				
 				if exit_status != 0:
-					sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+					sys.exit("Dice process step{:02d}-p{:02d} did not exit properly".format(cycle,proc))
 				else:
 					outfh = open("NPT.eq.out")           ## Open again to seek the normal end flag
 					flag = outfh.readlines()[dice_flag_line].strip()
 					outfh.close()
 					if flag != dice_end_flag:
-						sys.exit("Dice process p{:02d} did not exit properly".format(proc))
+						sys.exit("Dice process step{:02d}-p{:02d} did not exit properly".format(cycle,proc))
 				
 				fh.write("p{:02d}> ----- NPT production finished on {}\n".format(proc, 
 																					date_time()))
@@ -1659,7 +1652,7 @@ class Internal:
 
 	class Gaussian:
 
-		def __init__(self):
+		def __init__(self) -> None:
 
 			self.qmprog = "g09"
 			self.path = None
@@ -1672,7 +1665,7 @@ class Internal:
 			self.pop = "chelpg"
 			self.level = None
 
-		def run_gaussian(self, cycle, type, fh):
+		def run_gaussian(self, cycle: int, type: str, fh: TextIO) -> None:
 			
 			simdir="simfiles"
 			stepdir="step{:02d}".format(cycle)
@@ -1701,7 +1694,7 @@ class Internal:
 			
 			os.chdir(work_dir)
 
-		def run_formchk(self, cycle, fh):
+		def run_formchk(self, cycle: int, fh: TextIO):
 			
 			simdir="simfiles"
 			stepdir="step{:02d}".format(cycle)
@@ -1710,9 +1703,9 @@ class Internal:
 			work_dir = os.getcwd()
 			os.chdir(path)
 				
-			fh.write("Formatting the checkpoint file... ")
+			fh.write("Formatting the checkpoint file... \n")
 			
-			exit_status = subprocess.call(["formchk", "asec.chk"])
+			exit_status = subprocess.call(["formchk", "asec.chk"], stdout=fh)
 			
 			fh.write("Done\n")
 			

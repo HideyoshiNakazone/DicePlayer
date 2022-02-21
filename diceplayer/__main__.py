@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 
+from multiprocessing import Process, connection
 import os, sys, time, signal
 import setproctitle
 import numpy as np
 import argparse
 import shutil
-from multiprocessing import Process, connection
+import pickle
 
 from diceplayer.DPpack.PTable import *
 from diceplayer.DPpack.SetGlobals import *
@@ -23,9 +24,9 @@ if __name__ == '__main__':
 	parser.add_argument('--continue', dest='opt_continue' , default=False, action='store_true')
 	parser.add_argument('--version', action='version', version='%(prog)s 1.0')
 	parser.add_argument('-i', dest='infile', default='control.in', metavar='INFILE', 
-    			                   help='input file of diceplayer [default = control.in]')
+								   help='input file of diceplayer [default = control.in]')
 	parser.add_argument('-o', dest='outfile', default='run.log', metavar='OUTFILE', 
-    				                 help='output file of diceplayer [default = run.log]')
+									 help='output file of diceplayer [default = run.log]')
 	## Study the option of a parameter for continuing the last process via data from control.in and run.log files
 
 	args = parser.parse_args()
@@ -36,19 +37,7 @@ if __name__ == '__main__':
 
 		if args.opt_continue and os.path.exists(args.outfile):
 			
-			outfile = open(args.outfile,'r')
-			run_file = outfile.readlines()
-			control_sequence = '                                         Step # '
-			sucessfull_sequence = '+----------------------------------------------------------------------------------------+'
-			
-			for line in run_file:
-				if control_sequence in line:
-					cyc = int(line[-2])
-				if sucessfull_sequence in line:
-					cyc += 1
-
-
-			outfile.close()
+			save = pickle.load(open("latest-step.pkl","rb"))
 
 			if os.path.isfile(args.outfile+".backup"):
 				os.remove(args.outfile+".backup")
@@ -62,7 +51,7 @@ if __name__ == '__main__':
 		else:
 			outfile = open(args.outfile,"w",1)
 
-	except EnvironmentError as err:
+	except Exception as err:
 		sys.exit(err)
 
 	try:
@@ -70,7 +59,7 @@ if __name__ == '__main__':
 		if os.path.exists(args.infile):
 			infile = open(args.infile,"r")
 
-	except EnvironmentError as err:
+	except Exception as err:
 		sys.exit(err)
 
 ####  Read and check the keywords in INFILE
@@ -79,28 +68,19 @@ if __name__ == '__main__':
 
 	internal.read_keywords()
 
-	if args.opt_continue:
-		try:
-			internal.player.initcyc = cyc
-		except:
-			sys.exit("Error: There is no sutable run.log file to continue the previous process")
-
 	internal.check_keywords()
 	internal.print_keywords()
 
-# ####  Check whether the executables are in the path
+	if args.opt_continue:
+		internal.player.initcyc = save[0] + 1
+		internal.system = save[1]
+	else:
+		internal.read_potential()
+
+####  Check whether the executables are in the path
+####		and print potential to Log File
 
 	internal.check_executables()
-
-# ####  Read the potential, store the info in 'molecules' and prints the info in OUTFILE
-
-	internal.read_potential()
-
-	# if internal.player.lps == "yes":
-	# 	read_lps()
-
-	# if internal.player.ghosts == "yes":
-	# 	read_ghosts()
 
 	internal.print_potential()
 
@@ -175,29 +155,7 @@ if __name__ == '__main__':
 		####  Start block of parallel simulations
 		####
 		
-		procs = []
-		sentinels = []
-		for proc in range(1, internal.player.nprocs + 1):
-		
-			p = Process(target=internal.simulation_process, args=(cycle, proc))
-			p.start()
-			procs.append(p)
-			sentinels.append(p.sentinel)
-			
-		while procs:
-			finished = connection.wait(sentinels)
-			for proc_sentinel in finished:
-				i = sentinels.index(proc_sentinel)
-				status = procs[i].exitcode
-				procs.pop(i)
-				sentinels.pop(i)
-				if status != 0:
-					for p in procs:
-						p.terminate()
-					sys.exit(status)
-
-		for proc in range(1, internal.player.nprocs + 1):
-			internal.print_last_config(cycle, proc)
+		internal.dice_start(cycle)
 		
 		###
 		###  End of parallel simulations block
@@ -216,67 +174,62 @@ if __name__ == '__main__':
 		###  Start QM calculation
 		###
 		
-		make_qm_dir(cycle)
+		# make_qm_dir(cycle)
 
-		if internal.player.qmprog in ("g03", "g09", "g16"):
+		# if internal.player.qmprog in ("g03", "g09", "g16"):
 			
-			if cycle > 1:
+		# 	if cycle > 1:
 
-				src = "simfiles" + os.sep + "step{:02d}".format(cycle - 1) + os.sep + "qm" + os.sep + "asec.chk"
-				dst = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.chk"
-				shutil.copyfile(src, dst)
+		# 		src = "simfiles" + os.sep + "step{:02d}".format(cycle - 1) + os.sep + "qm" + os.sep + "asec.chk"
+		# 		dst = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.chk"
+		# 		shutil.copyfile(src, dst)
 			
-			internal.make_gaussian_input(cycle)
-			internal.gaussian.run_gaussian(cycle, "force", internal.outfile)
-			internal.gaussian.run_formchk(cycle, internal.outfile)
+		# 	internal.make_gaussian_input(cycle)
+		# 	internal.gaussian.run_gaussian(cycle, "force", internal.outfile)
+		# 	internal.gaussian.run_formchk(cycle, internal.outfile)
 				
-			## Read the gradient
-			file = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.fchk"
+		# 	## Read the gradient
+		# 	file = "simfiles" + os.sep + "step{:02d}".format(cycle) + os.sep + "qm" + os.sep + "asec.fchk"
 
-			try: 
-				gradient
-				old_gradient = gradient
-			except:
-				pass
+		# 	try: 
+		# 		gradient
+		# 		old_gradient = gradient
+		# 	except:
+		# 		pass
 
-			gradient = internal.read_forces_fchk(file, internal.outfile)
+		# 	gradient = internal.read_forces_fchk(file, internal.outfile)
 
-			print(type(gradient),"\n",gradient.shape,"\n",gradient)
+		# 	# If 1st step, read the hessian
+		# 	if cycle == 1:
+
+		# 		if internal.player.readhessian == "yes":
+
+		# 			file = "grad_hessian.dat"
+		# 			internal.outfile.write("\nReading the hessian matrix from file {}\n".format(file))
+		# 			hessian = internal.read_hessian_log(file)
+
+		# 		else:
+
+		# 			file = "simfiles" + os.sep + "step01" + os.sep + "qm" + os.sep + "asec.fchk"
+		# 			internal.outfile.write("\nReading the hessian matrix from file {}\n".format(file))
+		# 			hessian = internal.read_hessian_fchk(file)
+
+		# 	# From 2nd step on, update the hessian
+		# 	else:
+		# 		internal.outfile.write("\nUpdating the hessian matrix using the BFGS method... ")
+		# 		hessian = internal.system.molecule[0].update_hessian(step, gradient, old_gradient, hessian)
+		# 		internal.outfile.write("Done\n")
 				
-			# If 1st step, read the hessian
-			if cycle == 1:
+		# 	# Save gradient and hessian
+		# 	internal.print_grad_hessian(cycle, gradient, hessian)
 
-				if internal.player.readhessian == "yes":
+		# 	# Calculate the step and update the position
+		# 	step = internal.calculate_step(cycle, gradient, hessian)
 
-					file = "grad_hessian.dat"
-					internal.outfile.write("\nReading the hessian matrix from file {}\n".format(file))
-					hessian = internal.read_hessian_log(file)
-
-				else:
-
-					file = "simfiles" + os.sep + "step01" + os.sep + "qm" + os.sep + "asec.fchk"
-					internal.outfile.write("\nReading the hessian matrix from file {}\n".format(file))
-					hessian = internal.read_hessian_fchk(file)
-
-					print(type(hessian), "\n", hessian.shape, "\n", hessian)
+		# 	position += step
 				
-			# From 2nd step on, update the hessian
-			else:
-				internal.outfile.write("\nUpdating the hessian matrix using the BFGS method... ")
-				hessian = internal.system.molecule[0].update_hessian(step, gradient, old_gradient, hessian)
-				internal.outfile.write("Done\n")
-				
-			# Save gradient and hessian
-			internal.print_grad_hessian(cycle, gradient, hessian)
-
-			# Calculate the step and update the position
-			step = internal.calculate_step(cycle, gradient, hessian)
-
-			print(type(step), "\n", step.shape, "\n", step)
-			position += step
-				
-			# ## Update the geometry of the reference molecule
-			internal.system.update_molecule(position, internal.outfile)
+		# 	# ## Update the geometry of the reference molecule
+		# 	internal.system.update_molecule(position, internal.outfile)
 				
 # 				## If needed, calculate the charges
 # 				if cycle < internal.player.switchcyc:
@@ -344,7 +297,9 @@ if __name__ == '__main__':
 		internal.system.print_geom(cycle, geomsfh)
 		geomsfh.write(40 * "-"+"\n")
 
-		internal.outfile.write("\n+" + 88 * "-" + "+\n")	
+		internal.outfile.write("\n+" + 88 * "-" + "+\n")
+
+		pickle.dump([cycle,internal.system], open("latest-step.pkl", "wb"))
 	####
 	####  End of the iterative process
 	####

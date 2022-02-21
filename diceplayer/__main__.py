@@ -13,8 +13,8 @@ from diceplayer.DPpack.SetGlobals import *
 from diceplayer.DPpack.MolHandling import *
 from diceplayer.DPpack.Misc import *
 
-_version = 'dev'
-setproctitle.setproctitle("diceplayer-{}".format(_version))
+__version = 'dev'
+setproctitle.setproctitle("diceplayer-{}".format(__version))
 
 if __name__ == '__main__':
 ####  Read and store the arguments passed to the program  ####
@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
 	parser = argparse.ArgumentParser(prog='Diceplayer')
 	parser.add_argument('--continue', dest='opt_continue' , default=False, action='store_true')
-	parser.add_argument('--version', action='version', version='%(prog)s 1.0')
+	parser.add_argument('--version', action='version', version= "diceplayer-"+__version)
 	parser.add_argument('-i', dest='infile', default='control.in', metavar='INFILE', 
 								   help='input file of diceplayer [default = control.in]')
 	parser.add_argument('-o', dest='outfile', default='run.log', metavar='OUTFILE', 

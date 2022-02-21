@@ -2,7 +2,7 @@ from diceplayer.DPpack.MolHandling import *
 from diceplayer.DPpack.PTable import *
 from diceplayer.DPpack.Misc import *
 
-from diceplayer.DPpack.runtime.Dice import *
+from diceplayer.DPpack.external.Dice import *
 
 from typing import IO, Tuple, List, TextIO, Union
 

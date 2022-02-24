@@ -2,10 +2,10 @@
 #############               Welcome to DICEPLAYER version 1.0                #############
 ##########################################################################################
 
-Your python version is 3.8.12 | packaged by conda-forge | (default, Oct 12 2021, 21:57:06) 
-[GCC 9.4.0]
+Your python version is 3.8.12 (default, Oct 12 2021, 13:58:32) 
+[GCC 7.5.0]
 
-Program started on Monday, 21 Feb 2022 at 13:19:54
+Program started on Tuesday, 22 Feb 2022 at 02:37:19
 
 Environment variables:
 OMP_STACKSIZE = Not set
@@ -167,18 +167,3 @@ Molecule type 2 - PLACEHOLDER:
     Dipole moment = (    1.9725 ,    1.2491 ,   -0.0000 )     Total =    2.3347 Debye
 
 ==========================================================================================
-
-Starting the iterative process.
-
-------------------------------------------------------------------------------------------
-                                         Step # 1
-------------------------------------------------------------------------------------------
-
-Simulation process simfiles/step01/p01 initiated with pid 29435
-p01> NVT thermalization finished (from random configuration) on 21 Feb 2022 at 13:19:54
-Simulation process simfiles/step01/p02 initiated with pid 29436
-p02> NVT thermalization finished (from random configuration) on 21 Feb 2022 at 13:19:54
-Simulation process simfiles/step01/p03 initiated with pid 29437
-p03> NVT thermalization finished (from random configuration) on 21 Feb 2022 at 13:19:54
-Simulation process simfiles/step01/p04 initiated with pid 29438
-p04> NVT thermalization finished (from random configuration) on 21 Feb 2022 at 13:19:54

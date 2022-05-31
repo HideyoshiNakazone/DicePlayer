@@ -1,29 +1,23 @@
-from turtle import position
-from diceplayer.DPpack.Environment.Atom import *
-from diceplayer.DPpack.Utils.PTable import *
-from diceplayer.DPpack.Utils.Misc import *
-
-from diceplayer.DPpack.External.Dice import *
-
-from diceplayer.DPpack.Environment.Molecule import Molecule
-from diceplayer.DPpack.Environment.Atom import Atom
-
-from typing import IO, List, TextIO
+import os
+import shutil
+import subprocess
+import sys
+import textwrap
+from typing import TextIO
 
 import numpy as np
 
-import subprocess
-import os
-import sys
-import shutil
-import textwrap
-import types
+from diceplayer.DPpack.Environment.Atom import Atom
+from diceplayer.DPpack.Environment.Molecule import Molecule
+from diceplayer.DPpack.Utils.Misc import *
+from diceplayer.DPpack.Utils.PTable import *
+from diceplayer.DPpack.Utils.StepDTO import StepDTO
+from diceplayer.DPpack.Utils.Validations import NotNull
 
 
 class Gaussian:
 
     qmprog = "g09"
-    path = None
     mem = None
     keywords = None
     chgmult = [0, 1]
@@ -35,9 +29,7 @@ class Gaussian:
     def __init__(self) -> None:
         pass
 
-    @NotNull(requiredArgs = [
-        "level"
-    ])
+    @NotNull(requiredArgs=["level"])
     def updateKeywords(self, **data):
         self.__dict__.update(data)
 
@@ -71,7 +63,7 @@ class Gaussian:
         while start.find("Cartesian Gradient") != 0:  # expression in begining of line
             start = fchkfile.pop(0).strip()
 
-        degrees = 3 * len(self.molecule[0].atom)
+        degrees = 3 * len(self.step.molecule[0].atom)
         count = 0
         while len(forces) < degrees:
             values = fchkfile.pop(0).split()
@@ -90,11 +82,11 @@ class Gaussian:
             "Number     Number              X                Y                Z\n"
             "-----------------------------------------------------------------------\n"
         )
-        for i in range(len(self.molecule[0].atom)):
+        for i in range(len(self.step.molecule[0].atom)):
             fh.write(
                 "  {:>5d}     {:>3d}        {:>14.9f}   {:>14.9f}   {:>14.9f}\n".format(
                     i + 1,
-                    self.molecule[0].atom[i].na,
+                    self.step.molecule[0].atom[i].na,
                     forces.pop(0),
                     forces.pop(0),
                     forces.pop(0),
@@ -129,7 +121,7 @@ class Gaussian:
         while start.find("Cartesian Force Constants") != 0:
             start = fchkfile.pop(0).strip()
 
-        degrees = 3 * len(self.molecule[0].atom)
+        degrees = 3 * len(self.step.molecule[0].atom)
         last = round(degrees * (degrees + 1) / 2)
         count = 0
 
@@ -167,7 +159,7 @@ class Gaussian:
         while start.find("The second derivative matrix:") != 0:
             start = logfile.pop(0).strip()
 
-        degrees = 3 * len(self.molecule[0].atom)
+        degrees = 3 * len(self.step.molecule[0].atom)
         hessian = np.zeros((degrees, degrees))
 
         k = 0
@@ -193,7 +185,7 @@ class Gaussian:
 
         fh.write("Optimization cycle: {}\n".format(cycle))
         fh.write("Cartesian Gradient\n")
-        degrees = 3 * len(self.molecule[0].atom)
+        degrees = 3 * len(self.step.molecule[0].atom)
         for i in range(degrees):
             fh.write(" {:>11.8g}".format(cur_gradient[i]))
             if (i + 1) % 5 == 0 or i == degrees - 1:
@@ -229,14 +221,14 @@ class Gaussian:
         fh.write("%Chk=asec.chk\n")
         if self.mem != None:
             fh.write("%Mem={}MB\n".format(self.mem))
-        fh.write("%Nprocs={}\n".format(self.nprocs * self.ncores))
+        fh.write("%Nprocs={}\n".format(self.step.nprocs * self.step.ncores))
 
         kword_line = "#P " + str(self.level)
 
         if self.keywords != None:
             kword_line += " " + self.keywords
 
-        if self.opt == "yes":
+        if self.step.opt == "yes":
             kword_line += " Force"
 
         # kword_line += " Charge"
@@ -253,7 +245,7 @@ class Gaussian:
         fh.write("\n")
         fh.write("{},{}\n".format(self.chgmult[0], self.chgmult[1]))
 
-        for atom in self.molecule[0].atom:
+        for atom in self.step.molecule[0].atom:
             symbol = atomsymb[atom.na]
             fh.write(
                 "{:<2s}    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(
@@ -330,7 +322,7 @@ class Gaussian:
 
         fh.write("\nAtomic charges:\n")
         fh.write("------------------------------------\n")
-        for atom in self.molecule[0].atom:
+        for atom in self.step.molecule[0].atom:
             line = glogfile.pop(0).split()
             atom_str = line[1]
             charge = float(line[2])
@@ -466,28 +458,9 @@ class Gaussian:
 
     #     return step
 
+    def configure(self, step: StepDTO):
 
-    def configure(
-        self,
-        initcyc: int,
-        nprocs: int,
-        ncores: int,
-        altsteps: int,
-        switchcyc: int,
-        opt: str,
-        nmol: List[int],
-        molecule: List[Molecule],
-    ):
-
-        self.initcyc = initcyc
-
-        self.nprocs = nprocs
-        self.ncores = ncores
-        self.altsteps = altsteps
-        self.switchcyc = switchcyc
-        self.opt = opt
-
-        self.molecule = molecule
+        self.step = step
 
     def start(self, cycle: int, outfile: TextIO, readhessian: str) -> np.ndarray:
 
@@ -569,10 +542,8 @@ class Gaussian:
 
             # From 2nd step on, update the hessian
             else:
-                outfile.write(
-                    "\nUpdating the hessian matrix using the BFGS method... "
-                )
-                hessian = self.molecule[0].update_hessian(
+                outfile.write("\nUpdating the hessian matrix using the BFGS method... ")
+                hessian = self.step.molecule[0].update_hessian(
                     step, gradient, old_gradient, hessian
                 )
                 outfile.write("Done\n")
@@ -586,7 +557,7 @@ class Gaussian:
             position += step
 
             ## If needed, calculate the charges
-            if cycle < self.switchcyc:
+            if cycle < self.step.switchcyc:
 
                 # internal.gaussian.make_charge_input(cycle, asec_charges)
                 self.run_gaussian(cycle, "charge", outfile)
@@ -615,7 +586,7 @@ class Gaussian:
 
             ## Print new info for molecule[0]
             self.outfile.write("\nNew values for molecule type 1:\n\n")
-            self.molecule[0].print_mol_info(outfile)
+            self.step.molecule[0].print_mol_info(outfile)
 
             ##
             ##  Molcas block
@@ -683,6 +654,4 @@ class Gaussian:
 
     def reset(self):
 
-        del self.nprocs
-        del self.altsteps
-        del self.molecule
+        del self.step

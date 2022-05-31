@@ -1,23 +1,21 @@
-from diceplayer.DPpack.Utils.Validations import NotNull
-from diceplayer.DPpack.Utils.PTable import *
-from diceplayer.DPpack.Utils.Misc import *
-
-from diceplayer.DPpack.External.Gaussian import Gaussian
-from diceplayer.DPpack.External.Dice import Dice
-
-from diceplayer.DPpack.Environment.System import System
-from diceplayer.DPpack.Environment.Molecule import Molecule
-from diceplayer.DPpack.Environment.Atom import Atom
-
-from typing import TextIO
-
 import os
-import sys
 import shutil
+import sys
 import textwrap
 import types
+from typing import TextIO
+
 import yaml
 
+from diceplayer.DPpack.Environment.Atom import Atom
+from diceplayer.DPpack.Environment.Molecule import Molecule
+from diceplayer.DPpack.Environment.System import System
+from diceplayer.DPpack.External.Dice import Dice
+from diceplayer.DPpack.External.Gaussian import Gaussian
+from diceplayer.DPpack.Utils.Misc import *
+from diceplayer.DPpack.Utils.PTable import *
+from diceplayer.DPpack.Utils.StepDTO import StepDTO
+from diceplayer.DPpack.Utils.Validations import NotNull
 
 env = ["OMP_STACKSIZE"]
 
@@ -61,8 +59,9 @@ class Player:
 
         self.combrule = None
 
-
-    @NotNull(requiredArgs=["maxcyc", "opt", "nprocs", "qmprog", "lps", "ghosts", "altsteps"])
+    @NotNull(
+        requiredArgs=["maxcyc", "opt", "nprocs", "qmprog", "lps", "ghosts", "altsteps"]
+    )
     def updateKeywords(self, **data):
         self.__dict__.update(data)
 
@@ -585,11 +584,13 @@ class Player:
     def dice_start(self, cycle: int):
 
         self.dice.configure(
-            self.player.initcyc,
-            self.player.nprocs,
-            self.player.altsteps,
-            self.system.nmols,
-            self.system.molecule,
+            StepDTO(
+                self.player.initcyc,
+                self.player.nprocs,
+                self.player.altsteps,
+                self.system.nmols,
+                self.system.molecule,
+            )
         )
 
         self.dice.start(cycle)

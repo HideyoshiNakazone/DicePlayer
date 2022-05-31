@@ -1,19 +1,21 @@
 #!/usr/bin/python3
 
-from multiprocessing import Process, connection
-import os, sys, time, signal
-import setproctitle
-import numpy as np
 import argparse
-import shutil
+import os
 import pickle
+import shutil
+import signal
+import sys
+import time
+from multiprocessing import Process, connection
 
-from diceplayer.DPpack.Utils.Misc import *
+import numpy as np
+import setproctitle
 
-from diceplayer.DPpack.Player import Player
-
-from diceplayer.DPpack.Environment.Molecule import Molecule
 from diceplayer.DPpack.Environment.Atom import Atom
+from diceplayer.DPpack.Environment.Molecule import Molecule
+from diceplayer.DPpack.Player import Player
+from diceplayer.DPpack.Utils.Misc import *
 
 __version = "dev"
 setproctitle.setproctitle("diceplayer-{}".format(__version))

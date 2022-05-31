@@ -1,24 +1,16 @@
-from dataclasses import dataclass
-from diceplayer.DPpack.Utils.PTable import *
-from diceplayer.DPpack.Utils.Misc import *
-
-from diceplayer.DPpack.Environment.Molecule import Molecule
-from diceplayer.DPpack.Environment.Atom import Atom
-
-from typing import IO, Final, Tuple, List, TextIO, Union
-
-from numpy.core.numeric import partition
-from numpy import random
-
-from multiprocessing import Process, connection
-import subprocess
-import setproctitle
 import os
-import sys
 import shutil
+import subprocess
+import sys
+from multiprocessing import Process, connection
+from typing import Final, List, TextIO
 
+import setproctitle
+from diceplayer.DPpack.Utils.Misc import *
+from diceplayer.DPpack.Utils.PTable import *
+from diceplayer.DPpack.Utils.StepDTO import StepDTO
 from diceplayer.DPpack.Utils.Validations import NotNull
-
+from numpy import random
 
 DICE_END_FLAG: Final[str] = "End of simulation"
 DICE_FLAG_LINE: Final[int] = -2
@@ -26,18 +18,17 @@ UMAANG3_TO_GCM3: Final[float] = 1.6605
 
 MAX_SEED: Final[int] = 4294967295
 
+
 class Dice:
 
     title = "Diceplayer run"
     progname = "dice"
-    
-    path = None
-    
+
     nprocs: int = None
     randominit = "first"
     combrule = "*"
     ncores = 1
-    
+
     temp = 300.0
     press = 1.0
     isave = 1000
@@ -53,14 +44,7 @@ class Dice:
         self.infile = infile
         self.outfile = outfile
 
-    @NotNull(requiredArgs = [
-        "ncores", 
-        "nmol",
-        "dens", 
-        "nstep",
-        "ljname", 
-        "outname"
-    ])
+    @NotNull(requiredArgs=["ncores", "nmol", "dens", "nstep", "ljname", "outname"])
     def updateKeywords(self, **data):
         self.__dict__.update(data)
 
@@ -86,9 +70,9 @@ class Dice:
         volume = float(box[-3]) * float(box[-2]) * float(box[-1])
 
         total_mass = 0
-        for i in range(len(self.molecule)):
+        for i in range(len(self.step.molecule)):
 
-            total_mass += self.molecule[i].total_mass * self.nmol[i]
+            total_mass += self.step.molecule[i].total_mass * self.step.nmol[i]
 
         density = (total_mass / volume) * UMAANG3_TO_GCM3
 
@@ -109,9 +93,9 @@ class Dice:
         except:
             sys.exit("Error: cannot open file {}".format(file))
 
-        nsites = len(self.molecule[0].atom) * self.nmol[0]
-        for i in range(1, len(self.nmol)):
-            nsites += self.nmol[i] * len(self.molecule[i].atom)
+        nsites = len(self.step.molecule[0].atom) * self.step.nmol[0]
+        for i in range(1, len(self.step.nmol)):
+            nsites += self.step.nmol[i] * len(self.step.molecule[i].atom)
 
         nsites += 2
 
@@ -132,11 +116,11 @@ class Dice:
 
         num = time.time()
         num = (num - int(num)) * 1e6
-        
+
         num = int((num - int(num)) * 1e6)
         random.seed((os.getpid() * num) % (MAX_SEED + 1))
 
-        if self.randominit == "first" and cycle > self.initcyc:
+        if self.randominit == "first" and cycle > self.step.initcyc:
             last_step_dir = "step{:02d}".format(cycle - 1)
             last_path = sim_dir + os.sep + last_step_dir + os.sep + proc_dir
             xyzfile = last_path + os.sep + "last.xyz"
@@ -149,7 +133,7 @@ class Dice:
 
         elif len(self.nstep) == 3:
 
-            if self.randominit == "first" and cycle > self.initcyc:
+            if self.randominit == "first" and cycle > self.step.initcyc:
                 self.dens = self.__new_density(cycle, proc)
             else:
                 self.__make_nvt_ter(cycle, path)
@@ -175,15 +159,15 @@ class Dice:
         fh.write("ljname = {}\n".format(self.ljname))
         fh.write("outname = {}\n".format(self.outname))
 
-        string = " ".join(str(x) for x in self.nmol)
+        string = " ".join(str(x) for x in self.step.nmol)
         fh.write("nmol = {}\n".format(string))
 
         fh.write("dens = {}\n".format(self.dens))
         fh.write("temp = {}\n".format(self.temp))
 
-        if self.randominit == "first" and cycle > self.initcyc:
+        if self.randominit == "first" and cycle > self.step.initcyc:
             fh.write("init = yesreadxyz\n")
-            fh.write("nstep = {}\n".format(self.altsteps))
+            fh.write("nstep = {}\n".format(self.step.altsteps))
         else:
             fh.write("init = yes\n")
             fh.write("nstep = {}\n".format(self.nstep[0]))
@@ -214,7 +198,7 @@ class Dice:
         fh.write("ljname = {}\n".format(self.ljname))
         fh.write("outname = {}\n".format(self.outname))
 
-        string = " ".join(str(x) for x in self.nmol)
+        string = " ".join(str(x) for x in self.step.nmol)
         fh.write("nmol = {}\n".format(string))
 
         fh.write("dens = {}\n".format(self.dens))
@@ -226,7 +210,7 @@ class Dice:
         fh.write("accum = no\n")
         fh.write("iprint = 1\n")
         fh.write("isave = {}\n".format(self.isave))
-        fh.write("irdf = {}\n".format(10 * self.nprocs))
+        fh.write("irdf = {}\n".format(10 * self.step.nprocs))
 
         seed = int(1e6 * random.random())
         fh.write("seed = {}\n".format(seed))
@@ -246,16 +230,16 @@ class Dice:
         fh.write("ljname = {}\n".format(self.ljname))
         fh.write("outname = {}\n".format(self.outname))
 
-        string = " ".join(str(x) for x in self.nmol)
+        string = " ".join(str(x) for x in self.step.nmol)
         fh.write("nmol = {}\n".format(string))
 
         fh.write("press = {}\n".format(self.press))
         fh.write("temp = {}\n".format(self.temp))
 
-        if self.randominit == "first" and cycle > self.initcyc:
+        if self.randominit == "first" and cycle > self.step.initcyc:
             fh.write("init = yesreadxyz\n")
             fh.write("dens = {:<8.4f}\n".format(self.dens))
-            fh.write("vstep = {}\n".format(int(self.altsteps / 5)))
+            fh.write("vstep = {}\n".format(int(self.step.altsteps / 5)))
         else:
             fh.write("init = no\n")
             fh.write("vstep = {}\n".format(int(self.nstep[1] / 5)))
@@ -285,7 +269,7 @@ class Dice:
         fh.write("ljname = {}\n".format(self.ljname))
         fh.write("outname = {}\n".format(self.outname))
 
-        string = " ".join(str(x) for x in self.nmol)
+        string = " ".join(str(x) for x in self.step.nmol)
         fh.write("nmol = {}\n".format(string))
 
         fh.write("press = {}\n".format(self.press))
@@ -299,7 +283,7 @@ class Dice:
         fh.write("accum = no\n")
         fh.write("iprint = 1\n")
         fh.write("isave = {}\n".format(self.isave))
-        fh.write("irdf = {}\n".format(10 * self.nprocs))
+        fh.write("irdf = {}\n".format(10 * self.step.nprocs))
 
         seed = int(1e6 * random.random())
         fh.write("seed = {}\n".format(seed))
@@ -319,11 +303,11 @@ class Dice:
             sys.exit("Error: cannot open file {}".format(file))
 
         nsites_mm = 0
-        for i in range(1, len(self.nmol)):
-            nsites_mm += self.nmol[i] * len(self.molecule[i].atom)
+        for i in range(1, len(self.step.nmol)):
+            nsites_mm += self.step.nmol[i] * len(self.step.molecule[i].atom)
 
         nsites_mm *= -1
-        
+
         xyzfile = xyzfile[nsites_mm:]
 
         file = path + os.sep + self.outname + ".xy"
@@ -333,7 +317,7 @@ class Dice:
         except:
             sys.exit("Error: cannot open file {}".format(file))
 
-        for atom in self.molecule[0].atom:
+        for atom in self.step.molecule[0].atom:
             fh.write(
                 "{:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(atom.rx, atom.ry, atom.rz)
             )
@@ -360,16 +344,16 @@ class Dice:
             sys.exit("Error: cannot open file {}".format(file))
 
         fh.write("{}\n".format(self.combrule))
-        fh.write("{}\n".format(len(self.nmol)))
+        fh.write("{}\n".format(len(self.step.nmol)))
 
         nsites_qm = (
-            len(self.molecule[0].atom)
-            + len(self.molecule[0].ghost_atoms)
-            + len(self.molecule[0].lp_atoms)
+            len(self.step.molecule[0].atom)
+            + len(self.step.molecule[0].ghost_atoms)
+            + len(self.step.molecule[0].lp_atoms)
         )
 
-        fh.write("{} {}\n".format(nsites_qm, self.molecule[0].molname))
-        for atom in self.molecule[0].atom:
+        fh.write("{} {}\n".format(nsites_qm, self.step.molecule[0].molname))
+        for atom in self.step.molecule[0].atom:
             fh.write(
                 fstr.format(
                     atom.lbl,
@@ -383,23 +367,23 @@ class Dice:
                 )
             )
 
-        ghost_label = self.molecule[0].atom[-1].lbl + 1
-        for i in self.molecule[0].ghost_atoms:
+        ghost_label = self.step.molecule[0].atom[-1].lbl + 1
+        for i in self.step.molecule[0].ghost_atoms:
             fh.write(
                 fstr.format(
                     ghost_label,
                     ghost_number,
-                    self.molecule[0].atom[i].rx,
-                    self.molecule[0].atom[i].ry,
-                    self.molecule[0].atom[i].rz,
-                    self.molecule[0].atom[i].chg,
+                    self.step.molecule[0].atom[i].rx,
+                    self.step.molecule[0].atom[i].ry,
+                    self.step.molecule[0].atom[i].rz,
+                    self.step.molecule[0].atom[i].chg,
                     0,
                     0,
                 )
             )
 
         ghost_label += 1
-        for lp in self.molecule[0].lp_atoms:
+        for lp in self.step.molecule[0].lp_atoms:
             fh.write(
                 fstr.format(
                     ghost_label,
@@ -413,7 +397,7 @@ class Dice:
                 )
             )
 
-        for mol in self.molecule[1:]:
+        for mol in self.step.molecule[1:]:
             fh.write("{} {}\n".format(len(mol.atom), mol.molname))
             for atom in mol.atom:
                 fh.write(
@@ -462,7 +446,7 @@ class Dice:
 
         if len(self.nstep) == 2:
 
-            if self.randominit == "first" and cycle > self.initcyc:
+            if self.randominit == "first" and cycle > self.step.initcyc:
                 string_tmp = "previous"
             else:
                 string_tmp = "random"
@@ -620,7 +604,7 @@ class Dice:
                         )
 
             if not self.randominit == "always" or (
-                (self.randominit == "first" and cycle > self.initcyc)
+                (self.randominit == "first" and cycle > self.step.initcyc)
             ):
                 string = " (from previous configuration) "
             else:
@@ -735,28 +719,15 @@ class Dice:
         except Exception as err:
             sys.exit(err)
 
-    def configure(
-        self,
-        initcyc: int,
-        nprocs: int,
-        altsteps: int,
-        nmol: List[int],
-        molecule: List[Molecule],
-    ):
-
-        self.initcyc = initcyc
-
-        self.nprocs = nprocs
-        self.altsteps = altsteps
-        self.nmol = nmol
-        self.molecule = molecule
+    def configure(self, step: StepDTO):
+        self.step = step
 
     def start(self, cycle: int) -> None:
 
         procs = []
         sentinels = []
 
-        for proc in range(1, self.nprocs + 1):
+        for proc in range(1, self.step.nprocs + 1):
 
             p = Process(target=self.__simulation_process, args=(cycle, proc))
             p.start()
@@ -776,11 +747,8 @@ class Dice:
                         p.terminate()
                     sys.exit(status)
 
-        for proc in range(1, self.nprocs + 1):
+        for proc in range(1, self.step.nprocs + 1):
             self.__print_last_config(cycle, proc)
 
     def reset(self):
-
-        del self.nprocs
-        del self.altsteps
-        del self.molecule
+        del self.step

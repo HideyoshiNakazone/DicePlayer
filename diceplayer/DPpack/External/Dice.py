@@ -27,7 +27,6 @@ class Dice:
     nprocs: int = None
     randominit = "first"
     combrule = "*"
-    ncores = 1
 
     temp = 300.0
     press = 1.0
@@ -35,8 +34,8 @@ class Dice:
     dens = None
     ljname = None
     outname = None
-    nmol: List[int] = []
-    nstep: List[int] = []
+    nmol: List[int] = None
+    nstep: List[int] = None
     upbuf = 360
 
     def __init__(self, infile: TextIO, outfile: TextIO) -> None:
@@ -46,7 +45,7 @@ class Dice:
 
     @NotNull(requiredArgs=["ncores", "nmol", "dens", "nstep", "ljname", "outname"])
     def updateKeywords(self, **data):
-        self.__dict__.update(data)
+        self.__dict__.update(**data)
 
     def __new_density(self, cycle: int, proc: int) -> float:
 

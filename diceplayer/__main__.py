@@ -4,21 +4,15 @@ import argparse
 import os
 import pickle
 import shutil
-import signal
 import sys
-import time
-from multiprocessing import Process, connection
 
-import numpy as np
 import setproctitle
 
-from diceplayer.DPpack.Environment.Atom import Atom
-from diceplayer.DPpack.Environment.Molecule import Molecule
 from diceplayer.DPpack.Player import Player
 from diceplayer.DPpack.Utils.Misc import *
 
-__version = "dev"
-setproctitle.setproctitle("diceplayer-{}".format(__version))
+__VERSION = "dev"
+setproctitle.setproctitle("diceplayer-{}".format(__VERSION))
 
 if __name__ == "__main__":
     ####  Read and store the arguments passed to the program  ####
@@ -29,12 +23,12 @@ if __name__ == "__main__":
         "--continue", dest="opt_continue", default=False, action="store_true"
     )
     parser.add_argument(
-        "--version", action="version", version="diceplayer-" + __version
+        "--version", action="version", version="diceplayer-" + __VERSION
     )
     parser.add_argument(
         "-i",
         dest="infile",
-        default="control.in",
+        default="control.yml",
         metavar="INFILE",
         help="input file of diceplayer [default = control.in]",
     )
@@ -90,9 +84,10 @@ if __name__ == "__main__":
     player.print_keywords()
 
     if args.opt_continue:
-        player.player.initcyc = save[0] + 1
+        player.initcyc = save[0] + 1
         player.system = save[1]
     else:
+        player.initcyc = 1
         player.read_potential()
 
     ####  Check whether the executables are in the path
@@ -126,13 +121,13 @@ if __name__ == "__main__":
         make_simulation_dir()
     else:
         simdir = "simfiles"
-        stepdir = "step{:02d}".format(player.player.initcyc)
+        stepdir = "step{:02d}".format(player.initcyc)
         if os.path.exists(simdir + os.sep + stepdir):
             shutil.rmtree(simdir + os.sep + stepdir)
 
     ####  Open the geoms.xyz file and prints the initial geometry if starting from zero
 
-    if player.player.initcyc == 1:
+    if player.initcyc == 1:
         try:
             path = "geoms.xyz"
             geomsfh = open(path, "w", 1)
@@ -153,8 +148,8 @@ if __name__ == "__main__":
     position = player.system.molecule[0].read_position()
 
     ## If restarting, read the last gradient and hessian
-    # if player.player.initcyc > 1:
-    # 	if player.player.qmprog in ("g03", "g09", "g16"):
+    # if player.initcyc > 1:
+    # 	if player.qmprog in ("g03", "g09", "g16"):
     # 		Gaussian.read_forces("grad_hessian.dat")
     # 		Gaussian.read_hessian_fchk("grad_hessian.dat")
 
@@ -168,9 +163,7 @@ if __name__ == "__main__":
 
     player.outfile.write("\n" + 90 * "-" + "\n")
 
-    for cycle in range(
-        player.player.initcyc, player.player.initcyc + player.player.maxcyc
-    ):
+    for cycle in range(player.initcyc, player.initcyc + player.maxcyc):
 
         player.outfile.write("{} Step # {}\n".format(40 * " ", cycle))
         player.outfile.write(90 * "-" + "\n\n")
@@ -192,7 +185,7 @@ if __name__ == "__main__":
         asec_charges = player.populate_asec_vdw(cycle)
 
         ## After ASEC is built, compress files bigger than 1MB
-        for proc in range(1, player.player.nprocs + 1):
+        for proc in range(1, player.nprocs + 1):
             path = "step{:02d}".format(cycle) + os.sep + "p{:02d}".format(proc)
             compress_files_1mb(path)
 

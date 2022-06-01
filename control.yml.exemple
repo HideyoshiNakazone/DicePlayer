@@ -11,12 +11,13 @@ dice:
     ncores: 3
     nmol: [1, 50]
     dens: 0.75
-    nstep: [4000, 6000]
+    nstep: [2000, 3000]
     isave: 1000
     ljname: 'phb.ljc'
     outname: 'phb'
-    randominit: 'first'
+    randominit: 'always'
 
 gaussian:
+    qmprog: 'g16'
     level: 'MP2/aug-cc-pVDZ'
-    keywords: 'freq=intmodes'
+    keywords: 'freq'

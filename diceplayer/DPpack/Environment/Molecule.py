@@ -31,7 +31,7 @@ class Molecule:
         energy (NDArray[Any, Any]): The energy of the represented molecule
         gradient (NDArray[Any, Any]): The first derivative of the energy relative to the position
         hessian (NDArray[Any, Any]): The second derivative of the energy relative to the position
-        totalMass (int): The total mass of the molecule
+        total_mass (int): The total mass of the molecule
         com (NDArray[Any, Any]): The center of mass of the molecule
     """
 
@@ -50,7 +50,10 @@ class Molecule:
         self.gradient: NDArray[Any, Any]
         self.hessian: NDArray[Any, Any]
 
-        self.totalMass: int = 0
+        self.ghost_atoms: List[Atom] = []
+        self.lp_atoms: List[Atom] = []
+        
+        self.total_mass: int = 0
         self.com: NDArray[Any, Any] = None
 
     def add_atom(self, a: Atom) -> None:

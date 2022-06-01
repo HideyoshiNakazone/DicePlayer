@@ -17,21 +17,18 @@ from diceplayer.DPpack.Utils.Validations import NotNull
 
 class Gaussian:
 
-    qmprog = "g09"
     mem = None
-    keywords = None
     chgmult = [0, 1]
     gmiddle = None  # In each case, if a filename is given, its content will be
     gbottom = None  # inserted in the gaussian input
     pop = "chelpg"
-    level = None
 
     def __init__(self) -> None:
         pass
 
-    @NotNull(requiredArgs=["level"])
+    @NotNull(requiredArgs=["qmprog","level"])
     def updateKeywords(self, **data):
-        self.__dict__.update(data)
+        self.__dict__.update(**data)
 
     def run_formchk(self, cycle: int, fh: TextIO):
 

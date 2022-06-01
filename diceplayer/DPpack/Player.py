@@ -21,21 +21,31 @@ env = ["OMP_STACKSIZE"]
 
 
 class Player:
+
+    maxcyc = None
+    opt = None
+    nprocs = None
+    qmprog = None
+    lps = None
+    ghosts = None
+    altsteps = None
+
+    combrule = None
+
+    TOL_RMS_FORCE = 3e-4
+    TOL_MAX_FORCE = 4.5e-4
+    TOL_RMS_STEP = 1.2e-3
+    TOL_MAX_SET = 1.8e-3
+    TRUST_RADIUS = None
+
+    continued: bool = False
+
     def __init__(self, infile: TextIO, outfile: TextIO) -> None:
 
         self.infile = infile
         self.outfile = outfile
 
-        self.continued: bool = None
-
         self.system = System()
-
-        self.player = self.Player()
-        self.player_keywords = [
-            a
-            for a in dir(self.player)
-            if not a.startswith("__") and not callable(getattr(self.player, a))
-        ]
 
         self.dice = Dice(infile, outfile)
         self.dice_keywords = [
@@ -51,28 +61,20 @@ class Player:
             if not a.startswith("__") and not callable(getattr(self.gaussian, a))
         ]
 
-        self.TOL_RMS_FORCE = 3e-4
-        self.TOL_MAX_FORCE = 4.5e-4
-        self.TOL_RMS_STEP = 1.2e-3
-        self.TOL_MAX_SET = 1.8e-3
-        self.TRUST_RADIUS = None
-
-        self.combrule = None
-
     @NotNull(
         requiredArgs=["maxcyc", "opt", "nprocs", "qmprog", "lps", "ghosts", "altsteps"]
     )
     def updateKeywords(self, **data):
-        self.__dict__.update(data)
+        self.__dict__.update(**data)
 
     def read_keywords(self) -> None:
 
         with self.infile as f:
             data = yaml.load(f, Loader=yaml.SafeLoader)
 
-        self.updateKeywords(data.get("diceplayer"))
-        self.dice.updateKeywords(data.get("dice"))
-        self.gaussian.updateKeywords(data.get("gaussian"))
+        self.updateKeywords(**data.get("diceplayer"))
+        self.dice.updateKeywords(**data.get("dice"))
+        self.gaussian.updateKeywords(**data.get("gaussian"))
 
     def check_keywords(self) -> None:
 
@@ -108,7 +110,7 @@ class Player:
             )
 
         # Check only if QM program is Gaussian:
-        if self.player.qmprog in ("g03", "g09", "g16"):
+        if self.qmprog in ("g03", "g09", "g16"):
 
             if self.gaussian.level == None:
                 sys.exit(
@@ -126,14 +128,14 @@ class Player:
                     sys.exit("Error: file {} not found".format(self.gaussian.gbottom))
 
             if self.gaussian.pop != "chelpg" and (
-                self.player.ghosts == "yes" or self.player.lps == "yes"
+                self.ghosts == "yes" or self.lps == "yes"
             ):
                 sys.exit(
                     "Error: ghost atoms or lone pairs only available with 'pop = chelpg')"
                 )
 
         # Check only if QM program is Molcas:
-        # if self.player.qmprog == "molcas":
+        # if self.qmprog == "molcas":
 
         # 	if self.molcas.mbottom == None:
         # 		sys.exit("Error: 'mbottom' keyword not specified in file {}".format(self.infile))
@@ -144,7 +146,7 @@ class Player:
         # 	if self.molcas.basis == None:
         # 		sys.exit("Error: 'basis' keyword not specified in file {}".format(self.infile))
 
-        if self.player.altsteps != 0:
+        if self.altsteps != 0:
 
             # Verifica se tem mais de 1 molecula QM
             # (No futuro usar o RMSD fit para poder substituir todas as moleculas QM
@@ -155,9 +157,9 @@ class Player:
                 )
 
             # if not zero, altsteps cannot be less than min_steps
-            self.player.altsteps = max(min_steps, self.player.altsteps)
+            self.altsteps = max(min_steps, self.altsteps)
             # altsteps value is always the nearest multiple of 1000
-            self.player.altsteps = round(self.player.altsteps / 1000) * 1000
+            self.altsteps = round(self.altsteps / 1000) * 1000
 
         for i in range(len(self.dice.nstep)):
             # nstep can never be less than min_steps
@@ -198,16 +200,6 @@ class Player:
             "\n"
         )
 
-        for key in sorted(self.player_keywords):
-            if getattr(self.player, key) != None:
-                if isinstance(getattr(self.player, key), list):
-                    string = " ".join(str(x) for x in getattr(self.player, key))
-                    self.outfile.write("{} = {}\n".format(key, string))
-                else:
-                    self.outfile.write(
-                        "{} = {}\n".format(key, getattr(self.player, key))
-                    )
-
         self.outfile.write("\n")
 
         self.outfile.write(
@@ -227,7 +219,7 @@ class Player:
 
         self.outfile.write("\n")
 
-        if self.player.qmprog in ("g03", "g09", "g16"):
+        if self.qmprog in ("g03", "g09", "g16"):
 
             self.outfile.write(
                 "------------------------------------------------------------------------------------------\n"
@@ -248,7 +240,7 @@ class Player:
 
             self.outfile.write("\n")
 
-        # elif self.player.qmprog == "molcas":
+        # elif self.qmprog == "molcas":
 
         # 	self.outfile.write("------------------------------------------------------------------------------------------\n"
         # 			"                         MOLCAS variables being used in this run:\n"
@@ -492,7 +484,7 @@ class Player:
 
             self.outfile.write("\n")
 
-        if self.player.ghosts == "yes" or self.player.lps == "yes":
+        if self.ghosts == "yes" or self.lps == "yes":
             self.outfile.write(
                 "\n"
                 "------------------------------------------------------------------------------------------\n"
@@ -585,11 +577,11 @@ class Player:
 
         self.dice.configure(
             StepDTO(
-                self.player.initcyc,
-                self.player.nprocs,
-                self.player.altsteps,
-                self.system.nmols,
-                self.system.molecule,
+                initcyc=self.initcyc,
+                nprocs=self.nprocs,
+                altsteps=self.altsteps,
+                nmol=self.system.nmols,
+                molecule=self.system.molecule,
             )
         )
 
@@ -600,17 +592,17 @@ class Player:
     def gaussian_start(self, cycle: int, geomsfh: TextIO):
 
         self.gaussian.configure(
-            self.player.initcyc,
-            self.player.nprocs,
+            self.initcyc,
+            self.nprocs,
             self.dice.ncores,
-            self.player.altsteps,
-            self.player.switchcyc,
-            self.player.opt,
+            self.altsteps,
+            self.switchcyc,
+            self.opt,
             self.system.nmols,
             self.system.molecule,
         )
 
-        position = self.gaussian.start(cycle, self.outfile, self.player.readhessian)
+        position = self.gaussian.start(cycle, self.outfile, self.readhessian)
 
         ## Update the geometry of the reference molecule
         self.system.update_molecule(position, self.outfile)
@@ -637,7 +629,7 @@ class Player:
         else:
             nconfigs = int(self.dice.nstep[-1] / self.dice.isave)
 
-        norm_factor = nconfigs * self.player.nprocs
+        norm_factor = nconfigs * self.nprocs
 
         nsitesref = len(self.system.molecule[0].atom)
         # nsitesref = (
@@ -653,7 +645,7 @@ class Player:
         thickness = []
         picked_mols = []
 
-        for proc in range(1, self.player.nprocs + 1):  # Run over folders
+        for proc in range(1, self.nprocs + 1):  # Run over folders
 
             simdir = "simfiles"
             path = (
@@ -748,7 +740,7 @@ class Player:
                                 asec_charges[-1]["rz"] = atom.rz
                                 asec_charges[-1]["chg"] = atom.chg / norm_factor
 
-                                # if self.player.vdwforces == "yes":
+                                # if self.vdwforces == "yes":
                                 #     vdw_meanfield[-1]["rx"] = atom["rx"]
                                 #     vdw_meanfield[-1]["ry"] = atom["ry"]
                                 #     vdw_meanfield[-1]["rz"] = atom["rz"]
@@ -810,22 +802,3 @@ class Player:
         otherfh.close()
 
         return asec_charges
-
-    class Player:
-        def __init__(self) -> None:
-
-            self.maxcyc = None
-            self.nprocs = 1
-            self.switchcyc = 3
-            self.altsteps = 20000
-            self.maxstep = 0.3
-            self.opt = "yes"
-            self.freq = "no"
-            self.readhessian = "no"
-            self.lps = "no"
-            self.ghosts = "no"
-            self.vdwforces = "no"
-            self.tol_factor = 1.2
-            self.qmprog = "g16"
-
-            self.initcyc = 1

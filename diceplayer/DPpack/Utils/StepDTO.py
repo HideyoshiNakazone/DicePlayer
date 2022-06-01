@@ -7,11 +7,12 @@ from diceplayer.DPpack.Environment.Molecule import Molecule
 @dataclass
 class StepDTO:
 
-    initcyc: int
-    nprocs: int
-    ncores: int
-    altsteps: int
-    switchcyc: int
-    opt: str
-    nmol: List[int]
-    molecule: List[Molecule]
+    cycle: int = None
+    initcyc: int = None
+    nprocs: int = None
+    ncores: int = None
+    altsteps: int = None
+    switchcyc: int = None
+    opt: str = None
+    nmol: List[int] = None
+    molecule: List[Molecule] = None

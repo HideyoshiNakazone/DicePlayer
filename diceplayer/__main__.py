@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 import argparse
 import os
 import pickle
@@ -20,24 +18,24 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="Diceplayer")
     parser.add_argument(
-        "--continue", dest="opt_continue", default=False, action="store_true"
+        "-c", "--continue", dest="opt_continue", default=False, action="store_true"
     )
     parser.add_argument(
-        "--version", action="version", version="diceplayer-" + __VERSION
+        "-v", "--version", action="version", version="diceplayer-" + __VERSION
     )
     parser.add_argument(
-        "-i",
+        "-i", "--input",
         dest="infile",
         default="control.yml",
         metavar="INFILE",
-        help="input file of diceplayer [default = control.in]",
+        help="input file of diceplayer [default = control.in]"
     )
     parser.add_argument(
-        "-o",
+        "-o", "--output",
         dest="outfile",
         default="run.log",
         metavar="OUTFILE",
-        help="output file of diceplayer [default = run.log]",
+        help="output file of diceplayer [default = run.log]"
     )
     ## Study the option of a parameter for continuing the last process via data from control.in and run.log files
 

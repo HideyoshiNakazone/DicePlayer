@@ -612,17 +612,13 @@ class Player:
 
         self.gaussian.reset()
 
-    # I still have to talk with Herbet about this function
     def populate_asec_vdw(self, cycle):
 
         # Both asec_charges and vdw_meanfield will utilize the Molecule() class and Atoms() with some None elements
 
         asec_charges = Molecule(
             "ASEC_CHARGES"
-        )  # (lbl=None, na=None, rx, ry, rz, chg, eps=None, sig=None)
-        # vdw_meanfield = (
-        #     Molecule()
-        # )  # (lbl=None, na=None, rx, ry, rz, chg=None, eps, sig)
+        )
 
         if self.dice.nstep[-1] % self.dice.isave == 0:
             nconfigs = round(self.dice.nstep[-1] / self.dice.isave)
@@ -632,11 +628,6 @@ class Player:
         norm_factor = nconfigs * self.nprocs
 
         nsitesref = len(self.system.molecule[0].atom)
-        # nsitesref = (
-        #     len(self.system.molecule[0].atom)
-        #     + len(self.system.molecule[0].ghost_atoms)
-        #     + len(self.system.molecule[0].lp_atoms)
-        # )
 
         nsites_total = self.dice.nmol[0] * nsitesref
         for i in range(1, len(self.dice.nmol)):
@@ -647,9 +638,8 @@ class Player:
 
         for proc in range(1, self.nprocs + 1):  # Run over folders
 
-            simdir = "simfiles"
             path = (
-                simdir
+                "simfiles"
                 + os.sep
                 + "step{:02d}".format(cycle)
                 + os.sep
@@ -682,19 +672,18 @@ class Player:
                     )
                 )
 
-                # Skip the first (reference) molecule
                 xyzfile = xyzfile[nsitesref:]
                 mol_count = 0
-                for type in range(len(self.dice.nmol)):  # Run over types of molecules
+                for type in range(len(self.dice.nmol)):
 
                     if type == 0:
                         nmols = self.dice.nmol[0] - 1
                     else:
                         nmols = self.dice.nmol[type]
 
-                    for mol in range(nmols):  # Run over molecules of each type
+                    for mol in range(nmols):
 
-                        new_molecule = Molecule(self.system.molecule[type].molname)
+                        new_molecule = Molecule(self.system.molecule[type])
                         # Run over sites of each molecule
                         for site in range(len(self.system.molecule[types].atom)):
 

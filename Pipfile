@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = "*"
+pyinstaller = "*"
+pyinstall = "*"
+argparse = "*"
+typing = "*"
+nptyping = "*"
+"subprocess.run" = "*"
+multiprocess = "*"
+setproctitle = "*"
+textwrap3 = "*"
+pathlib = "*"
+gzip-utils = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"

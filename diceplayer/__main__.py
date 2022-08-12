@@ -9,7 +9,8 @@ import setproctitle
 from diceplayer.DPpack.Player import Player
 from diceplayer.DPpack.Utils.Misc import *
 
-__VERSION = "dev"
+__VERSION = "v0.0.1"
+os.nice(+19)
 setproctitle.setproctitle("diceplayer-{}".format(__VERSION))
 
 if __name__ == "__main__":
@@ -178,13 +179,9 @@ if __name__ == "__main__":
         ###  End of parallel simulations block
         ###
 
-        # Make ASEC
-        player.outfile.write("\nBuilding the ASEC and vdW meanfields... ")
-        asec_charges = player.populate_asec_vdw(cycle)
-
         ## After ASEC is built, compress files bigger than 1MB
         for proc in range(1, player.nprocs + 1):
-            path = "step{:02d}".format(cycle) + os.sep + "p{:02d}".format(proc)
+            path = "simfiles"+os.sep+"step{:02d}".format(cycle) + os.sep + "p{:02d}".format(proc)
             compress_files_1mb(path)
 
         ###

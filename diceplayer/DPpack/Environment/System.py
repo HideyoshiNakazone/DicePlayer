@@ -222,3 +222,23 @@ class System:
                     symbol, atom.rx, atom.ry, atom.rz
                 )
             )
+
+    def printChargesAndDipole(self, cycle: int, fh: TextIO) -> None:
+        """
+        Print the charges and dipole of the molecule in the Output file
+
+        Args:
+            cycle (int): Number of the cycle
+            fh (TextIO): Output file
+        """
+
+        fh.write("Cycle # {}\n".format(cycle))
+        fh.write("Number of site: {}\n".format(len(self.molecule[0].atom)))
+
+        chargesAndDipole = self.molecule[0].charges_and_dipole()
+
+        fh.write(
+            "{:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(
+                chargesAndDipole[0], chargesAndDipole[1], chargesAndDipole[2], chargesAndDipole[3], chargesAndDipole[4]
+            )
+        )

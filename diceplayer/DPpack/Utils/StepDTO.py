@@ -16,3 +16,6 @@ class StepDTO:
     opt: str = None
     nmol: List[int] = None
     molecule: List[Molecule] = None
+
+    charges: List[float] = None
+    position: List[float] = None

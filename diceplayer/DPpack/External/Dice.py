@@ -158,7 +158,7 @@ class Dice:
         fh.write("ljname = {}\n".format(self.ljname))
         fh.write("outname = {}\n".format(self.outname))
 
-        string = " ".join(str(x) for x in self.step.nmol)
+        string = " ".join(str(x) for x in self.nmol)
         fh.write("nmol = {}\n".format(string))
 
         fh.write("dens = {}\n".format(self.dens))
@@ -197,7 +197,7 @@ class Dice:
         fh.write("ljname = {}\n".format(self.ljname))
         fh.write("outname = {}\n".format(self.outname))
 
-        string = " ".join(str(x) for x in self.step.nmol)
+        string = " ".join(str(x) for x in self.nmol)
         fh.write("nmol = {}\n".format(string))
 
         fh.write("dens = {}\n".format(self.dens))
@@ -229,7 +229,7 @@ class Dice:
         fh.write("ljname = {}\n".format(self.ljname))
         fh.write("outname = {}\n".format(self.outname))
 
-        string = " ".join(str(x) for x in self.step.nmol)
+        string = " ".join(str(x) for x in self.nmol)
         fh.write("nmol = {}\n".format(string))
 
         fh.write("press = {}\n".format(self.press))
@@ -268,7 +268,7 @@ class Dice:
         fh.write("ljname = {}\n".format(self.ljname))
         fh.write("outname = {}\n".format(self.outname))
 
-        string = " ".join(str(x) for x in self.step.nmol)
+        string = " ".join(str(x) for x in self.nmol)
         fh.write("nmol = {}\n".format(string))
 
         fh.write("press = {}\n".format(self.press))

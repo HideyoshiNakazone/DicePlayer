@@ -5,19 +5,13 @@ name = "pypi"
 
 [packages]
 numpy = "*"
-pyinstaller = "*"
-pyinstall = "*"
+pickle5 = "*"
 argparse = "*"
-typing = "*"
-nptyping = "*"
-"subprocess.run" = "*"
-multiprocess = "*"
+pyinstaller = "*"
 setproctitle = "*"
-textwrap3 = "*"
-pathlib = "*"
-gzip-utils = "*"
+pyyaml = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.8"
+python_version = "3.10"

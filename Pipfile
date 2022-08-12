@@ -8,6 +8,8 @@ numpy = "*"
 pickle5 = "*"
 argparse = "*"
 pyinstaller = "*"
+setproctitle = "*"
+pyyaml = "*"
 
 [dev-packages]
 

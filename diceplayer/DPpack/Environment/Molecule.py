@@ -234,6 +234,11 @@ class Molecule:
 
         return position
 
+    def updateCharges(self, charges: List[float]) -> None:
+        
+        for i, atom in enumerate(self.atom):
+            atom.chg = charges[i]
+
     def update_hessian(
         self,
         step: np.ndarray,

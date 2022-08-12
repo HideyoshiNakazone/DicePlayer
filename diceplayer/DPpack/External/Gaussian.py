@@ -1,9 +1,11 @@
+from ast import keyword
+from asyncore import read
 import os
 import shutil
 import subprocess
 import sys
 import textwrap
-from typing import TextIO
+from typing import Dict, List, TextIO
 
 import numpy as np
 
@@ -23,12 +25,20 @@ class Gaussian:
     gbottom = None  # inserted in the gaussian input
     pop = "chelpg"
 
+    keywords = ""
+
     def __init__(self) -> None:
         pass
 
     @NotNull(requiredArgs=["qmprog","level"])
     def updateKeywords(self, **data):
         self.__dict__.update(**data)
+        self.checkKeywords()
+
+    def checkKeywords(self):
+
+        if self.pop not in ["chelpg", "mk", "nbo"]:
+            self.pop = "chelpg"
 
     def run_formchk(self, cycle: int, fh: TextIO):
 
@@ -46,6 +56,29 @@ class Gaussian:
         fh.write("Done\n")
 
         os.chdir(work_dir)
+
+    def readChargesFromFchk(self, file: str, fh: TextIO) -> List[float]:
+
+        try:
+            with open(file) as fchk:
+                fchkfile = fchk.readlines()
+        except:
+            sys.exit("Error: cannot open file {}".format(file))
+
+        if self.pop in ["chelpg", "mk"]:
+            CHARGE_FLAG = "ESP Charges"
+        else:
+            CHARGE_FLAG = "ESP Charges"
+
+        start = fchkfile.pop(0).strip()
+        while start.find(CHARGE_FLAG) != 0:  # expression in begining of line
+            start = fchkfile.pop(0).strip()
+
+        charges: List[float] = []
+        while len(charges) < len(self.step.molecule[0].atom):
+            charges.extend([float(x) for x in fchkfile.pop(0).split()])
+
+        return charges
 
     def read_forces_fchk(self, file: str, fh: TextIO) -> np.ndarray:
 
@@ -202,7 +235,7 @@ class Gaussian:
         fh.close()
 
     # Change the name to make_gaussian_input
-    def make_gaussian_input(self, cycle: int, asec_charges=None) -> None:
+    def make_gaussian_input(self, cycle: int, asec_charges: List[Dict]) -> None:
 
         simdir = "simfiles"
         stepdir = "step{:02d}".format(cycle)
@@ -222,7 +255,7 @@ class Gaussian:
 
         kword_line = "#P " + str(self.level)
 
-        if self.keywords != None:
+        if self.keywords != "":
             kword_line += " " + self.keywords
 
         if self.step.opt == "yes":
@@ -250,58 +283,18 @@ class Gaussian:
                 )
             )
 
-        # ## If also performing charge fit in the same calculation
-        # if cycle >= self.player.switchcyc:
-        # 	for ghost in ghost_atoms:
-        # 		fh.write("Bq    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(
-        # 											ghost['rx'], ghost['ry'], ghost['rz']))
-
-        # 	for lp in lp_atoms:
-        # 		fh.write("Bq    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(
-        # 														lp['rx'], lp['ry'], lp['rz']))
-
-        # fh.write("\n")
-
-        # If gmiddle file was informed, write its contents in asec.gjf
-        # if self.gmiddle != None:
-        # 	if not os.path.isfile(self.gmiddle):
-        # 		sys.exit("Error: cannot find file {} in main directory".format(
-        # 																self.gmiddle))
-        # 	try:
-        # 		with open(self.gmiddle) as gmiddlefile:
-        # 			gmiddle = gmiddlefile.readlines()
-        # 	except:
-        # 		sys.exit("Error: cannot open file {}".format(self.gmiddle))
-
-        # 	for line in gmiddle:
-        # 		fh.write(line)
-
-        # 	fh.write("\n")
-
-        # ## Write the ASEC:
-        # for charge in asec_charges:
-        # 	fh.write("{:>10.5f}   {:>10.5f}   {:>10.5f}     {:>11.8f}\n".format(
-        # 							charge['rx'], charge['ry'], charge['rz'], charge['chg']))
-
         fh.write("\n")
 
-        # ## If gbottom file was informed, write its contents in asec.gjf
-        # if self.gbottom != None:
-        # 	if not os.path.isfile(self.gbottom):
-        # 		sys.exit("Error: cannot find file {} in main directory".format(
-        # 																self.gbottom))
-        # 	try:
-        # 		with open(self.gbottom) as gbottomfile:
-        # 			gbottom = gbottomfile.readlines()
-        # 	except:
-        # 		sys.exit("Error: cannot open file {}".format(self.gbottom))
+        for charge in asec_charges:
+            fh.write(
+                "{:>10.5f}   {:>10.5f}   {:>10.5f}     {:>11.8f}\n".format(
+                    charge['rx'], charge['ry'], charge['rz'], charge['chg']
+                )
+            )
 
-        # 	for line in gbottom:
-        # 		fh.write(line)
-
-        # fh.write("\n")
-
-        # fh.close()
+        fh.write("\n")
+        
+        fh.close()
 
     def read_charges(self, file: str, fh: TextIO) -> None:
 
@@ -342,6 +335,90 @@ class Gaussian:
         # 		fh.write(" {:<2s}      {:>10.6f}\n".format(atom_str, charge))
 
         fh.write("------------------------------------\n")
+
+    def executeOptimizationRoutine(self, cycle: int, outfile: TextIO, readhessian: str):
+
+        try:
+            gradient
+            old_gradient = gradient
+        except:
+            pass
+
+        gradient = self.read_forces_fchk(file, outfile)
+
+        # If 1st step, read the hessian
+        if cycle == 1:
+
+            if readhessian == "yes":
+
+                file = "grad_hessian.dat"
+                outfile.write(
+                    "\nReading the hessian matrix from file {}\n".format(file)
+                )
+                hessian = self.read_hessian_log(file)
+
+            else:
+
+                file = (
+                    "simfiles"
+                    + os.sep
+                    + "step01"
+                    + os.sep
+                    + "qm"
+                    + os.sep
+                    + "asec.fchk"
+                )
+                outfile.write(
+                    "\nReading the hessian matrix from file {}\n".format(file)
+                )
+                hessian = self.read_hessian_fchk(file)
+
+        # From 2nd step on, update the hessian
+        else:
+            outfile.write("\nUpdating the hessian matrix using the BFGS method... ")
+            hessian = self.step.molecule[0].update_hessian(
+                step, gradient, old_gradient, hessian
+            )
+            outfile.write("Done\n")
+
+        # Save gradient and hessian
+        self.print_grad_hessian(cycle, gradient, hessian)
+
+        # Calculate the step and update the position
+        step = self.calculate_step(cycle, gradient, hessian)
+
+        position += step
+
+        ## If needed, calculate the charges
+        if cycle < self.step.switchcyc:
+
+            # internal.gaussian.make_charge_input(cycle, asec_charges)
+            self.run_gaussian(cycle, "charge", outfile)
+
+            file = (
+                "simfiles"
+                + os.sep
+                + "step{:02d}".format(cycle)
+                + os.sep
+                + "qm"
+                + os.sep
+                + "asec2.log"
+            )
+            self.read_charges(file, outfile)
+        else:
+            file = (
+                "simfiles"
+                + os.sep
+                + "step{:02d}".format(cycle)
+                + os.sep
+                + "qm"
+                + os.sep
+                + "asec.log"
+            )
+            self.read_charges(file, outfile)
+
+        self.outfile.write("\nNew values for molecule type 1:\n\n")
+        self.step.molecule[0].print_mol_info(outfile)
 
     def run_gaussian(self, cycle: int, type: str, fh: TextIO) -> None:
 
@@ -459,41 +536,39 @@ class Gaussian:
 
         self.step = step
 
-    def start(self, cycle: int, outfile: TextIO, readhessian: str) -> np.ndarray:
+    def start(self, cycle: int, outfile: TextIO, asec_charges: List[Dict], readhessian: str) -> StepDTO:
 
         make_qm_dir(cycle)
 
-        if self.qmprog in ("g03", "g09", "g16"):
+        if cycle > 1:
 
-            if cycle > 1:
-
-                src = (
-                    "simfiles"
-                    + os.sep
-                    + "step{:02d}".format(cycle - 1)
-                    + os.sep
-                    + "qm"
-                    + os.sep
-                    + "asec.chk"
-                )
-                dst = (
-                    "simfiles"
-                    + os.sep
-                    + "step{:02d}".format(cycle)
-                    + os.sep
-                    + "qm"
-                    + os.sep
-                    + "asec.chk"
-                )
-                shutil.copyfile(src, dst)
-
-            self.make_gaussian_input(cycle)
-            self.run_gaussian(cycle, "force", outfile)
-            self.run_formchk(cycle, outfile)
-
-            ## Read the gradient
-            file = (
+            src = (
                 "simfiles"
+                + os.sep
+                + "step{:02d}".format(cycle - 1)
+                + os.sep
+                + "qm"
+                + os.sep
+                + "asec.chk"
+            )
+            dst = (
+                "simfiles"
+                + os.sep
+                + "step{:02d}".format(cycle)
+                + os.sep
+                + "qm"
+                + os.sep
+                + "asec.chk"
+            )
+            shutil.copyfile(src, dst)
+
+        self.make_gaussian_input(cycle, asec_charges)
+        self.run_gaussian(cycle, "force", outfile)
+        self.run_formchk(cycle, outfile)
+
+        ## Read the gradient
+        file = (
+            "simfiles"
                 + os.sep
                 + "step{:02d}".format(cycle)
                 + os.sep
@@ -502,152 +577,18 @@ class Gaussian:
                 + "asec.fchk"
             )
 
-            try:
-                gradient
-                old_gradient = gradient
-            except:
-                pass
+        if self.step.opt:
 
-            gradient = self.read_forces_fchk(file, outfile)
+            pass
+            # position = self.executeOptimizationRoutine(cycle, outfile, readhessian)
+            # self.step.position = position
 
-            # If 1st step, read the hessian
-            if cycle == 1:
+        else:
 
-                if readhessian == "yes":
+            charges = self.readChargesFromFchk(file, outfile)
+            self.step.charges = charges
 
-                    file = "grad_hessian.dat"
-                    outfile.write(
-                        "\nReading the hessian matrix from file {}\n".format(file)
-                    )
-                    hessian = self.read_hessian_log(file)
-
-                else:
-
-                    file = (
-                        "simfiles"
-                        + os.sep
-                        + "step01"
-                        + os.sep
-                        + "qm"
-                        + os.sep
-                        + "asec.fchk"
-                    )
-                    outfile.write(
-                        "\nReading the hessian matrix from file {}\n".format(file)
-                    )
-                    hessian = self.read_hessian_fchk(file)
-
-            # From 2nd step on, update the hessian
-            else:
-                outfile.write("\nUpdating the hessian matrix using the BFGS method... ")
-                hessian = self.step.molecule[0].update_hessian(
-                    step, gradient, old_gradient, hessian
-                )
-                outfile.write("Done\n")
-
-            # Save gradient and hessian
-            self.print_grad_hessian(cycle, gradient, hessian)
-
-            # Calculate the step and update the position
-            step = self.calculate_step(cycle, gradient, hessian)
-
-            position += step
-
-            ## If needed, calculate the charges
-            if cycle < self.step.switchcyc:
-
-                # internal.gaussian.make_charge_input(cycle, asec_charges)
-                self.run_gaussian(cycle, "charge", outfile)
-
-                file = (
-                    "simfiles"
-                    + os.sep
-                    + "step{:02d}".format(cycle)
-                    + os.sep
-                    + "qm"
-                    + os.sep
-                    + "asec2.log"
-                )
-                self.read_charges(file, outfile)
-            else:
-                file = (
-                    "simfiles"
-                    + os.sep
-                    + "step{:02d}".format(cycle)
-                    + os.sep
-                    + "qm"
-                    + os.sep
-                    + "asec.log"
-                )
-                self.read_charges(file, outfile)
-
-            ## Print new info for molecule[0]
-            self.outfile.write("\nNew values for molecule type 1:\n\n")
-            self.step.molecule[0].print_mol_info(outfile)
-
-            ##
-            ##  Molcas block
-            ##
-            # if player['qmprog'] == "molcas":
-
-        # elif player['opt'] == "ts":
-
-        ##
-        ##  Gaussian block
-        ##
-        # if player['qmprog'] in ("g03", "g09", "g16"):
-
-        ##
-        ##  Molcas block
-        ##
-        # if player['qmprog'] == "molcas":
-
-        # else:  ## Only relax the charge distribution
-
-        #     if internal.player.qmprog in ("g03", "g09", "g16"):
-
-        #         if cycle > 1:
-        #             src = (
-        #                 "simfiles"
-        #                 + os.sep
-        #                 + "step{:02d}".format(cycle - 1)
-        #                 + os.sep
-        #                 + "qm"
-        #                 + os.sep
-        #                 + "asec.chk"
-        #             )
-        #             dst = (
-        #                 "simfiles"
-        #                 + os.sep
-        #                 + "step{:02d}".format(cycle)
-        #                 + os.sep
-        #                 + "qm"
-        #                 + os.sep
-        #                 + "asec.chk"
-        #             )
-        #             shutil.copyfile(src, dst)
-
-        #         # internal.gaussian.make_charge_input(cycle, asec_charges)
-        #         internal.gaussian.run_gaussian(cycle, "charge", internal.outfile)
-
-        #         file = (
-        #             "simfiles"
-        #             + os.sep
-        #             + "step{:02d}".format(cycle)
-        #             + os.sep
-        #             + "qm"
-        #             + os.sep
-        #             + "asec2.log"
-        #         )
-        #         internal.read_charges(file)
-
-        #         ## Print new info for molecule[0]
-        #         internal.outfile.write("\nNew values for molecule type 1:\n\n")
-        #         internal.system.molecule[0].print_mol_info()
-
-        # 			#if player['qmprog'] == "molcas"
-
-        return position
+        return self.step
 
     def reset(self):
 

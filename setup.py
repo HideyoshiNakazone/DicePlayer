@@ -22,7 +22,7 @@ parser.add_argument(
     dest="clean",
     default=False,
     action="store_true",
-    help="Cleans the Development Environment",
+    help="Cleans the Development Environment"
 )
 
 args = parser.parse_args()
@@ -37,9 +37,18 @@ def __build():
 
 def __clean():
 
-    shutil.rmtree("build")
-    shutil.rmtree("dist")
-    os.remove("diceplayer.spec")
+    try:
+
+        shutil.rmtree("build")
+        shutil.rmtree("dist")
+        os.remove("diceplayer.spec")
+
+    except:
+        
+        print("Workspace clean.")
+
+
+    
 
 
 if __name__ == "__main__":

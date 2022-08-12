@@ -2,8 +2,7 @@ import os
 import shutil
 import sys
 import textwrap
-import types
-from typing import TextIO
+from typing import Dict, List, TextIO
 
 import yaml
 
@@ -29,8 +28,14 @@ class Player:
     lps = None
     ghosts = None
     altsteps = None
-
     combrule = None
+
+    switchcyc = 3
+    maxstep = 0.3
+    freq = "no"
+    readhessian = "no"
+    vdwforces = "no"
+    tol_factor = 1.2
 
     TOL_RMS_FORCE = 3e-4
     TOL_MAX_FORCE = 4.5e-4
@@ -62,7 +67,7 @@ class Player:
         ]
 
     @NotNull(
-        requiredArgs=["maxcyc", "opt", "nprocs", "qmprog", "lps", "ghosts", "altsteps"]
+        requiredArgs=["maxcyc", "opt", "nprocs", "qmprog", "altsteps"]
     )
     def updateKeywords(self, **data):
         self.__dict__.update(**data)
@@ -590,35 +595,51 @@ class Player:
         self.dice.reset()
 
     def gaussian_start(self, cycle: int, geomsfh: TextIO):
-
+        
         self.gaussian.configure(
-            self.initcyc,
-            self.nprocs,
-            self.dice.ncores,
-            self.altsteps,
-            self.switchcyc,
-            self.opt,
-            self.system.nmols,
-            self.system.molecule,
+            StepDTO(
+                initcyc=self.initcyc,
+                nprocs=self.nprocs,
+                ncores=self.dice.ncores,
+                altsteps=self.altsteps,
+                switchcyc=self.switchcyc,
+                opt=self.opt,
+                nmol=self.system.nmols,
+                molecule=self.system.molecule
+            )
         )
 
-        position = self.gaussian.start(cycle, self.outfile, self.readhessian)
+        # Make ASEC
+        self.outfile.write("\nBuilding the ASEC and vdW meanfields... ")
+        asec_charges = self.populate_asec_vdw(cycle)
 
-        ## Update the geometry of the reference molecule
-        self.system.update_molecule(position, self.outfile)
+        step = self.gaussian.start(cycle, self.outfile, asec_charges, self.readhessian)
 
-        ## Print new geometry in geoms.xyz
-        self.system.print_geom(cycle, geomsfh)
+        if self.opt:
+
+            position = step.position
+
+            ## Update the geometry of the reference molecule
+            self.system.update_molecule(position, self.outfile)
+
+            ## Print new geometry in geoms.xyz
+            self.system.print_geom(cycle, geomsfh)
+
+        else:
+
+            charges = step.charges
+
+            self.system.molecule[0].updateCharges(charges)
+
+            self.system.printChargesAndDipole(cycle, self.outfile)
 
         self.gaussian.reset()
 
-    def populate_asec_vdw(self, cycle):
+    def populate_asec_vdw(self, cycle) -> List[Dict]:
 
         # Both asec_charges and vdw_meanfield will utilize the Molecule() class and Atoms() with some None elements
 
-        asec_charges = Molecule(
-            "ASEC_CHARGES"
-        )
+        asec_charges = []
 
         if self.dice.nstep[-1] % self.dice.isave == 0:
             nconfigs = round(self.dice.nstep[-1] / self.dice.isave)
@@ -683,18 +704,14 @@ class Player:
 
                     for mol in range(nmols):
 
-                        new_molecule = Molecule(self.system.molecule[type])
-                        # Run over sites of each molecule
-                        for site in range(len(self.system.molecule[types].atom)):
+                        new_molecule = Molecule("ASEC TMP MOLECULE")
+                        for site in range(len(self.system.molecule[type].atom)):
 
-                            # new_molecule.append({})
                             line = xyzfile.pop(0).split()
 
                             if (
                                 line[0].title()
-                                != atomsymb[
-                                    self.system.molecule[type].atom[site].na.strip()
-                                ]
+                                != atomsymb[self.system.molecule[type].atom[site].na].strip()
                             ):
                                 sys.exit("Error reading file {}".format(file))
 
@@ -702,15 +719,9 @@ class Player:
                                 Atom(
                                     self.system.molecule[type].atom[site].lbl,
                                     self.system.molecule[type].atom[site].na,
-                                    self.system.molecule[type]
-                                    .atom[site]
-                                    .float(line[1]),
-                                    self.system.molecule[type]
-                                    .atom[site]
-                                    .float(line[2]),
-                                    self.system.molecule[type]
-                                    .atom[site]
-                                    .float(line[3]),
+                                    float(line[1]),
+                                    float(line[2]),
+                                    float(line[3]),
                                     self.system.molecule[type].atom[site].chg,
                                     self.system.molecule[type].atom[site].eps,
                                     self.system.molecule[type].atom[site].sig,
@@ -721,13 +732,7 @@ class Player:
                         if dist < thickness[-1]:
                             mol_count += 1
                             for atom in new_molecule.atom:
-                                asec_charges.append({})
-                                # vdw_meanfield.append({})
-
-                                asec_charges[-1]["rx"] = atom.rx
-                                asec_charges[-1]["ry"] = atom.ry
-                                asec_charges[-1]["rz"] = atom.rz
-                                asec_charges[-1]["chg"] = atom.chg / norm_factor
+                                asec_charges.append({"lbl": atomsymb[atom.na], "rx": atom.rx, "ry": atom.ry, "rz": atom.rz, "chg": atom.chg})
 
                                 # if self.vdwforces == "yes":
                                 #     vdw_meanfield[-1]["rx"] = atom["rx"]
@@ -781,13 +786,16 @@ class Player:
         self.outfile.write(textwrap.fill(string, 86))
         self.outfile.write("\n")
 
-        otherfh = open("ASEC.dat", "w")
+        otherfh = open("ASEC.xyz", "w", 1)
         for charge in asec_charges:
             otherfh.write(
-                "{:>10.5f}   {:>10.5f}   {:>10.5f}     {:>11.8f}\n".format(
-                    charge["rx"], charge["ry"], charge["rz"], charge["chg"]
+                "{}   {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(
+                    charge['lbl'], charge['rx'], charge['ry'], charge['rz']
                 )
             )
         otherfh.close()
+
+        for charge in asec_charges:
+            charge['chg'] /= norm_factor
 
         return asec_charges

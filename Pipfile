@@ -10,8 +10,12 @@ argparse = "*"
 pyinstaller = "*"
 setproctitle = "*"
 pyyaml = "*"
+nptyping = "*"
+intel-openmp = "*"
+typing = "*"
 
 [dev-packages]
+pyinstaller = "*"
 
 [requires]
 python_version = "3.10"

@@ -1,23 +1,15 @@
-from diceplayer.DPpack.Utils.PTable import *
-from diceplayer.DPpack.Utils.Misc import *
-
-from diceplayer.DPpack.Environment.Atom import Atom
-
-from typing import IO, Any, Final, Tuple, List, TextIO
-from nptyping import Float, NDArray, Shape
-
-from numpy import linalg
-import numpy as np
-
-from copy import deepcopy
-import sys, math
-import sys
+import logging
 import math
+from copy import deepcopy
+from typing import List, Any, Tuple, Final, Union
 
+import numpy as np
+from nptyping import NDArray, Shape, Float
+from numpy.linalg import linalg
 
-""" Constants of unit conversion """
-BOHR2ANG: Final[float] = 0.52917721092
-ANG2BOHR: Final[float] = 1 / BOHR2ANG
+from diceplayer.shared.environment.atom import Atom
+from diceplayer.shared.utils.misc import BOHR2ANG
+from diceplayer.shared.utils.ptable import ghost_number
 
 
 class Molecule:
@@ -52,9 +44,9 @@ class Molecule:
 
         self.ghost_atoms: List[Atom] = []
         self.lp_atoms: List[Atom] = []
-        
+
         self.total_mass: int = 0
-        self.com: NDArray[Any, Any] = None
+        self.com: Union[None, NDArray[Any, Any]] = None
 
     def add_atom(self, a: Atom) -> None:
         """
@@ -67,13 +59,9 @@ class Molecule:
         self.atom.append(a)
         self.total_mass += a.mass
 
-        if a.na == ghost_number:
-
-            self.ghost_atoms.append(self.atom.index(a))
-
         self.center_of_mass()
 
-    def center_of_mass(self) -> None:
+    def center_of_mass(self) -> NDArray[Any, Any]:
         """
         Calculates the center of mass of the molecule
         """
@@ -81,10 +69,11 @@ class Molecule:
         self.com = np.zeros(3)
 
         for atom in self.atom:
-
             self.com += atom.mass * np.array([atom.rx, atom.ry, atom.rz])
 
         self.com = self.com / self.total_mass
+
+        return self.com
 
     def center_of_mass_to_origin(self) -> None:
         """
@@ -94,7 +83,6 @@ class Molecule:
         self.center_of_mass()
 
         for atom in self.atom:
-
             atom.rx -= self.com[0]
             atom.ry -= self.com[1]
             atom.rz -= self.com[2]
@@ -121,7 +109,7 @@ class Molecule:
 
         return [charge, dipole[0], dipole[1], dipole[2], total_dipole]
 
-    def distances_between_atoms(self) -> NDArray[Shape["Any,Any"],Float]:
+    def distances_between_atoms(self) -> NDArray[Shape["Any,Any"], Float]:
         """
         Calculates distances between the atoms of the molecule
 
@@ -138,7 +126,7 @@ class Molecule:
                         dx = atom1.rx - atom2.rx
                         dy = atom1.ry - atom2.ry
                         dz = atom1.rz - atom2.rz
-                        distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
+                        distances.append(math.sqrt(dx ** 2 + dy ** 2 + dz ** 2))
 
         return np.array(distances).reshape(dim, dim)
 
@@ -154,14 +142,13 @@ class Molecule:
         Ixx = Ixy = Ixz = Iyy = Iyz = Izz = 0.0
 
         for atom in self.atom:
-
             dx = atom.rx - self.com[0]
             dy = atom.ry - self.com[1]
             dz = atom.rz - self.com[2]
 
-            Ixx += atom.mass * (dy**2 + dz**2)
-            Iyy += atom.mass * (dz**2 + dx**2)
-            Izz += atom.mass * (dx**2 + dy**2)
+            Ixx += atom.mass * (dy ** 2 + dz ** 2)
+            Iyy += atom.mass * (dz ** 2 + dx ** 2)
+            Izz += atom.mass * (dx ** 2 + dy ** 2)
 
             Ixy += atom.mass * dx * dy * -1
             Ixz += atom.mass * dx * dz * -1
@@ -215,7 +202,7 @@ class Molecule:
         try:
             evals, evecs = linalg.eigh(self.inertia_tensor())
         except:
-            sys.exit("Error: diagonalization of inertia tensor did not converge")
+            raise RuntimeError("Error: diagonalization of inertia tensor did not converge")
 
         return evals, evecs
 
@@ -235,16 +222,16 @@ class Molecule:
         return position
 
     def updateCharges(self, charges: List[float]) -> None:
-        
+
         for i, atom in enumerate(self.atom):
             atom.chg = charges[i]
 
     def update_hessian(
-        self,
-        step: np.ndarray,
-        cur_gradient: np.ndarray,
-        old_gradient: np.ndarray,
-        hessian: np.ndarray,
+            self,
+            step: np.ndarray,
+            cur_gradient: np.ndarray,
+            old_gradient: np.ndarray,
+            hessian: np.ndarray,
     ) -> np.ndarray:
         """
         Updates the Hessian of the molecule based on the current hessian, the current gradient and the previous gradient
@@ -305,21 +292,18 @@ class Molecule:
         evals, evecs = self.principal_axes()
 
         if round(linalg.det(evecs)) == -1:
-
             evecs[0, 2] *= -1
             evecs[1, 2] *= -1
             evecs[2, 2] *= -1
 
         if round(linalg.det(evecs)) != 1:
-
-            sys.exit(
+            raise RuntimeError(
                 "Error: could not make a rotation matrix while adopting the standard orientation"
             )
 
         rot_matrix = evecs.T
 
         for atom in self.atom:
-
             position = np.array([atom.rx, atom.ry, atom.rz])
             new_position = np.matmul(rot_matrix, position.T).T
 
@@ -332,7 +316,7 @@ class Molecule:
         Creates a new Molecule object where its' atoms has been translated by a vector
 
         Args:
-            vector (np.ndarray): translation vector 
+            vector (np.ndarray): translation vector
 
         Returns:
             Molecule: new Molecule object translated by a vector
@@ -341,22 +325,18 @@ class Molecule:
         new_molecule = deepcopy(self)
 
         for atom in new_molecule.atom:
-
             atom.rx += vector[0]
             atom.ry += vector[1]
             atom.rz += vector[2]
 
         return new_molecule
 
-    def print_mol_info(self, fh: TextIO) -> None:
+    def print_mol_info(self) -> None:
         """
         Prints the Molecule information into a Output File
-
-        Args:
-            fh (TextIO): Output File
         """
 
-        fh.write(
+        logging.info(
             "    Center of mass = ( {:>10.4f} , {:>10.4f} , {:>10.4f} )\n".format(
                 self.com[0], self.com[1], self.com[2]
             )
@@ -364,45 +344,45 @@ class Molecule:
         inertia = self.inertia_tensor()
         evals, evecs = self.principal_axes()
 
-        fh.write(
+        logging.info(
             "    Moments of inertia =  {:>9E}  {:>9E}  {:>9E}\n".format(
                 evals[0], evals[1], evals[2]
             )
         )
 
-        fh.write(
+        logging.info(
             "    Major principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
                 evecs[0, 0], evecs[1, 0], evecs[2, 0]
             )
         )
-        fh.write(
+        logging.info(
             "    Inter principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
                 evecs[0, 1], evecs[1, 1], evecs[2, 1]
             )
         )
-        fh.write(
+        logging.info(
             "    Minor principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
                 evecs[0, 2], evecs[1, 2], evecs[2, 2]
             )
         )
 
         sizes = self.sizes_of_molecule()
-        fh.write(
+        logging.info(
             "    Characteristic lengths = ( {:>6.2f} , {:>6.2f} , {:>6.2f} )\n".format(
                 sizes[0], sizes[1], sizes[2]
             )
         )
-        fh.write("    Total mass = {:>8.2f} au\n".format(self.total_mass))
+        logging.info("    Total mass = {:>8.2f} au\n".format(self.total_mass))
 
         chg_dip = self.charges_and_dipole()
-        fh.write("    Total charge = {:>8.4f} e\n".format(chg_dip[0]))
-        fh.write(
+        logging.info("    Total charge = {:>8.4f} e\n".format(chg_dip[0]))
+        logging.info(
             "    Dipole moment = ( {:>9.4f} , {:>9.4f} , {:>9.4f} )     Total = {:>9.4f} Debye\n\n".format(
                 chg_dip[1], chg_dip[2], chg_dip[3], chg_dip[4]
             )
         )
 
-    def minimum_distance(self, molec: "Molecule") -> float:
+    def minimum_distance(self, molec: 'Molecule') -> float:
         """
         Return the minimum distance between two molecules
 
@@ -421,6 +401,6 @@ class Molecule:
                         dx = atom1.rx - atom2.rx
                         dy = atom1.ry - atom2.ry
                         dz = atom1.rz - atom2.rz
-                        distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
+                        distances.append(math.sqrt(dx ** 2 + dy ** 2 + dz ** 2))
 
         return min(distances)

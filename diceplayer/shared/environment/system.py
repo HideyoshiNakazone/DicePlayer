@@ -1,21 +1,13 @@
-from diceplayer.DPpack.Utils.PTable import *
-from diceplayer.DPpack.Utils.Misc import *
-
-from diceplayer.DPpack.Environment.Molecule import ANG2BOHR, BOHR2ANG, Molecule
-from diceplayer.DPpack.Environment.Atom import Atom
-
-from typing import IO, Final, Tuple, List, TextIO
-
-from numpy import linalg
-import numpy as np
-
-from copy import deepcopy
-import sys, math
-import sys
 import math
+from copy import deepcopy
+from typing import List, Tuple, TextIO
 
-BOHR2ANG: Final[float] = 0.52917721092
-ANG2BOHR: Final[float] = 1 / BOHR2ANG
+import numpy as np
+from numpy import linalg
+
+from diceplayer.shared.environment.molecule import Molecule
+from diceplayer.shared.utils.misc import BOHR2ANG
+from diceplayer.shared.utils.ptable import atomsymb
 
 
 class System:
@@ -46,7 +38,7 @@ class System:
         self.molecule.append(m)
         self.nmols.append(nmols)
 
-    def center_of_mass_distance(self, a: Molecule, b: Molecule) -> float:
+    def center_of_mass_distance(self, a: int, b: int) -> float:
         """
         Calculates the distance between the center of mass of two molecules
 
@@ -73,7 +65,7 @@ class System:
         reference_mol = self.molecule[r_index]
 
         if len(projecting_mol.atom) != len(reference_mol.atom):
-            sys.exit(
+            raise RuntimeError(
                 "Error in RMSD fit procedure: molecules have different number of atoms"
             )
         dim = len(projecting_mol.atom)
@@ -102,7 +94,7 @@ class System:
         try:
             evals, evecs = linalg.eigh(rr)
         except:
-            sys.exit("Error: diagonalization of RR matrix did not converge")
+            raise RuntimeError("Error: diagonalization of RR matrix did not converge")
 
         a1 = evecs[:, 2].T
         a2 = evecs[:, 1].T
@@ -180,7 +172,7 @@ class System:
             criterium = "com"
 
         if criterium != "com" and criterium != "min":
-            sys.exit("Error in value passed to function nearest_image")
+            raise RuntimeError("Error in value passed to function nearest_image")
 
         min_dist = 1e20
 

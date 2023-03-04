@@ -13,8 +13,8 @@ dice:
     dens: 0.75
     nstep: [2000, 3000]
     isave: 1000
-    ljname: 'phb.ljc'
     outname: 'phb'
+    ljname: 'phb.ljc'
     randominit: 'always'
 
 gaussian:

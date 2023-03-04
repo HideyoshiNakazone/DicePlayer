@@ -13,6 +13,7 @@ pyyaml = "*"
 nptyping = "*"
 intel-openmp = "*"
 typing = "*"
+dacite = "*"
 
 [dev-packages]
 pyinstaller = "*"

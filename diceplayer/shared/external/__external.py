@@ -18,7 +18,7 @@ class External(ABC):
         pass
 
     @abstractmethod
-    def start(self):
+    def start(self, cycle: int):
         pass
 
     @abstractmethod

@@ -1,3 +1,4 @@
+from diceplayer.shared.external.dice import Dice
 from diceplayer.player import Player
 
 from pathlib import Path
@@ -9,7 +10,8 @@ import sys
 
 __VERSION = "v0.0.1"
 
-if __name__ == "__main__":
+
+def main():
     """
     Read and store the arguments passed to the program
     and set the usage and help messages
@@ -63,3 +65,6 @@ if __name__ == "__main__":
     player = Player(args.infile)
 
     player.start()
+
+if __name__ == "__main__":
+    main()

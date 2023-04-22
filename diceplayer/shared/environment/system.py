@@ -1,63 +1,46 @@
-import math
-from copy import deepcopy
-from typing import List, Tuple, TextIO
-
-import numpy as np
-from numpy import linalg
-
 from diceplayer.shared.environment.molecule import Molecule
-from diceplayer.shared.utils.misc import BOHR2ANG
 from diceplayer.shared.utils.ptable import atomsymb
+from diceplayer.shared.utils.misc import BOHR2ANG
+
+from typing import List, Tuple, TextIO
+from copy import deepcopy
+from numpy import linalg
+import numpy as np
+import math
 
 
 class System:
     """
-    System class declaration. This class is used throughout the DicePlayer program to represent the system containing the molecules.
+        System class declaration. This class is used throughout the DicePlayer program to represent the system containing the molecules.
 
-    Atributes:
-        molecule (List[Molecule]): List of molecules of the system
-        nmols (List[int]): List of number of molecules in the system
-    """
+        Atributes:
+            molecule (List[Molecule]): List of molecules of the system
+            nmols (List[int]): List of number of molecules in the system
+        """
 
     def __init__(self) -> None:
         """
-        Initializes a empty system object that will be populated afterwards
-        """
+                    Initializes a empty system object that will be populated afterwards
+                    """
 
         self.molecule: List[Molecule] = []
         self.nmols: List[int] = []
 
     def add_type(self, nmols: int, m: Molecule) -> None:
         """
-        Adds a new molecule type to the system
+                    Adds a new molecule type to the system
 
-        Args:
-            nmols (int): Number of molecules of the new type in the system
-            m (Molecule): The instance of the new type of molecule
-        """
+                    Args:
+                        nmols (int): Number of molecules of the new type in the system
+                        m (Molecule): The instance of the new type of molecule
+                    """
+        if isinstance(m, Molecule) is False:
+            raise TypeError("Error: molecule is not a Molecule instance")
         self.molecule.append(m)
+
+        if isinstance(nmols, int) is False:
+            raise TypeError("Error: nmols is not an integer")
         self.nmols.append(nmols)
-
-    def center_of_mass_distance(self, a: int, b: int) -> float:
-        """
-        Calculates the distance between the center of mass of two molecules
-
-        Args:
-            a (Molecule): First Molecule Instance
-            b (Molecule): Second Molecule Instance
-
-        Returns:
-            float: module of the distance between the two center of masses
-        """
-
-        com1 = self.molecule[a].center_of_mass()
-        com2 = self.molecule[b].center_of_mass()
-        dx = com1[0] - com2[0]
-        dy = com1[1] - com2[1]
-        dz = com1[2] - com2[2]
-        distance = math.sqrt(dx**2 + dy**2 + dz**2)
-
-        return distance
 
     def rmsd_fit(self, p_index: int, r_index: int) -> Tuple[float, Molecule]:
 
@@ -118,9 +101,9 @@ class System:
         rmsd = 0
         for i in range(dim):
             rmsd += (
-                (x[i, 0] - y[i, 0]) ** 2
-                + (x[i, 1] - y[i, 1]) ** 2
-                + (x[i, 2] - y[i, 2]) ** 2
+                    (x[i, 0] - y[i, 0]) ** 2
+                    + (x[i, 1] - y[i, 1]) ** 2
+                    + (x[i, 2] - y[i, 2]) ** 2
             )
         rmsd = math.sqrt(rmsd / dim)
 
@@ -135,13 +118,71 @@ class System:
 
         return rmsd, projected_mol
 
+    # def center_of_mass_distance(self, a: int, b: int) -> float:
+    #     """
+    #     Calculates the distance between the center of mass of two molecules
+    #
+    #     Args:
+    #         a (Molecule): First Molecule Instance
+    #         b (Molecule): Second Molecule Instance
+    #
+    #     Returns:
+    #         float: module of the distance between the two center of masses
+    #     """
+    #
+    #     com1 = self.molecule[a].center_of_mass()
+    #     com2 = self.molecule[b].center_of_mass()
+    #     dx = com1[0] - com2[0]
+    #     dy = com1[1] - com2[1]
+    #     dz = com1[2] - com2[2]
+    #     distance = math.sqrt(dx**2 + dy**2 + dz**2)
+    #
+    #     return distance
+
+    # def nearest_image(
+    #     self,
+    #     index_r: int,
+    #     index_m: int,
+    #     lx: float,
+    #     ly: float,
+    #     lz: float,
+    #     criterium=None,
+    # ) -> Tuple[float, Molecule]:
+    #
+    #     if criterium in None:
+    #         criterium = "com"
+    #
+    #     if criterium != "com" and criterium != "min":
+    #         raise RuntimeError("Error in value passed to function nearest_image")
+    #
+    #     min_dist = 1e20
+    #
+    #     for i in range(-1, 2):
+    #         for j in range(-1, 2):
+    #             for k in range(-1, 2):
+    #
+    #                 tr_vector = [i * lx, j * ly, k * lz]
+    #                 self.add_molecule(self.molecule[index_m].translate(tr_vector))
+    #
+    #                 if criterium == "com":
+    #                     dist = self.center_of_mass_distance(index_r, -1)
+    #                 else:
+    #                     dist = self.minimum_distance(index_r, -1)
+    #
+    #                 if dist < min_dist:
+    #                     min_dist = dist
+    #                     nearestmol = deepcopy(self.molecule[-1])
+    #
+    #     self.molecule.pop(-1)
+    #
+    #     return min_dist, nearestmol
     def update_molecule(self, position: np.ndarray, fh: TextIO) -> None:
         """Updates the position of the molecule in the Output file
 
-        Args:
-            position (np.ndarray): numpy position vector
-            fh (TextIO): Output file
-        """
+                Args:
+                    position (np.ndarray): numpy position vector
+                    fh (TextIO): Output file
+                """
 
         position_in_ang = (position * BOHR2ANG).tolist()
         self.add_type(self.nmols[0], deepcopy(self.molecule[0]))
@@ -158,52 +199,15 @@ class System:
         fh.write("\nProjected new conformation of reference molecule with RMSD fit\n")
         fh.write("RMSD = {:>8.5f} Angstrom\n".format(rmsd))
 
-    def nearest_image(
-        self,
-        index_r: int,
-        index_m: int,
-        lx: float,
-        ly: float,
-        lz: float,
-        criterium=None,
-    ) -> Tuple[float, Molecule]:
-
-        if criterium in None:
-            criterium = "com"
-
-        if criterium != "com" and criterium != "min":
-            raise RuntimeError("Error in value passed to function nearest_image")
-
-        min_dist = 1e20
-
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                for k in range(-1, 2):
-
-                    tr_vector = [i * lx, j * ly, k * lz]
-                    self.add_molecule(self.molecule[index_m].translate(tr_vector))
-
-                    if criterium == "com":
-                        dist = self.center_of_mass_distance(index_r, -1)
-                    else:
-                        dist = self.minimum_distance(index_r, -1)
-
-                    if dist < min_dist:
-                        min_dist = dist
-                        nearestmol = deepcopy(self.molecule[-1])
-
-        self.molecule.pop(-1)
-
-        return min_dist, nearestmol
 
     def print_geom(self, cycle: int, fh: TextIO) -> None:
         """
-        Print the geometry of the molecule in the Output file
+                Print the geometry of the molecule in the Output file
 
-        Args:
-            cycle (int): Number of the cycle
-            fh (TextIO): Output file
-        """
+                Args:
+                    cycle (int): Number of the cycle
+                    fh (TextIO): Output file
+                """
 
         fh.write("Cycle # {}\n".format(cycle))
         fh.write("Number of site: {}\n".format(len(self.molecule[0].atom)))
@@ -217,12 +221,12 @@ class System:
 
     def printChargesAndDipole(self, cycle: int, fh: TextIO) -> None:
         """
-        Print the charges and dipole of the molecule in the Output file
+                Print the charges and dipole of the molecule in the Output file
 
-        Args:
-            cycle (int): Number of the cycle
-            fh (TextIO): Output file
-        """
+                Args:
+                    cycle (int): Number of the cycle
+                    fh (TextIO): Output file
+                """
 
         fh.write("Cycle # {}\n".format(cycle))
         fh.write("Number of site: {}\n".format(len(self.molecule[0].atom)))

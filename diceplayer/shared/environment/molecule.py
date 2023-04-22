@@ -79,13 +79,12 @@ class Molecule:
         """
         Updated positions based on the center of mass of the molecule
         """
-
-        self.center_of_mass()
-
         for atom in self.atom:
             atom.rx -= self.com[0]
             atom.ry -= self.com[1]
             atom.rz -= self.com[2]
+
+        self.center_of_mass()
 
     def charges_and_dipole(self) -> List[float]:
         """
@@ -119,16 +118,15 @@ class Molecule:
 
         distances = []
         dim = len(self.atom)
-        for atom1 in self.atom:
-            if atom1.na != ghost_number:
-                for atom2 in self.atom:
-                    if atom2.na != ghost_number:
-                        dx = atom1.rx - atom2.rx
-                        dy = atom1.ry - atom2.ry
-                        dz = atom1.rz - atom2.rz
-                        distances.append(math.sqrt(dx ** 2 + dy ** 2 + dz ** 2))
+        for index1, atom1 in enumerate(self.atom):
+            for index2, atom2 in enumerate(self.atom):
+                if index1 != index2:
+                    dx = atom1.rx - atom2.rx
+                    dy = atom1.ry - atom2.ry
+                    dz = atom1.rz - atom2.rz
+                    distances.append(math.sqrt(dx ** 2 + dy ** 2 + dz ** 2))
 
-        return np.array(distances).reshape(dim, dim)
+        return np.array(distances).reshape(dim, dim-1)
 
     def inertia_tensor(self) -> NDArray[Shape["3, 3"], Float]:
         """
@@ -156,40 +154,6 @@ class Molecule:
 
         return np.array([[Ixx, Ixy, Ixz], [Ixy, Iyy, Iyz], [Ixz, Iyz, Izz]])
 
-    def axes(self) -> NDArray[Shape["3, 3"], Float]:
-        """
-        Calculates the axes of the molecule
-
-        Returns:
-           NDArray[Shape["3, 3"], Float]: Returns the axes of molecule
-        """
-
-        eixos = np.zeros(3)
-        if len(self.atom) == 2:
-
-            position1 = np.array([self.atom[0].rx, self.atom[0].ry, self.atom[0].rz])
-            position2 = np.array([self.atom[1].rx, self.atom[1].ry, self.atom[1].rz])
-            eixos = position2 - position1
-            eixos /= linalg.norm(eixos)
-
-        elif len(self.atom) > 2:
-
-            position1 = np.array([self.atom[0].rx, self.atom[0].ry, self.atom[0].rz])
-            position2 = np.array([self.atom[1].rx, self.atom[1].ry, self.atom[1].rz])
-            position3 = np.array([self.atom[2].rx, self.atom[2].ry, self.atom[2].rz])
-            v1 = position2 - position1
-            v2 = position3 - position1
-            v3 = np.cross(v1, v2)
-            v2 = np.cross(v1, v3)
-            v1 /= linalg.norm(v1)
-            v2 /= linalg.norm(v2)
-            v3 /= linalg.norm(v3)
-            eixos = np.array(
-                [[v1[0], v1[1], v1[2]], [v2[0], v2[1], v2[2]], [v3[0], v3[1], v3[2]]]
-            )
-
-        return eixos
-
     def principal_axes(self) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calculates the principal axes of the molecule
@@ -201,7 +165,7 @@ class Molecule:
 
         try:
             evals, evecs = linalg.eigh(self.inertia_tensor())
-        except:
+        except ValueError:
             raise RuntimeError("Error: diagonalization of inertia tensor did not converge")
 
         return evals, evecs
@@ -221,38 +185,38 @@ class Molecule:
 
         return position
 
-    def updateCharges(self, charges: List[float]) -> None:
+    def update_charges(self, charges: List[float]) -> None:
 
         for i, atom in enumerate(self.atom):
             atom.chg = charges[i]
 
-    def update_hessian(
-            self,
-            step: np.ndarray,
-            cur_gradient: np.ndarray,
-            old_gradient: np.ndarray,
-            hessian: np.ndarray,
-    ) -> np.ndarray:
-        """
-        Updates the Hessian of the molecule based on the current hessian, the current gradient and the previous gradient
-
-        Args:
-            step (np.ndarray): step value of the iteration
-            cur_gradient (np.ndarray): current gradient
-            old_gradient (np.ndarray): previous gradient
-            hessian (np.ndarray): current hessian
-
-        Returns:
-            np.ndarray: updated hessian of the molecule
-        """
-
-        dif_gradient = cur_gradient - old_gradient
-
-        mat1 = 1 / np.dot(dif_gradient, step) * np.matmul(dif_gradient.T, dif_gradient)
-        mat2 = 1 / np.dot(step, np.matmul(hessian, step.T).T)
-        mat2 *= np.matmul(np.matmul(hessian, step.T), np.matmul(step, hessian))
-
-        return hessian + mat1 - mat2
+    # @staticmethod
+    # def update_hessian(
+    #         step: np.ndarray,
+    #         cur_gradient: np.ndarray,
+    #         old_gradient: np.ndarray,
+    #         hessian: np.ndarray,
+    # ) -> np.ndarray:
+    #     """
+    #     Updates the Hessian of the molecule based on the current hessian, the current gradient and the previous gradient
+    #
+    #     Args:
+    #         step (np.ndarray): step value of the iteration
+    #         cur_gradient (np.ndarray): current gradient
+    #         old_gradient (np.ndarray): previous gradient
+    #         hessian (np.ndarray): current hessian
+    #
+    #     Returns:
+    #         np.ndarray: updated hessian of the molecule
+    #     """
+    #
+    #     dif_gradient = cur_gradient - old_gradient
+    #
+    #     mat1 = 1 / np.dot(dif_gradient, step) * np.matmul(dif_gradient.T, dif_gradient)
+    #     mat2 = 1 / np.dot(step, np.matmul(hessian, step.T).T)
+    #     mat2 *= np.matmul(np.matmul(hessian, step.T), np.matmul(step, hessian))
+    #
+    #     return hessian + mat1 - mat2
 
     def sizes_of_molecule(self) -> List[float]:
         """
@@ -267,10 +231,9 @@ class Molecule:
         z_list = []
 
         for atom in self.atom:
-            if atom.na != ghost_number:
-                x_list.append(atom.rx)
-                y_list.append(atom.ry)
-                z_list.append(atom.rz)
+            x_list.append(atom.rx)
+            y_list.append(atom.ry)
+            z_list.append(atom.rz)
 
         x_max = max(x_list)
         x_min = min(x_list)

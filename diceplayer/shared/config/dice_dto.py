@@ -24,27 +24,27 @@ class DiceDTO(Dataclass):
 
     def __post_init__(self):
 
-        if self.ljname is None:
+        if not isinstance(self.ljname, str):
             raise ValueError(
                 "Error: 'ljname' keyword not specified in config file"
             )
 
-        if self.outname is None:
+        if not isinstance(self.outname, str):
             raise ValueError(
                 "Error: 'outname' keyword not specified in config file"
             )
 
-        if self.dens is None:
+        if not isinstance(self.dens, float):
             raise ValueError(
                 "Error: 'dens' keyword not specified in config file"
             )
 
-        if self.nmol == 0:
+        if not isinstance(self.nmol, list):
             raise ValueError(
                 "Error: 'nmol' keyword not defined appropriately in config file"
             )
 
-        if self.nstep == 0:
+        if not isinstance(self.nstep, list):
             raise ValueError(
                 "Error: 'nstep' keyword not defined appropriately in config file"
             )

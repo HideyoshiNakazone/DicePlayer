@@ -1,6 +1,5 @@
-from diceplayer.shared.utils.dataclass_protocol import Dataclass
 from diceplayer.shared.config.gaussian_dto import GaussianDTO
-from diceplayer.shared.external.__external import External
+from diceplayer.shared.external import External
 
 
 class Gaussian(External):

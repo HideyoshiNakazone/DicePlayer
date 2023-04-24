@@ -8,10 +8,9 @@ class TestDiceDto(unittest.TestCase):
         dice_dto = DiceDTO(
             ljname='test',
             outname='test',
-            ncores=1,
             dens=1.0,
             nmol=[1],
-            nstep=[1],
+            nstep=[1, 1],
         )
 
         self.assertIsInstance(dice_dto, DiceDTO)
@@ -21,10 +20,9 @@ class TestDiceDto(unittest.TestCase):
             DiceDTO(
                 ljname=None,
                 outname='test',
-                ncores=1,
                 dens=1.0,
                 nmol=[1],
-                nstep=[1],
+                nstep=[1, 1],
             )
             self.assertEqual(ex.exception, "Error: 'ljname' keyword not specified in config file")
 
@@ -33,10 +31,9 @@ class TestDiceDto(unittest.TestCase):
             DiceDTO(
                 ljname='test',
                 outname=None,
-                ncores=1,
                 dens=1.0,
                 nmol=[1],
-                nstep=[1],
+                nstep=[1, 1],
             )
             self.assertEqual(ex.exception, "Error: 'outname' keyword not specified in config file")
 
@@ -45,10 +42,9 @@ class TestDiceDto(unittest.TestCase):
             DiceDTO(
                 ljname='test',
                 outname='test',
-                ncores=1,
                 dens=None,
                 nmol=[1],
-                nstep=[1],
+                nstep=[1, 1],
             )
             self.assertEqual(ex.exception, "Error: 'dens' keyword not specified in config file")
 
@@ -57,10 +53,9 @@ class TestDiceDto(unittest.TestCase):
             DiceDTO(
                 ljname='test',
                 outname='test',
-                ncores=1,
                 dens=1.0,
                 nmol=0,
-                nstep=[1],
+                nstep=[1, 1],
             )
             self.assertEqual(ex.exception, "Error: 'nmol' keyword not defined appropriately in config file")
 
@@ -69,7 +64,6 @@ class TestDiceDto(unittest.TestCase):
             DiceDTO(
                 ljname='test',
                 outname='test',
-                ncores=1,
                 dens=1.0,
                 nmol=[1],
                 nstep=0,
@@ -80,10 +74,9 @@ class TestDiceDto(unittest.TestCase):
         dice_dto = DiceDTO.from_dict({
             'ljname': 'test',
             'outname': 'test',
-            'ncores': 1,
             'dens': 1.0,
             'nmol': [1],
-            'nstep': [1],
+            'nstep': [1, 1],
         })
 
         self.assertIsInstance(dice_dto, DiceDTO)

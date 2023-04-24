@@ -1,21 +1,22 @@
 diceplayer:
     maxcyc: 3
     opt: no
+    ncores: 4
     nprocs: 4
     qmprog: 'g16'
     lps: no
     ghosts: no
-    altsteps: 20000
 
+    altsteps: 20000
 dice:
-    ncores: 3
     nmol: [1, 50]
     dens: 0.75
-    nstep: [2000, 3000]
+    nstep: [2000, 3000, 4000]
     isave: 1000
     outname: 'phb'
+    progname: '~/.local/bin/dice'
     ljname: 'phb.ljc'
-    randominit: 'always'
+    randominit: 'first'
 
 gaussian:
     qmprog: 'g16'

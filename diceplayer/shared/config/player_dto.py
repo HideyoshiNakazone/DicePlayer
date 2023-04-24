@@ -6,9 +6,13 @@ from dacite import from_dict
 
 @dataclass
 class PlayerDTO(Dataclass):
+    """
+    Data Transfer Object for the player configuration.
+    """
     opt: bool
     maxcyc: int
     nprocs: int
+    ncores: int
 
     qmprog: str = 'g16'
     altsteps: int = 20000

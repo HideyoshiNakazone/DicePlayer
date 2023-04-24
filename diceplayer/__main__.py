@@ -1,4 +1,4 @@
-from diceplayer.shared.external.dice import Dice
+from diceplayer.shared.interface.dice_interface import DiceInterface
 from diceplayer.player import Player
 
 from pathlib import Path
@@ -6,7 +6,6 @@ import argparse
 import logging
 import pickle
 import sys
-
 
 __VERSION = "v0.0.1"
 
@@ -51,7 +50,7 @@ def main():
 
         output_path = Path(args.outfile)
         if output_path.exists():
-            output_path.rename(str(output_path)+".backup")
+            output_path.rename(str(output_path) + ".backup")
 
     except Exception as err:
         sys.exit(err)
@@ -65,6 +64,7 @@ def main():
     player = Player(args.infile)
 
     player.start()
+
 
 if __name__ == "__main__":
     main()

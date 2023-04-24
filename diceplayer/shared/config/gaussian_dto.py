@@ -6,6 +6,9 @@ from dacite import from_dict
 
 @dataclass
 class GaussianDTO(Dataclass):
+    """
+    Data Transfer Object for the Gaussian configuration.
+    """
     level: str
     qmprog: str
     keywords: str

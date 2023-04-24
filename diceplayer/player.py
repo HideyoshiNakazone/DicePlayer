@@ -1,3 +1,4 @@
+from diceplayer.shared.config.step_dto import StepDTO
 from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.utils.dataclass_protocol import Dataclass
 from diceplayer.shared.config.gaussian_dto import GaussianDTO
@@ -5,9 +6,9 @@ from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.environment.system import System
 from diceplayer.shared.utils.misc import weekday_date_time
 from diceplayer.shared.config.player_dto import PlayerDTO
-from diceplayer.shared.external.gaussian import Gaussian
+from diceplayer.shared.interface.gaussian_interface import GaussianInterface
 from diceplayer.shared.config.dice_dto import DiceDTO
-from diceplayer.shared.external.dice import Dice
+from diceplayer.shared.interface.dice_interface import DiceInterface
 
 from dataclasses import fields
 from pathlib import Path
@@ -39,8 +40,8 @@ class Player:
             config_data.get("diceplayer")
         )
 
-        self.gaussian = Gaussian(config_data.get("gaussian"))
-        self.dice = Dice(config_data.get("dice"))
+        self.gaussian = GaussianInterface(config_data.get("gaussian"))
+        self.dice = DiceInterface(config_data.get("dice"))
 
     def start(self):
         self.print_keywords()
@@ -49,6 +50,9 @@ class Player:
 
         self.read_potentials()
         # self.print_potentials()
+
+        self.dice_start(1)
+        self.dice_start(2)
 
     def create_simulation_dir(self):
         simulation_dir_path = Path(self.config.simulation_dir)
@@ -140,7 +144,7 @@ class Player:
                     self.dice.config.ljname
                 )
             )
-        self.dice.combrule = combrule
+        self.dice.config.combrule = combrule
 
         ntypes = ljdata.pop(0).split()[0]
         if not ntypes.isdigit():
@@ -184,8 +188,21 @@ class Player:
                     Atom(**self.validate_atom_dict(i, j, new_atom))
                 )
 
-    def dice_start(self):
-        self.dice.start()
+    def dice_start(self, cycle: int):
+        self.dice.configure(
+            StepDTO(
+                ncores=self.config.ncores,
+                nprocs=self.config.nprocs,
+                simulation_dir=self.config.simulation_dir,
+                altsteps=self.config.altsteps,
+                molecule=self.system.molecule,
+                nmol=self.system.nmols,
+            )
+        )
+
+        self.dice.start(cycle)
+
+        self.dice.reset()
 
     def gaussian_start(self):
         self.gaussian.start()

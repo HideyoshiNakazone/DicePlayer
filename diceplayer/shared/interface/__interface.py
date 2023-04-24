@@ -3,7 +3,7 @@ from diceplayer.shared.utils.dataclass_protocol import Dataclass
 from abc import ABC, abstractmethod
 
 
-class External(ABC):
+class Interface(ABC):
     __slots__ = [
         'config'
     ]

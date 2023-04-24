@@ -1,8 +1,8 @@
 from diceplayer.shared.config.gaussian_dto import GaussianDTO
-from diceplayer.shared.external import External
+from diceplayer.shared.interface import Interface
 
 
-class Gaussian(External):
+class GaussianInterface(Interface):
 
     def __init__(self, data: dict):
         self.config: GaussianDTO = self.set_config(data)

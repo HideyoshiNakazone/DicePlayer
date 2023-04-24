@@ -7,10 +7,11 @@ from typing import List
 
 @dataclass
 class DiceDTO(Dataclass):
-
+    """
+    Data Transfer Object for the Dice configuration.
+    """
     ljname: str
     outname: str
-    ncores: int
     dens: float
     nmol: List[int]
     nstep: List[int]
@@ -20,6 +21,7 @@ class DiceDTO(Dataclass):
     isave: int = 1000
     press: float = 1.0
     temp: float = 300.0
+    progname: str = "dice"
     randominit: str = 'first'
 
     def __post_init__(self):
@@ -44,7 +46,7 @@ class DiceDTO(Dataclass):
                 "Error: 'nmol' keyword not defined appropriately in config file"
             )
 
-        if not isinstance(self.nstep, list):
+        if not isinstance(self.nstep, list) or len(self.nstep) not in (2, 3):
             raise ValueError(
                 "Error: 'nstep' keyword not defined appropriately in config file"
             )

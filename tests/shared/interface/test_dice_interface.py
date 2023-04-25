@@ -34,11 +34,11 @@ class TestDiceInterface(unittest.TestCase):
             }
         )
 
-        self.assertFalse(hasattr(dice, 'step'))
+        self.assertIsNone(dice.step)
 
         dice.configure('test')
 
-        self.assertTrue(hasattr(dice, 'step'))
+        self.assertIsNotNone(dice.step)
 
     def test_reset(self):
         dice = DiceInterface(

@@ -1,14 +1,15 @@
-from diceplayer.shared.config.step_dto import StepDTO
-from diceplayer.shared.environment.atom import Atom
+from diceplayer.shared.interface.gaussian_interface import GaussianInterface
+from diceplayer.shared.interface.dice_interface import DiceInterface
 from diceplayer.shared.utils.dataclass_protocol import Dataclass
 from diceplayer.shared.config.gaussian_dto import GaussianDTO
 from diceplayer.shared.environment.molecule import Molecule
-from diceplayer.shared.environment.system import System
 from diceplayer.shared.utils.misc import weekday_date_time
 from diceplayer.shared.config.player_dto import PlayerDTO
-from diceplayer.shared.interface.gaussian_interface import GaussianInterface
+from diceplayer.shared.environment.system import System
+from diceplayer.shared.config.step_dto import StepDTO
 from diceplayer.shared.config.dice_dto import DiceDTO
-from diceplayer.shared.interface.dice_interface import DiceInterface
+from diceplayer.shared.environment.atom import Atom
+from diceplayer.shared.utils.ptable import atommass
 
 from dataclasses import fields
 from pathlib import Path
@@ -18,7 +19,6 @@ import yaml
 import sys
 import os
 
-from diceplayer.shared.utils.ptable import atommass
 
 ENV = ["OMP_STACKSIZE"]
 

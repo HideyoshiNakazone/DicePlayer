@@ -23,8 +23,6 @@ MAX_SEED: Final[int] = 4294967295
 
 
 class DiceInterface(Interface):
-    __slots__ = ['config', 'step']
-
     title = "Diceplayer run"
 
     def __init__(self, data: dict):

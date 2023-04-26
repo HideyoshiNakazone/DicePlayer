@@ -5,12 +5,12 @@ import unittest
 
 class TestPlayerDTO(unittest.TestCase):
     def test_class_instantiation(self):
-        player_dto = PlayerDTO(opt=True, maxcyc=100, nprocs=4)
+        player_dto = PlayerDTO(opt=True, maxcyc=100, nprocs=4, ncores=4)
 
         self.assertIsInstance(player_dto, PlayerDTO)
 
     def test_min_altsteps(self):
-        player_dto = PlayerDTO(opt=True, maxcyc=100, nprocs=4, altsteps=100)
+        player_dto = PlayerDTO(opt=True, maxcyc=100, nprocs=4, ncores=4, altsteps=100)
 
         self.assertEqual(player_dto.altsteps, 20000)
 
@@ -18,7 +18,8 @@ class TestPlayerDTO(unittest.TestCase):
         player_dto = PlayerDTO.from_dict({
             'opt': True,
             'maxcyc': 100,
-            'nprocs': 4
+            'nprocs': 4,
+            'ncores': 4,
         })
 
         self.assertIsInstance(player_dto, PlayerDTO)

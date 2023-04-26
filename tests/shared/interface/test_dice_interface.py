@@ -1,5 +1,8 @@
 from diceplayer.shared.interface.dice_interface import DiceInterface
+from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.config.step_dto import StepDTO
+
+import io
 
 from tests.mocks.mock_proc import MockConnection, MockProc
 
@@ -559,6 +562,38 @@ class TestDiceInterface(unittest.TestCase):
 
         with self.assertRaises(FileNotFoundError):
             dice._run_dice(1, 1)
+
+    def test_make_init_file(self):
+        dice = DiceInterface(
+            {
+                'ljname': 'test',
+                'outname': 'test',
+                'ncores': 1,
+                'dens': 1.0,
+                'nmol': [1],
+                'nstep': [1, 1],
+            }
+        )
+        dice.configure(
+            StepDTO(
+                ncores=1,
+                nprocs=1,
+                simulation_dir='test',
+                altsteps=1,
+                molecule=[
+                    
+                ],
+                nmol=[],
+            )
+        )
+
+        last_xyz_file = io.StringIO()
+        last_xyz_file.writelines([
+            'TEST',
+            'TEST',
+            'TEST',
+            'TEST',
+        ])
 
 
 if __name__ == '__main__':

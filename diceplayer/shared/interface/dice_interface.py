@@ -15,6 +15,7 @@ import time
 import sys
 import os
 
+
 DICE_END_FLAG: Final[str] = "End of simulation"
 DICE_FLAG_LINE: Final[int] = -2
 UMAANG3_TO_GCM3: Final[float] = 1.6605

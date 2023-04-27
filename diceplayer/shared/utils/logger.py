@@ -1,26 +1,53 @@
 import logging
 
 
+def valid_logger(func):
+    def wrapper(*args, **kwargs):
+        logger = args[0]
+        assert logger._was_set, \
+            "Logger is not set. Please call set_logger() first."
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
 class Logger:
     outfile = None
 
     _logger = None
-    _instance = None
 
-    def __new__(cls, *args, **kwargs):
-        if not getattr(cls, '_instance'):
-            cls._instance = super(Logger, cls).__new__(cls)
-        return cls._instance
+    _was_set = False
 
-    def set_logger(self, logger_name, outfile='run.log', level=logging.INFO):
+    def __init__(self, logger_name):
+        if self._logger is None:
+            self._logger = logging.getLogger(logger_name)
+
+    def set_logger(self, outfile='run.log', level=logging.INFO):
         self.outfile = outfile
-
-        self._logger = logging.getLogger(logger_name)
 
         if level is not None:
             self._logger.setLevel(level)
 
         self._create_handlers()
+
+        self._was_set = True
+
+    @valid_logger
+    def info(self, message):
+        self._logger.info(message)
+
+    @valid_logger
+    def debug(self, message):
+        self._logger.debug(message)
+
+    @valid_logger
+    def warning(self, message):
+        self._logger.warning(message)
+
+    @valid_logger
+    def error(self, message):
+        self._logger.error(message)
 
     def _create_handlers(self):
         handlers = []

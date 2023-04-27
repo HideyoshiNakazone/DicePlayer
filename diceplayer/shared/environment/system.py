@@ -42,6 +42,29 @@ class System:
             raise TypeError("Error: nmols is not an integer")
         self.nmols.append(nmols)
 
+    def update_molecule(self, position: np.ndarray, fh: TextIO) -> None:
+        """Updates the position of the molecule in the Output file
+
+                Args:
+                    position (np.ndarray): numpy position vector
+                    fh (TextIO): Output file
+                """
+
+        position_in_ang = (position * BOHR2ANG).tolist()
+        self.add_type(self.nmols[0], deepcopy(self.molecule[0]))
+
+        for atom in self.molecule[-1].atom:
+
+            atom.rx = position_in_ang.pop(0)
+            atom.ry = position_in_ang.pop(0)
+            atom.rz = position_in_ang.pop(0)
+
+        rmsd, self.molecule[0] = self.rmsd_fit(-1, 0)
+        self.molecule.pop(-1)
+
+        fh.write("\nProjected new conformation of reference molecule with RMSD fit\n")
+        fh.write("RMSD = {:>8.5f} Angstrom\n".format(rmsd))
+
     def rmsd_fit(self, p_index: int, r_index: int) -> Tuple[float, Molecule]:
 
         projecting_mol = self.molecule[p_index]
@@ -176,65 +199,43 @@ class System:
     #     self.molecule.pop(-1)
     #
     #     return min_dist, nearestmol
-    def update_molecule(self, position: np.ndarray, fh: TextIO) -> None:
-        """Updates the position of the molecule in the Output file
-
-                Args:
-                    position (np.ndarray): numpy position vector
-                    fh (TextIO): Output file
-                """
-
-        position_in_ang = (position * BOHR2ANG).tolist()
-        self.add_type(self.nmols[0], deepcopy(self.molecule[0]))
-
-        for atom in self.molecule[-1].atom:
-
-            atom.rx = position_in_ang.pop(0)
-            atom.ry = position_in_ang.pop(0)
-            atom.rz = position_in_ang.pop(0)
-
-        rmsd, self.molecule[0] = self.rmsd_fit(-1, 0)
-        self.molecule.pop(-1)
-
-        fh.write("\nProjected new conformation of reference molecule with RMSD fit\n")
-        fh.write("RMSD = {:>8.5f} Angstrom\n".format(rmsd))
 
 
-    def print_geom(self, cycle: int, fh: TextIO) -> None:
-        """
-                Print the geometry of the molecule in the Output file
-
-                Args:
-                    cycle (int): Number of the cycle
-                    fh (TextIO): Output file
-                """
-
-        fh.write("Cycle # {}\n".format(cycle))
-        fh.write("Number of site: {}\n".format(len(self.molecule[0].atom)))
-        for atom in self.molecule[0].atom:
-            symbol = atomsymb[atom.na]
-            fh.write(
-                "{:<2s}    {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(
-                    symbol, atom.rx, atom.ry, atom.rz
-                )
-            )
-
-    def printChargesAndDipole(self, cycle: int, fh: TextIO) -> None:
-        """
-                Print the charges and dipole of the molecule in the Output file
-
-                Args:
-                    cycle (int): Number of the cycle
-                    fh (TextIO): Output file
-                """
-
-        fh.write("Cycle # {}\n".format(cycle))
-        fh.write("Number of site: {}\n".format(len(self.molecule[0].atom)))
-
-        chargesAndDipole = self.molecule[0].charges_and_dipole()
-
-        fh.write(
-            "{:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(
-                chargesAndDipole[0], chargesAndDipole[1], chargesAndDipole[2], chargesAndDipole[3], chargesAndDipole[4]
-            )
-        )
+    # def print_geom(self, cycle: int, fh: TextIO) -> None:
+    #     """
+    #             Print the geometry of the molecule in the Output file
+    #
+    #             Args:
+    #                 cycle (int): Number of the cycle
+    #                 fh (TextIO): Output file
+    #             """
+    #
+    #     fh.write("Cycle # {}\n".format(cycle))
+    #     fh.write("Number of site: {}\n".format(len(self.molecule[0].atom)))
+    #     for atom in self.molecule[0].atom:
+    #         symbol = atomsymb[atom.na]
+    #         fh.write(
+    #             "{:<2s}    {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(
+    #                 symbol, atom.rx, atom.ry, atom.rz
+    #             )
+    #         )
+    #
+    # def printChargesAndDipole(self, cycle: int, fh: TextIO) -> None:
+    #     """
+    #             Print the charges and dipole of the molecule in the Output file
+    #
+    #             Args:
+    #                 cycle (int): Number of the cycle
+    #                 fh (TextIO): Output file
+    #             """
+    #
+    #     fh.write("Cycle # {}\n".format(cycle))
+    #     fh.write("Number of site: {}\n".format(len(self.molecule[0].atom)))
+    #
+    #     chargesAndDipole = self.molecule[0].charges_and_dipole()
+    #
+    #     fh.write(
+    #         "{:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(
+    #             chargesAndDipole[0], chargesAndDipole[1], chargesAndDipole[2], chargesAndDipole[3], chargesAndDipole[4]
+    #         )
+    #     )

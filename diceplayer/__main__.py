@@ -1,5 +1,6 @@
 from diceplayer.shared.interface.dice_interface import DiceInterface
 from diceplayer.player import Player
+from diceplayer import logger
 
 from pathlib import Path
 import argparse
@@ -40,6 +41,7 @@ def main():
     args = parser.parse_args()
 
     # Open OUTFILE for writing and print keywords and initial info
+    logger.set_logger(args.outfile, logging.INFO)
 
     try:
 
@@ -54,12 +56,6 @@ def main():
 
     except Exception as err:
         sys.exit(err)
-
-    logging.basicConfig(
-        filename=args.outfile,
-        format='%(message)s',
-        level=logging.INFO
-    )
 
     player = Player(args.infile)
 

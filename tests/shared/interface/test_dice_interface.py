@@ -1,5 +1,6 @@
 from diceplayer.shared.interface.dice_interface import DiceInterface
 from diceplayer.shared.environment.molecule import Molecule
+from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.config.step_dto import StepDTO
 
 import io
@@ -563,7 +564,25 @@ class TestDiceInterface(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             dice._run_dice(1, 1)
 
-    def test_make_init_file(self):
+    @mock.patch('builtins.open', new_callable=mock.mock_open)
+    def test_make_init_file(self, mock_open):
+        example_atom = Atom(
+            lbl=1,
+            na=1,
+            rx=1.0,
+            ry=1.0,
+            rz=1.0,
+            chg=1.0,
+            eps=1.0,
+            sig=1.0,
+        )
+
+        main_molecule = Molecule('main_molecule')
+        main_molecule.add_atom(example_atom)
+
+        secondary_molecule = Molecule('secondary_molecule')
+        secondary_molecule.add_atom(example_atom)
+
         dice = DiceInterface(
             {
                 'ljname': 'test',
@@ -581,19 +600,359 @@ class TestDiceInterface(unittest.TestCase):
                 simulation_dir='test',
                 altsteps=1,
                 molecule=[
-                    
+                    main_molecule,
+                    secondary_molecule,
                 ],
-                nmol=[],
+                nmol=[
+                    len(main_molecule.atom),
+                    len(secondary_molecule.atom),
+                ],
             )
         )
 
         last_xyz_file = io.StringIO()
         last_xyz_file.writelines([
-            'TEST',
-            'TEST',
-            'TEST',
-            'TEST',
+            '   TEST\n',
+            ' Configuration number :     TEST =   TEST  TEST  TEST\n',
+            '   H     1.00000     1.00000     1.00000\n',
+            '   H     1.00000     1.00000     1.00000\n',
         ])
+        last_xyz_file.seek(0)
+
+        dice._make_init_file('test', last_xyz_file)
+
+        mock_handler = mock_open()
+        calls = mock_handler.write.call_args_list
+
+        lines = list(map(lambda x: x[0][0], calls))
+
+        expected_lines = [
+            '  1.000000    1.000000    1.000000\n',
+            '  1.000000    1.000000    1.000000\n',
+            '$end'
+        ]
+
+        self.assertEqual(lines, expected_lines)
+
+    @mock.patch('builtins.open', new_callable=mock.mock_open)
+    def test_new_density(self, mock_open):
+        example_atom = Atom(
+            lbl=1,
+            na=1,
+            rx=1.0,
+            ry=1.0,
+            rz=1.0,
+            chg=1.0,
+            eps=1.0,
+            sig=1.0,
+        )
+
+        main_molecule = Molecule('main_molecule')
+        main_molecule.add_atom(example_atom)
+
+        secondary_molecule = Molecule('secondary_molecule')
+        secondary_molecule.add_atom(example_atom)
+
+        dice = DiceInterface(
+            {
+                'ljname': 'test',
+                'outname': 'test',
+                'ncores': 1,
+                'dens': 1.0,
+                'nmol': [1],
+                'nstep': [1, 1],
+            }
+        )
+        dice.configure(
+            StepDTO(
+                ncores=1,
+                nprocs=1,
+                simulation_dir='test',
+                altsteps=1,
+                molecule=[
+                    main_molecule,
+                    secondary_molecule,
+                ],
+                nmol=[
+                    len(main_molecule.atom),
+                    len(secondary_molecule.atom),
+                ],
+            )
+        )
+
+        last_xyz_file = io.StringIO()
+        last_xyz_file.writelines([
+            '   TEST\n',
+            ' Configuration number :     TEST =   1  1  1\n',
+            '   H     1.00000     1.00000     1.00000\n',
+            '   H     1.00000     1.00000     1.00000\n',
+        ])
+        last_xyz_file.seek(0)
+
+        density = dice._new_density(last_xyz_file)
+
+        self.assertEqual(density, 3.3472359000000003)
+
+    @mock.patch('builtins.open', new_callable=mock.mock_open)
+    @mock.patch('diceplayer.shared.interface.dice_interface.random')
+    def test_make_nvt_ter(self, mock_random, mock_open):
+        mock_random.random.return_value = 1
+
+        dice = DiceInterface(
+            {
+                'ljname': 'test',
+                'outname': 'test',
+                'ncores': 1,
+                'dens': 1.0,
+                'nmol': [1],
+                'nstep': [1, 1],
+            }
+        )
+        dice.configure(
+            StepDTO(
+                ncores=1,
+                nprocs=1,
+                simulation_dir='test',
+                altsteps=1,
+                molecule=[],
+                nmol=[],
+            )
+        )
+
+        dice._make_nvt_ter(1, 'test')
+
+        mock_handler = mock_open()
+        calls = mock_handler.write.call_args_list
+
+        lines = list(map(lambda x: x[0][0], calls))
+
+        expected_lines = ['title = Diceplayer run - NVT Thermalization\n', 'ncores = 1\n', 'ljname = test\n', 'outname = test\n', 'nmol = 1\n', 'dens = 1.0\n', 'temp = 300.0\n', 'init = yes\n', 'nstep = 1\n', 'vstep = 0\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 0\n', 'irdf = 0\n', 'seed = 1000000\n', 'upbuf = 360']
+
+        self.assertEqual(lines, expected_lines)
+
+    @mock.patch('builtins.open', new_callable=mock.mock_open)
+    @mock.patch('diceplayer.shared.interface.dice_interface.random')
+    def test_make_nvt_eq(self, mock_random, mock_open):
+        mock_random.random.return_value = 1
+
+        dice = DiceInterface(
+            {
+                'ljname': 'test',
+                'outname': 'test',
+                'ncores': 1,
+                'dens': 1.0,
+                'nmol': [1],
+                'nstep': [1, 1],
+            }
+        )
+        dice.configure(
+            StepDTO(
+                ncores=1,
+                nprocs=1,
+                simulation_dir='test',
+                altsteps=1,
+                molecule=[],
+                nmol=[],
+            )
+        )
+
+        dice._make_nvt_eq('test')
+
+        mock_handler = mock_open()
+        calls = mock_handler.write.call_args_list
+
+        lines = list(map(lambda x: x[0][0], calls))
+
+        expected_lines = ['title = Diceplayer run - NVT Production\n', 'ncores = 1\n', 'ljname = test\n', 'outname = test\n', 'nmol = 1\n', 'dens = 1.0\n', 'temp = 300.0\n', 'init = no\n', 'nstep = 1\n', 'vstep = 0\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 1000\n', 'irdf = 10\n', 'seed = 1000000\n']
+
+        self.assertEqual(lines, expected_lines)
+
+    @mock.patch('builtins.open', new_callable=mock.mock_open)
+    @mock.patch('diceplayer.shared.interface.dice_interface.random')
+    def test_make_npt_ter(self, mock_random, mock_open):
+        mock_random.random.return_value = 1
+
+        dice = DiceInterface(
+            {
+                'ljname': 'test',
+                'outname': 'test',
+                'ncores': 1,
+                'dens': 1.0,
+                'nmol': [1],
+                'nstep': [1, 1, 1],
+            }
+        )
+        dice.configure(
+            StepDTO(
+                ncores=1,
+                nprocs=1,
+                simulation_dir='test',
+                altsteps=1,
+                molecule=[],
+                nmol=[],
+            )
+        )
+
+        dice._make_npt_ter(1, 'test')
+
+        mock_handler = mock_open()
+        calls = mock_handler.write.call_args_list
+
+        lines = list(map(lambda x: x[0][0], calls))
+
+        expected_lines = ['title = Diceplayer run - NPT Thermalization\n', 'ncores = 1\n', 'ljname = test\n', 'outname = test\n', 'nmol = 1\n', 'press = 1.0\n', 'temp = 300.0\n', 'init = no\n', 'vstep = 0\n', 'nstep = 5\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 0\n', 'irdf = 0\n', 'seed = 1000000\n']
+
+        self.assertEqual(lines, expected_lines)
+
+    @mock.patch('builtins.open', new_callable=mock.mock_open)
+    @mock.patch('diceplayer.shared.interface.dice_interface.random')
+    def test_make_npt_eq(self, mock_random, mock_open):
+        mock_random.random.return_value = 1
+
+        dice = DiceInterface(
+            {
+                'ljname': 'test',
+                'outname': 'test',
+                'ncores': 1,
+                'dens': 1.0,
+                'nmol': [1],
+                'nstep': [1, 1, 1],
+            }
+        )
+        dice.configure(
+            StepDTO(
+                ncores=1,
+                nprocs=1,
+                simulation_dir='test',
+                altsteps=1,
+                molecule=[],
+                nmol=[],
+            )
+        )
+
+        dice._make_npt_eq('test')
+
+        mock_handler = mock_open()
+        calls = mock_handler.write.call_args_list
+
+        lines = list(map(lambda x: x[0][0], calls))
+
+        expected_lines = ['title = Diceplayer run - NPT Production\n', 'ncores = 1\n', 'ljname = test\n', 'outname = test\n', 'nmol = 1\n', 'press = 1.0\n', 'temp = 300.0\n', 'nstep = 5\n', 'vstep = 0\n', 'init = no\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 1000\n', 'irdf = 10\n', 'seed = 1000000\n']
+
+        self.assertEqual(lines, expected_lines)
+
+    @mock.patch('builtins.open', new_callable=mock.mock_open)
+    def test_make_potentials(self, mock_open):
+        example_atom = Atom(
+            lbl=1,
+            na=1,
+            rx=1.0,
+            ry=1.0,
+            rz=1.0,
+            chg=1.0,
+            eps=1.0,
+            sig=1.0,
+        )
+
+        main_molecule = Molecule('main_molecule')
+        main_molecule.add_atom(example_atom)
+
+        secondary_molecule = Molecule('secondary_molecule')
+        secondary_molecule.add_atom(example_atom)
+
+        dice = DiceInterface(
+            {
+                'ljname': 'test',
+                'outname': 'test',
+                'ncores': 1,
+                'dens': 1.0,
+                'nmol': [1],
+                'nstep': [1, 1],
+            }
+        )
+        dice.configure(
+            StepDTO(
+                ncores=1,
+                nprocs=1,
+                simulation_dir='test',
+                altsteps=1,
+                molecule=[
+                    main_molecule,
+                    secondary_molecule,
+                ],
+                nmol=[
+                    len(main_molecule.atom),
+                    len(secondary_molecule.atom),
+                ],
+            )
+        )
+
+        dice._make_potentials('test')
+
+        mock_handler = mock_open()
+        calls = mock_handler.write.call_args_list
+
+        lines = list(map(lambda x: x[0][0], calls))
+
+        expected_lines = ['*\n', '2\n', '1 main_molecule\n', '1     1     1.00000    1.00000    1.00000    1.000000   1.00000  1.0000\n', '1 secondary_molecule\n', '1     1     1.00000    1.00000    1.00000    1.000000   1.00000  1.0000\n']
+
+        self.assertEqual(lines, expected_lines)
+
+    @mock.patch('diceplayer.shared.interface.dice_interface.subprocess')
+    @mock.patch('builtins.open', new_callable=mock.mock_open, read_data='End of simulation\nBLABLA')
+    def test_run_dice_file(self, mock_open, mock_subprocess):
+        mock_subprocess.call.return_value = 0
+        dice = DiceInterface(
+            {
+                'ljname': 'test',
+                'outname': 'test',
+                'ncores': 1,
+                'dens': 1.0,
+                'nmol': [1],
+                'nstep': [1, 1],
+            }
+        )
+
+        dice.run_dice_file(1, 1, 'test')
+
+        self.assertTrue(mock_subprocess.call.called)
+        self.assertTrue(mock_open.called)
+
+    @mock.patch('diceplayer.shared.interface.dice_interface.subprocess')
+    @mock.patch('builtins.open', new_callable=mock.mock_open, read_data='Error\nBLABLA')
+    def test_run_dice_file_raises_runtime_error_on_dice_file(self, mock_open, mock_subprocess):
+        mock_subprocess.call.return_value = 0
+        dice = DiceInterface(
+            {
+                'ljname': 'test',
+                'outname': 'test',
+                'ncores': 1,
+                'dens': 1.0,
+                'nmol': [1],
+                'nstep': [1, 1],
+            }
+        )
+
+        with self.assertRaises(RuntimeError):
+            dice.run_dice_file(1, 1, 'test')
+
+    @mock.patch('diceplayer.shared.interface.dice_interface.subprocess')
+    @mock.patch('builtins.open', new_callable=mock.mock_open, read_data='End of simulation\nBLABLA')
+    def test_run_dice_file_raises_runtime_error_of_dice_exit_code(self, mock_open, mock_subprocess):
+        mock_subprocess.call.return_value = 1
+        dice = DiceInterface(
+            {
+                'ljname': 'test',
+                'outname': 'test',
+                'ncores': 1,
+                'dens': 1.0,
+                'nmol': [1],
+                'nstep': [1, 1],
+            }
+        )
+
+        with self.assertRaises(RuntimeError):
+            dice.run_dice_file(1, 1, 'test')
 
 
 if __name__ == '__main__':

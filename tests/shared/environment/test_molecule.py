@@ -1,3 +1,5 @@
+import numpy as np
+
 from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.environment.atom import Atom
 
@@ -145,3 +147,66 @@ class TestMolecule(unittest.TestCase):
             expected_charges,
             actual_charges
         )
+
+    def test_sizes_of_molecule(self):
+        mol = Molecule('test')
+
+        mol.add_atom(
+            Atom(lbl=1, na=1, rx=0.0, ry=0.0, rz=0.0, chg=1.0, eps=1.0, sig=1.0)
+        )
+
+        sizes = mol.sizes_of_molecule()
+
+        expected_sizes = [0.0, 0.0, 0.0]
+
+        npt.assert_equal(sizes, expected_sizes)
+
+    def test_standard_orientation(self):
+        mol = Molecule('test')
+
+        mol.add_atom(
+            Atom(lbl=1, na=1, rx=1.0, ry=1.0, rz=1.0, chg=1.0, eps=1.0, sig=1.0)
+        )
+
+        mol.standard_orientation()
+
+        expected_position = [0.0, 0.0, 0.0]
+
+        self.assertEqual(mol.read_position().tolist(), expected_position)
+
+    def test_translate(self):
+        mol = Molecule('test')
+
+        mol.add_atom(
+            Atom(lbl=1, na=1, rx=1.0, ry=1.0, rz=1.0, chg=1.0, eps=1.0, sig=1.0)
+        )
+
+        new_mol = mol.translate(np.array([-1, -1, -1]))
+
+        expected_position = [0.0, 0.0, 0.0]
+
+        self.assertEqual(
+            new_mol.read_position().tolist(),
+            expected_position
+        )
+
+    def test_minimum_distance(self):
+        mol1 = Molecule('test1')
+        mol1.add_atom(
+            Atom(lbl=1, na=1, rx=0.0, ry=0.0, rz=0.0, chg=1.0, eps=1.0, sig=1.0)
+        )
+
+        mol2 = Molecule('test2')
+        mol2.add_atom(
+            Atom(lbl=1, na=1, rx=1.0, ry=0.0, rz=0.0, chg=1.0, eps=1.0, sig=1.0)
+        )
+
+        expected_distance = 1.0
+
+        actual_distance = mol1.minimum_distance(mol2)
+
+        self.assertEqual(expected_distance, actual_distance)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -167,7 +167,7 @@ class DiceInterface(Interface):
         xyz_lines = last_xyz_file.readlines()
 
         nsites_mm = 0
-        for i in range(len(self.step.nmol)):
+        for i in range(1, len(self.step.nmol)):
             nsites_mm += self.step.nmol[i] * len(self.step.molecule[i].atom)
 
         xyz_lines = xyz_lines[-nsites_mm:]
@@ -379,9 +379,9 @@ class DiceInterface(Interface):
                 )
 
         if exit_status != 0:
-            raise Exception(f"Dice process step{cycle:02d}-p{proc:02d} did not exit properly")
+            raise RuntimeError(f"Dice process step{cycle:02d}-p{proc:02d} did not exit properly")
 
         with open(Path(file_name + ".out"), 'r') as outfile:
             flag = outfile.readlines()[DICE_FLAG_LINE].strip()
             if flag != DICE_END_FLAG:
-                raise Exception(f"Dice process step{cycle:02d}-p{proc:02d} did not exit properly")
+                raise RuntimeError(f"Dice process step{cycle:02d}-p{proc:02d} did not exit properly")

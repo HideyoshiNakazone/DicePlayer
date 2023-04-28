@@ -36,10 +36,28 @@ class TestLogger(unittest.TestCase):
         self.assertIsInstance(logger, Logger)
 
     @mock.patch('builtins.open', mock.mock_open())
-    def test_set_logger(self):
+    @mock.patch('diceplayer.shared.utils.logger.Path.exists')
+    @mock.patch('diceplayer.shared.utils.logger.Path.rename')
+    def test_set_logger_if_file_exists(self, mock_rename, mock_exists):
         logger = Logger('test')
+
+        mock_exists.return_value = True
         logger.set_logger()
 
+        self.assertTrue(mock_rename.called)
+        self.assertIsNotNone(logger._logger)
+        self.assertEqual(logger._logger.name, 'test')
+
+    @mock.patch('builtins.open', mock.mock_open())
+    @mock.patch('diceplayer.shared.utils.logger.Path.exists')
+    @mock.patch('diceplayer.shared.utils.logger.Path.rename')
+    def test_set_logger_if_file_not_exists(self, mock_rename, mock_exists):
+        logger = Logger('test')
+
+        mock_exists.return_value = False
+        logger.set_logger()
+
+        self.assertFalse(mock_rename.called)
         self.assertIsNotNone(logger._logger)
         self.assertEqual(logger._logger.name, 'test')
 

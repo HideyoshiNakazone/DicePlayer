@@ -1,3 +1,4 @@
+from pathlib import Path
 import logging
 
 
@@ -24,7 +25,9 @@ class Logger:
             self._logger = logging.getLogger(logger_name)
 
     def set_logger(self, outfile='run.log', level=logging.INFO):
-        self.outfile = outfile
+        self.outfile = Path(outfile)
+        if self.outfile.exists():
+            self.outfile.rename(str(self.outfile) + ".backup")
 
         if level is not None:
             self._logger.setLevel(level)

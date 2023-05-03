@@ -3,6 +3,7 @@ from __future__ import annotations
 from diceplayer.shared.config.dice_dto import DiceDTO
 from diceplayer.shared.config.step_dto import StepDTO
 from diceplayer.shared.interface import Interface
+from diceplayer import logger
 
 from multiprocessing import Process, connection
 from setproctitle import setproctitle
@@ -14,7 +15,6 @@ import random
 import time
 import sys
 import os
-
 
 DICE_END_FLAG: Final[str] = "End of simulation"
 DICE_FLAG_LINE: Final[int] = -2
@@ -41,8 +41,9 @@ class DiceInterface(Interface):
         procs = []
         sentinels = []
 
-        for proc in range(1, self.step.nprocs + 1):
+        logger.info(f"---------------------- DICE - CYCLE {cycle} --------------------------\n")
 
+        for proc in range(1, self.step.nprocs + 1):
             p = Process(target=self._simulation_process, args=(cycle, proc))
             p.start()
 
@@ -60,6 +61,8 @@ class DiceInterface(Interface):
                     for p in procs:
                         p.terminate()
                     sys.exit(status)
+
+        logger.info("\n")
 
     def reset(self):
         del self.step
@@ -132,6 +135,11 @@ class DiceInterface(Interface):
             f"step{cycle:02d}",
             f"p{proc:02d}"
         )
+
+        logger.info(
+            f"Simulation process {str(proc_dir)} initiated with pid {os.getpid()}"
+        )
+
         os.chdir(proc_dir)
 
         if not (self.config.randominit == 'first' and cycle > 1):
@@ -385,3 +393,5 @@ class DiceInterface(Interface):
             flag = outfile.readlines()[DICE_FLAG_LINE].strip()
             if flag != DICE_END_FLAG:
                 raise RuntimeError(f"Dice process step{cycle:02d}-p{proc:02d} did not exit properly")
+
+        logger.info(f"Dice {file_name} - step{cycle:02d}-p{proc:02d} exited properly")

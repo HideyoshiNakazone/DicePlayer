@@ -1,6 +1,7 @@
 from diceplayer.shared.utils.logger import Logger, valid_logger
 
 import logging
+import io
 
 from unittest import mock
 import unittest
@@ -36,6 +37,23 @@ class TestLogger(unittest.TestCase):
         self.assertIsInstance(logger, Logger)
 
     @mock.patch('builtins.open', mock.mock_open())
+    def test_set_logger_to_file(self):
+        logger = Logger('test')
+
+        logger.set_logger(stream=io.StringIO())
+
+        self.assertIsNotNone(logger._logger)
+        self.assertEqual(logger._logger.name, 'test')
+
+    def test_set_logger_to_stream(self):
+        logger = Logger('test')
+
+        logger.set_logger(stream=io.StringIO())
+
+        self.assertIsNotNone(logger._logger)
+        self.assertEqual(logger._logger.name, 'test')
+
+    @mock.patch('builtins.open', mock.mock_open())
     @mock.patch('diceplayer.shared.utils.logger.Path.exists')
     @mock.patch('diceplayer.shared.utils.logger.Path.rename')
     def test_set_logger_if_file_exists(self, mock_rename, mock_exists):
@@ -64,6 +82,7 @@ class TestLogger(unittest.TestCase):
     @mock.patch('builtins.open', mock.mock_open())
     def test_close(self):
         logger = Logger('test')
+
         logger.set_logger()
         logger.close()
 
@@ -72,7 +91,7 @@ class TestLogger(unittest.TestCase):
     @mock.patch('builtins.open', mock.mock_open())
     def test_info(self):
         logger = Logger('test')
-        logger.set_logger()
+        logger.set_logger(stream=io.StringIO())
 
         with self.assertLogs(level='INFO') as cm:
             logger.info('test')
@@ -82,7 +101,7 @@ class TestLogger(unittest.TestCase):
     @mock.patch('builtins.open', mock.mock_open())
     def test_debug(self):
         logger = Logger('test')
-        logger.set_logger(level=logging.DEBUG)
+        logger.set_logger(stream=io.StringIO(), level=logging.DEBUG)
 
         with self.assertLogs(level='DEBUG') as cm:
             logger.debug('test')
@@ -92,7 +111,7 @@ class TestLogger(unittest.TestCase):
     @mock.patch('builtins.open', mock.mock_open())
     def test_warning(self):
         logger = Logger('test')
-        logger.set_logger()
+        logger.set_logger(stream=io.StringIO())
 
         with self.assertLogs(level='WARNING') as cm:
             logger.warning('test')
@@ -102,7 +121,7 @@ class TestLogger(unittest.TestCase):
     @mock.patch('builtins.open', mock.mock_open())
     def test_error(self):
         logger = Logger('test')
-        logger.set_logger()
+        logger.set_logger(stream=io.StringIO())
 
         with self.assertLogs(level='ERROR') as cm:
             logger.error('test')

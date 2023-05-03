@@ -2,6 +2,7 @@ from diceplayer.shared.interface.dice_interface import DiceInterface
 from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.config.step_dto import StepDTO
+from diceplayer import logger
 
 import io
 
@@ -12,6 +13,9 @@ import unittest
 
 
 class TestDiceInterface(unittest.TestCase):
+    def setUp(self):
+        logger.set_logger(stream=io.StringIO())
+
     def test_class_instantiation(self):
         dice = DiceInterface(
             {

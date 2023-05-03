@@ -6,8 +6,8 @@ diceplayer:
     qmprog: 'g16'
     lps: no
     ghosts: no
-
     altsteps: 20000
+
 dice:
     nmol: [1, 50]
     dens: 0.75

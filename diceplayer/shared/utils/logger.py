@@ -24,15 +24,17 @@ class Logger:
         if self._logger is None:
             self._logger = logging.getLogger(logger_name)
 
-    def set_logger(self, outfile='run.log', level=logging.INFO):
-        self.outfile = Path(outfile)
-        if self.outfile.exists():
-            self.outfile.rename(str(self.outfile) + ".backup")
+    def set_logger(self, outfile='run.log', level=logging.INFO, stream=None):
+        outfile_path = None
+        if outfile is not None and stream is None:
+            outfile_path = Path(outfile)
+            if outfile_path.exists():
+                outfile_path.rename(str(outfile_path) + ".backup")
 
         if level is not None:
             self._logger.setLevel(level)
 
-        self._create_handlers()
+        self._create_handlers(outfile_path, stream)
 
         self._was_set = True
 
@@ -52,10 +54,12 @@ class Logger:
     def error(self, message):
         self._logger.error(message)
 
-    def _create_handlers(self):
+    def _create_handlers(self, outfile_path: Path, stream):
         handlers = []
-        if self.outfile is not None:
-            handlers.append(logging.FileHandler(self.outfile, mode='a+'))
+        if outfile_path is not None:
+            handlers.append(logging.FileHandler(outfile_path, mode='a+'))
+        elif stream is not None:
+            handlers.append(logging.StreamHandler(stream))
         else:
             handlers.append(logging.StreamHandler())
 

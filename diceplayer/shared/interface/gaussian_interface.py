@@ -14,7 +14,7 @@ class GaussianInterface(Interface):
     def configure(self):
         pass
 
-    def start(self):
+    def start(self, cycle: int):
         pass
 
     def reset(self):

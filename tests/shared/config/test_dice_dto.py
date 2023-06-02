@@ -1,11 +1,11 @@
-from diceplayer.shared.config.dice_dto import DiceDTO
+from diceplayer.shared.config.dice_config import DiceConfig
 
 import unittest
 
 
 class TestDiceDto(unittest.TestCase):
     def test_class_instantiation(self):
-        dice_dto = DiceDTO(
+        dice_dto = DiceConfig(
             ljname='test',
             outname='test',
             dens=1.0,
@@ -13,11 +13,11 @@ class TestDiceDto(unittest.TestCase):
             nstep=[1, 1],
         )
 
-        self.assertIsInstance(dice_dto, DiceDTO)
+        self.assertIsInstance(dice_dto, DiceConfig)
 
     def test_validate_jname(self):
         with self.assertRaises(ValueError) as ex:
-            DiceDTO(
+            DiceConfig(
                 ljname=None,
                 outname='test',
                 dens=1.0,
@@ -28,7 +28,7 @@ class TestDiceDto(unittest.TestCase):
 
     def test_validate_outname(self):
         with self.assertRaises(ValueError) as ex:
-            DiceDTO(
+            DiceConfig(
                 ljname='test',
                 outname=None,
                 dens=1.0,
@@ -39,7 +39,7 @@ class TestDiceDto(unittest.TestCase):
 
     def test_validate_dens(self):
         with self.assertRaises(ValueError) as ex:
-            DiceDTO(
+            DiceConfig(
                 ljname='test',
                 outname='test',
                 dens=None,
@@ -50,7 +50,7 @@ class TestDiceDto(unittest.TestCase):
 
     def test_validate_nmol(self):
         with self.assertRaises(ValueError) as ex:
-            DiceDTO(
+            DiceConfig(
                 ljname='test',
                 outname='test',
                 dens=1.0,
@@ -61,7 +61,7 @@ class TestDiceDto(unittest.TestCase):
 
     def test_validate_nstep(self):
         with self.assertRaises(ValueError) as ex:
-            DiceDTO(
+            DiceConfig(
                 ljname='test',
                 outname='test',
                 dens=1.0,
@@ -71,7 +71,7 @@ class TestDiceDto(unittest.TestCase):
             self.assertEqual(ex.exception, "Error: 'nstep' keyword not defined appropriately in config file")
 
     def test_from_dict(self):
-        dice_dto = DiceDTO.from_dict({
+        dice_dto = DiceConfig.from_dict({
             'ljname': 'test',
             'outname': 'test',
             'dens': 1.0,
@@ -79,4 +79,4 @@ class TestDiceDto(unittest.TestCase):
             'nstep': [1, 1],
         })
 
-        self.assertIsInstance(dice_dto, DiceDTO)
+        self.assertIsInstance(dice_dto, DiceConfig)

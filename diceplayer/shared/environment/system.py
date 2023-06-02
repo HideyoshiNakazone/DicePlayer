@@ -1,6 +1,7 @@
 from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.utils.ptable import atomsymb
 from diceplayer.shared.utils.misc import BOHR2ANG
+from diceplayer import logger
 
 from typing import List, Tuple, TextIO
 from copy import deepcopy
@@ -11,50 +12,42 @@ import math
 
 class System:
     """
-        System class declaration. This class is used throughout the DicePlayer program to represent the system containing the molecules.
+    System class declaration. This class is used throughout the DicePlayer program to represent the system containing the molecules.
 
-        Atributes:
-            molecule (List[Molecule]): List of molecules of the system
-            nmols (List[int]): List of number of molecules in the system
-        """
+    Atributes:
+        molecule (List[Molecule]): List of molecules of the system
+        nmols (List[int]): List of number of molecules in the system
+    """
 
     def __init__(self) -> None:
         """
-                    Initializes a empty system object that will be populated afterwards
-                    """
-
-        self.molecule: List[Molecule] = []
-        self.nmols: List[int] = []
-
-    def add_type(self, nmols: int, m: Molecule) -> None:
+        Initializes an empty system object that will be populated afterwards
         """
-                    Adds a new molecule type to the system
+        self.nmols: List[int] = []
+        self.molecule: List[Molecule] = []
 
-                    Args:
-                        nmols (int): Number of molecules of the new type in the system
-                        m (Molecule): The instance of the new type of molecule
-                    """
+    def add_type(self, m: Molecule) -> None:
+        """
+        Adds a new molecule type to the system
+
+        Args:
+            m (Molecule): The instance of the new type of molecule
+        """
         if isinstance(m, Molecule) is False:
             raise TypeError("Error: molecule is not a Molecule instance")
         self.molecule.append(m)
 
-        if isinstance(nmols, int) is False:
-            raise TypeError("Error: nmols is not an integer")
-        self.nmols.append(nmols)
-
-    def update_molecule(self, position: np.ndarray, fh: TextIO) -> None:
+    def update_molecule(self, position: np.ndarray) -> None:
         """Updates the position of the molecule in the Output file
 
-                Args:
-                    position (np.ndarray): numpy position vector
-                    fh (TextIO): Output file
-                """
+        Args:
+            position (np.ndarray): numpy position vector
+        """
 
         position_in_ang = (position * BOHR2ANG).tolist()
-        self.add_type(self.nmols[0], deepcopy(self.molecule[0]))
+        self.add_type(deepcopy(self.molecule[0]))
 
         for atom in self.molecule[-1].atom:
-
             atom.rx = position_in_ang.pop(0)
             atom.ry = position_in_ang.pop(0)
             atom.rz = position_in_ang.pop(0)
@@ -62,8 +55,8 @@ class System:
         rmsd, self.molecule[0] = self.rmsd_fit(-1, 0)
         self.molecule.pop(-1)
 
-        fh.write("\nProjected new conformation of reference molecule with RMSD fit\n")
-        fh.write("RMSD = {:>8.5f} Angstrom\n".format(rmsd))
+        logger.info("Projected new conformation of reference molecule with RMSD fit")
+        logger.info(f"RMSD = {rmsd:>8.5f} Angstrom")
 
     def rmsd_fit(self, p_index: int, r_index: int) -> Tuple[float, Molecule]:
 
@@ -200,7 +193,6 @@ class System:
     #
     #     return min_dist, nearestmol
 
-
     # def print_geom(self, cycle: int, fh: TextIO) -> None:
     #     """
     #             Print the geometry of the molecule in the Output file
@@ -220,22 +212,22 @@ class System:
     #             )
     #         )
     #
-    # def printChargesAndDipole(self, cycle: int, fh: TextIO) -> None:
-    #     """
-    #             Print the charges and dipole of the molecule in the Output file
-    #
-    #             Args:
-    #                 cycle (int): Number of the cycle
-    #                 fh (TextIO): Output file
-    #             """
-    #
-    #     fh.write("Cycle # {}\n".format(cycle))
-    #     fh.write("Number of site: {}\n".format(len(self.molecule[0].atom)))
-    #
-    #     chargesAndDipole = self.molecule[0].charges_and_dipole()
-    #
-    #     fh.write(
-    #         "{:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(
-    #             chargesAndDipole[0], chargesAndDipole[1], chargesAndDipole[2], chargesAndDipole[3], chargesAndDipole[4]
-    #         )
-    #     )
+    def print_charges_and_dipole(self, cycle: int) -> None:
+        """
+                Print the charges and dipole of the molecule in the Output file
+
+                Args:
+                    cycle (int): Number of the cycle
+                    fh (TextIO): Output file
+                """
+
+        logger.info("Cycle # {}\n".format(cycle))
+        logger.info("Number of site: {}\n".format(len(self.molecule[0].atom)))
+
+        chargesAndDipole = self.molecule[0].charges_and_dipole()
+
+        logger.info(
+            "{:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(
+                chargesAndDipole[0], chargesAndDipole[1], chargesAndDipole[2], chargesAndDipole[3], chargesAndDipole[4]
+            )
+        )

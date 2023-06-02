@@ -11,10 +11,11 @@ class GaussianDTO(Dataclass):
     """
     level: str
     qmprog: str
-    keywords: str
 
     chgmult = [0, 1]
     pop: str = 'chelpg'
+    chg_tol: float = 0.01
+    keywords: str = None
 
     def __post_init__(self):
         if self.qmprog not in ("g03", "g09", "g16"):

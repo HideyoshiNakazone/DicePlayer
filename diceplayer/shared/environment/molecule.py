@@ -1,15 +1,18 @@
-import logging
-import math
-from copy import deepcopy
-from typing import List, Any, Tuple, Final, Union
+from __future__ import annotations
 
-import numpy as np
-from nptyping import NDArray, Shape, Float
-from numpy.linalg import linalg
-
+from diceplayer.shared.utils.ptable import ghost_number
 from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.utils.misc import BOHR2ANG
-from diceplayer.shared.utils.ptable import ghost_number
+from diceplayer import logger
+
+from nptyping import NDArray, Shape, Float
+from numpy.linalg import linalg
+import numpy as np
+
+from typing import List, Any, Tuple, Union
+from copy import deepcopy
+import logging
+import math
 
 
 class Molecule:
@@ -185,10 +188,17 @@ class Molecule:
 
         return position
 
-    def update_charges(self, charges: List[float]) -> None:
-
+    def update_charges(self, charges: NDArray) -> int:
+        """
+        Updates the charges of the atoms of the molecule and
+        returns the max difference between the new and old charges
+        """
+        diff = 0
         for i, atom in enumerate(self.atom):
+            diff = max(diff, abs(atom.chg - charges[i]))
             atom.chg = charges[i]
+
+        return diff
 
     # @staticmethod
     # def update_hessian(
@@ -299,48 +309,48 @@ class Molecule:
         Prints the Molecule information into a Output File
         """
 
-        logging.info(
-            "    Center of mass = ( {:>10.4f} , {:>10.4f} , {:>10.4f} )\n".format(
+        logger.info(
+            "    Center of mass = ( {:>10.4f} , {:>10.4f} , {:>10.4f} )".format(
                 self.com[0], self.com[1], self.com[2]
             )
         )
         inertia = self.inertia_tensor()
         evals, evecs = self.principal_axes()
 
-        logging.info(
-            "    Moments of inertia =  {:>9E}  {:>9E}  {:>9E}\n".format(
+        logger.info(
+            "    Moments of inertia =  {:>9E}  {:>9E}  {:>9E}".format(
                 evals[0], evals[1], evals[2]
             )
         )
 
-        logging.info(
-            "    Major principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
+        logger.info(
+            "    Major principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )".format(
                 evecs[0, 0], evecs[1, 0], evecs[2, 0]
             )
         )
-        logging.info(
-            "    Inter principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
+        logger.info(
+            "    Inter principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )".format(
                 evecs[0, 1], evecs[1, 1], evecs[2, 1]
             )
         )
-        logging.info(
-            "    Minor principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )\n".format(
+        logger.info(
+            "    Minor principal axis = ( {:>10.6f} , {:>10.6f} , {:>10.6f} )".format(
                 evecs[0, 2], evecs[1, 2], evecs[2, 2]
             )
         )
 
         sizes = self.sizes_of_molecule()
-        logging.info(
-            "    Characteristic lengths = ( {:>6.2f} , {:>6.2f} , {:>6.2f} )\n".format(
+        logger.info(
+            "    Characteristic lengths = ( {:>6.2f} , {:>6.2f} , {:>6.2f} )".format(
                 sizes[0], sizes[1], sizes[2]
             )
         )
-        logging.info("    Total mass = {:>8.2f} au\n".format(self.total_mass))
+        logger.info("    Total mass = {:>8.2f} au".format(self.total_mass))
 
         chg_dip = self.charges_and_dipole()
-        logging.info("    Total charge = {:>8.4f} e\n".format(chg_dip[0]))
-        logging.info(
-            "    Dipole moment = ( {:>9.4f} , {:>9.4f} , {:>9.4f} )     Total = {:>9.4f} Debye\n\n".format(
+        logger.info("    Total charge = {:>8.4f} e".format(chg_dip[0]))
+        logger.info(
+            "    Dipole moment = ( {:>9.4f} , {:>9.4f} , {:>9.4f} )     Total = {:>9.4f} Debye".format(
                 chg_dip[1], chg_dip[2], chg_dip[3], chg_dip[4]
             )
         )

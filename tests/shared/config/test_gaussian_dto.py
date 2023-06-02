@@ -1,4 +1,4 @@
-from diceplayer.shared.config.gaussian_dto import GaussianDTO
+from diceplayer.shared.config.gaussian_config import GaussianDTO
 
 import unittest
 

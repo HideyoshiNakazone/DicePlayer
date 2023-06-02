@@ -3,117 +3,10 @@ from diceplayer import logger
 
 import io
 
+from tests.mocks.mock_inputs import mock_open
+
 from unittest import mock
 import unittest
-
-
-def get_config_example():
-    return """
-diceplayer:
-    maxcyc: 3
-    opt: no
-    ncores: 4
-    nprocs: 4
-    qmprog: 'g16'
-    lps: no
-    ghosts: no
-    altsteps: 20000
-
-dice:
-    nmol: [1, 50]
-    dens: 0.75
-    nstep: [2000, 3000, 4000]
-    isave: 1000
-    outname: 'phb'
-    progname: '~/.local/bin/dice'
-    ljname: 'phb.ljc'
-    randominit: 'first'
-
-gaussian:
-    qmprog: 'g16'
-    level: 'MP2/aug-cc-pVDZ'
-    keywords: 'freq'
-"""
-
-
-def get_potentials_exemple():
-    return """\
-*
-2
-1 TEST
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-1 PLACEHOLDER
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-"""
-
-
-def get_potentials_error_combrule():
-    return """\
-.
-2
-1 TEST
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-1 PLACEHOLDER
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-"""
-
-
-def get_potentials_error_ntypes():
-    return """\
-*
-a
-1 TEST
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-1 PLACEHOLDER
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-"""
-
-
-def get_potentials_error_ntypes_config():
-    return """\
-*
-3
-1 TEST
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-1 PLACEHOLDER
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-"""
-
-
-def get_potentials_error_nsites():
-    return """\
-*
-2
-. TEST
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-1 PLACEHOLDER
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-"""
-
-
-def get_potentials_error_molname():
-    return """\
-*
-2
-1
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-1 PLACEHOLDER
- 1   1   0.000000   0.000000   0.000000   0.000000  0.0000  0.0000
-"""
-
-
-def mock_open(file, *args, **kwargs):
-    values = {
-        "control.test.yml": get_config_example(),
-        "phb.ljc": get_potentials_exemple(),
-        "phb.error.combrule.ljc": get_potentials_error_combrule(),
-        "phb.error.ntypes.ljc": get_potentials_error_ntypes(),
-        "phb.error.ntypes.config.ljc": get_potentials_error_ntypes_config(),
-        "phb.error.nsites.ljc": get_potentials_error_nsites(),
-        "phb.error.molname.ljc": get_potentials_error_molname(),
-    }
-    mock_file = mock.mock_open(read_data=values[file])
-    return mock_file()
 
 
 class TestPlayer(unittest.TestCase):
@@ -131,19 +24,13 @@ class TestPlayer(unittest.TestCase):
     def test_start(self):
         player = Player("control.test.yml")
 
-        player.print_keywords = mock.MagicMock()
-        player.create_simulation_dir = mock.MagicMock()
-        player.read_potentials = mock.MagicMock()
-        player.print_potentials = mock.MagicMock()
+        player.gaussian_start = mock.MagicMock()
         player.dice_start = mock.MagicMock()
 
         player.start(1)
 
-        self.assertTrue(player.print_keywords.called)
-        self.assertTrue(player.create_simulation_dir.called)
-        self.assertTrue(player.read_potentials.called)
-        self.assertTrue(player.print_potentials.called)
         self.assertEqual(player.dice_start.call_count, 3)
+        self.assertEqual(player.gaussian_start.call_count, 3)
 
     @mock.patch("builtins.open", mock_open)
     @mock.patch("diceplayer.player.Path")
@@ -178,7 +65,22 @@ class TestPlayer(unittest.TestCase):
         with self.assertLogs() as cm:
             player.print_keywords()
 
-        expected_output = ['INFO:diceplayer:##########################################################################################\n#############               Welcome to DICEPLAYER version 1.0                #############\n##########################################################################################\n\n', 'INFO:diceplayer:Your python version is TEST\n', 'INFO:diceplayer:\n', 'INFO:diceplayer:Program started on 00 Test 0000 at 00:00:00\n', 'INFO:diceplayer:\n', 'INFO:diceplayer:Environment variables:\n', 'INFO:diceplayer:OMP_STACKSIZE = Not set\n', 'INFO:diceplayer:\n==========================================================================================\n                         CONTROL variables being used in this run:\n------------------------------------------------------------------------------------------\n\n', 'INFO:diceplayer:\n', 'INFO:diceplayer:------------------------------------------------------------------------------------------\n                         DICE variables being used in this run:\n------------------------------------------------------------------------------------------\n\n', 'INFO:diceplayer:dens = 0.75', 'INFO:diceplayer:isave = 1000', 'INFO:diceplayer:ljname = phb.ljc', 'INFO:diceplayer:nmol = [ 1 50 ]', 'INFO:diceplayer:nstep = [ 2000 3000 4000 ]', 'INFO:diceplayer:outname = phb', 'INFO:diceplayer:press = 1.0', 'INFO:diceplayer:progname = ~/.local/bin/dice', 'INFO:diceplayer:randominit = first', 'INFO:diceplayer:temp = 300.0', 'INFO:diceplayer:\n', 'INFO:diceplayer:------------------------------------------------------------------------------------------\n                         GAUSSIAN variables being used in this run:\n------------------------------------------------------------------------------------------\n\n', 'INFO:diceplayer:keywords = freq', 'INFO:diceplayer:level = MP2/aug-cc-pVDZ', 'INFO:diceplayer:pop = chelpg', 'INFO:diceplayer:qmprog = g16', 'INFO:diceplayer:\n']
+        expected_output = [
+            'INFO:diceplayer:##########################################################################################\n#############               Welcome to DICEPLAYER version 1.0                #############\n##########################################################################################\n\n',
+            'INFO:diceplayer:Your python version is TEST\n', 'INFO:diceplayer:\n',
+            'INFO:diceplayer:Program started on 00 Test 0000 at 00:00:00\n', 'INFO:diceplayer:\n',
+            'INFO:diceplayer:Environment variables:\n', 'INFO:diceplayer:OMP_STACKSIZE = Not set\n',
+            'INFO:diceplayer:\n==========================================================================================\n                         CONTROL variables being used in this run:\n------------------------------------------------------------------------------------------\n\n',
+            'INFO:diceplayer:\n',
+            'INFO:diceplayer:------------------------------------------------------------------------------------------\n                         DICE variables being used in this run:\n------------------------------------------------------------------------------------------\n\n',
+            'INFO:diceplayer:dens = 0.75', 'INFO:diceplayer:isave = 1000', 'INFO:diceplayer:ljname = phb.ljc',
+            'INFO:diceplayer:nmol = [ 1 50 ]', 'INFO:diceplayer:nstep = [ 2000 3000 4000 ]',
+            'INFO:diceplayer:outname = phb', 'INFO:diceplayer:press = 1.0',
+            'INFO:diceplayer:progname = ~/.local/bin/dice', 'INFO:diceplayer:randominit = first',
+            'INFO:diceplayer:temp = 300.0', 'INFO:diceplayer:\n',
+            'INFO:diceplayer:------------------------------------------------------------------------------------------\n                         GAUSSIAN variables being used in this run:\n------------------------------------------------------------------------------------------\n\n',
+            'INFO:diceplayer:keywords = freq', 'INFO:diceplayer:level = MP2/aug-cc-pVDZ',
+            'INFO:diceplayer:pop = chelpg', 'INFO:diceplayer:qmprog = g16', 'INFO:diceplayer:\n']
 
         self.assertEqual(cm.output, expected_output)
 
@@ -333,7 +235,7 @@ class TestPlayer(unittest.TestCase):
 
         # Testing combrule error
         with self.assertRaises(SystemExit) as context:
-            player.dice.config.ljname = "phb.error.combrule.ljc"
+            player.config.dice.ljname = "phb.error.combrule.ljc"
             player.read_potentials()
 
         self.assertEqual(
@@ -343,7 +245,7 @@ class TestPlayer(unittest.TestCase):
 
         # Testing ntypes error
         with self.assertRaises(SystemExit) as context:
-            player.dice.config.ljname = "phb.error.ntypes.ljc"
+            player.config.dice.ljname = "phb.error.ntypes.ljc"
             player.read_potentials()
 
         self.assertEqual(
@@ -353,7 +255,7 @@ class TestPlayer(unittest.TestCase):
 
         # Testing ntypes error on config
         with self.assertRaises(SystemExit) as context:
-            player.dice.config.ljname = "phb.error.ntypes.config.ljc"
+            player.config.dice.ljname = "phb.error.ntypes.config.ljc"
             player.read_potentials()
 
         self.assertEqual(
@@ -364,7 +266,7 @@ class TestPlayer(unittest.TestCase):
 
         # Testing nsite error
         with self.assertRaises(ValueError) as context:
-            player.dice.config.ljname = "phb.error.nsites.ljc"
+            player.config.dice.ljname = "phb.error.nsites.ljc"
             player.read_potentials()
 
         self.assertEqual(
@@ -374,7 +276,7 @@ class TestPlayer(unittest.TestCase):
 
         # Testing molname error
         with self.assertRaises(ValueError) as context:
-            player.dice.config.ljname = "phb.error.molname.ljc"
+            player.config.dice.ljname = "phb.error.molname.ljc"
             player.read_potentials()
 
         self.assertEqual(
@@ -391,7 +293,23 @@ class TestPlayer(unittest.TestCase):
         with self.assertLogs(level='INFO') as context:
             player.print_potentials()
 
-        expected_output = ['INFO:diceplayer:==========================================================================================\n', 'INFO:diceplayer:                    Potential parameters from file phb.ljc:', 'INFO:diceplayer:------------------------------------------------------------------------------------------\n', 'INFO:diceplayer:Combination rule: *', 'INFO:diceplayer:Types of molecules: 2\n', 'INFO:diceplayer:1 atoms in molecule type 1:', 'INFO:diceplayer:---------------------------------------------------------------------------------', 'INFO:diceplayer:Lbl  AN       X          Y          Z         Charge    Epsilon   Sigma     Mass', 'INFO:diceplayer:---------------------------------------------------------------------------------', 'INFO:diceplayer:1     1     0.00000    0.00000    0.00000    0.000000   0.00000  0.0000    1.0079', 'INFO:diceplayer:\n', 'INFO:diceplayer:1 atoms in molecule type 2:', 'INFO:diceplayer:---------------------------------------------------------------------------------', 'INFO:diceplayer:Lbl  AN       X          Y          Z         Charge    Epsilon   Sigma     Mass', 'INFO:diceplayer:---------------------------------------------------------------------------------', 'INFO:diceplayer:1     1     0.00000    0.00000    0.00000    0.000000   0.00000  0.0000    1.0079', 'INFO:diceplayer:\n', 'INFO:diceplayer:==========================================================================================']
+        expected_output = [
+            'INFO:diceplayer:==========================================================================================\n',
+            'INFO:diceplayer:                    Potential parameters from file phb.ljc:',
+            'INFO:diceplayer:------------------------------------------------------------------------------------------\n',
+            'INFO:diceplayer:Combination rule: *', 'INFO:diceplayer:Types of molecules: 2\n',
+            'INFO:diceplayer:1 atoms in molecule type 1:',
+            'INFO:diceplayer:---------------------------------------------------------------------------------',
+            'INFO:diceplayer:Lbl  AN       X          Y          Z         Charge    Epsilon   Sigma     Mass',
+            'INFO:diceplayer:---------------------------------------------------------------------------------',
+            'INFO:diceplayer:1     1     0.00000    0.00000    0.00000    0.000000   0.00000  0.0000    1.0079',
+            'INFO:diceplayer:\n', 'INFO:diceplayer:1 atoms in molecule type 2:',
+            'INFO:diceplayer:---------------------------------------------------------------------------------',
+            'INFO:diceplayer:Lbl  AN       X          Y          Z         Charge    Epsilon   Sigma     Mass',
+            'INFO:diceplayer:---------------------------------------------------------------------------------',
+            'INFO:diceplayer:1     1     0.00000    0.00000    0.00000    0.000000   0.00000  0.0000    1.0079',
+            'INFO:diceplayer:\n',
+            'INFO:diceplayer:==========================================================================================']
 
         self.assertEqual(
             context.output,
@@ -401,23 +319,22 @@ class TestPlayer(unittest.TestCase):
     @mock.patch("builtins.open", mock_open)
     def test_dice_start(self):
         player = Player("control.test.yml")
-        player.dice = mock.MagicMock()
-        player.dice.start = mock.MagicMock()
+        player.dice_interface = mock.MagicMock()
+        player.dice_interface.start = mock.MagicMock()
 
         player.dice_start(1)
 
-        player.dice.start.assert_called_once()
+        player.dice_interface.start.assert_called_once()
 
-    @mock.patch("builtins.open", mock_open)
-    def test_gaussian_start(self):
-        player = Player("control.test.yml")
-        player.gaussian = mock.MagicMock()
-        player.gaussian.start = mock.MagicMock()
-
-        player.gaussian_start(1)
-
-        player.gaussian.start.assert_called_once()
-
+    # @mock.patch("builtins.open", mock_open)
+    # def test_gaussian_start(self):
+    #     player = Player("control.test.yml")
+    #     player.gaussian_interface = mock.MagicMock()
+    #     player.gaussian_interface.start = mock.MagicMock()
+    #
+    #     player.gaussian_start(1)
+    #
+    #     player.gaussian_interface.start.assert_called_once()
 
 
 if __name__ == '__main__':

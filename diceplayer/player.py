@@ -1,19 +1,18 @@
 from diceplayer.shared.interface.gaussian_interface import GaussianInterface
 from diceplayer.shared.interface.dice_interface import DiceInterface
 from diceplayer.shared.utils.dataclass_protocol import Dataclass
-from diceplayer.shared.config.gaussian_dto import GaussianDTO
-from diceplayer.shared.environment.molecule import Molecule
+from diceplayer.shared.config.gaussian_config import GaussianDTO
+from diceplayer.shared.config.player_config import PlayerConfig
+from diceplayer.shared.config.dice_config import DiceConfig
 from diceplayer.shared.utils.misc import weekday_date_time
-from diceplayer.shared.config.player_dto import PlayerDTO
+from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.environment.system import System
-from diceplayer.shared.config.step_dto import StepDTO
-from diceplayer.shared.config.dice_dto import DiceDTO
 from diceplayer.shared.environment.atom import Atom
 from diceplayer import logger
 
 from dataclasses import fields
 from pathlib import Path
-from typing import Type
+from typing import Type, List
 import logging
 import yaml
 import sys
@@ -33,19 +32,49 @@ class Player:
             config_data.get("diceplayer")
         )
 
-        self.gaussian = GaussianInterface(config_data.get("gaussian"))
-        self.dice = DiceInterface(config_data.get("dice"))
+        self.dice_interface = DiceInterface()
+        self.gaussian_interface = GaussianInterface()
 
     def start(self, initial_cycle: int = 1):
-        self.print_keywords()
-
-        self.create_simulation_dir()
-
-        self.read_potentials()
-        self.print_potentials()
+        logger.info(
+            "==========================================================================================\n"
+            "Starting the iterative process.\n"
+            "==========================================================================================\n"
+        )
 
         for cycle in range(initial_cycle, self.config.maxcyc + 1):
+
+            logger.info(
+                f"------------------------------------------------------------------------------------------\n"
+                f"                                         Step # {cycle}\n"
+                f"------------------------------------------------------------------------------------------\n"
+            )
+
             self.dice_start(cycle)
+
+            try:
+                self.gaussian_start(cycle)
+            except StopIteration as e:
+                break
+
+    def prepare_system(self):
+        for i, mol in enumerate(self.system.molecule):
+            logger.info(
+                f"Molecule {i + 1} - {mol.molname}"
+            )
+
+            mol.print_mol_info()
+            logger.info(
+                "\n    Translating and rotating molecule to standard orientation..."
+            )
+
+            mol.standard_orientation()
+            logger.info("\n Done")
+            logger.info("\nNew values:\n")
+            mol.print_mol_info()
+
+            logger.info("\n")
+
 
     def create_simulation_dir(self):
         simulation_dir_path = Path(self.config.simulation_dir)
@@ -71,13 +100,10 @@ class Player:
             "##########################################################################################\n"
             "#############               Welcome to DICEPLAYER version 1.0                #############\n"
             "##########################################################################################\n"
-            "\n"
         )
         logger.info("Your python version is {}\n".format(sys.version))
-        logger.info("\n")
         logger.info("Program started on {}\n".format(weekday_date_time()))
-        logger.info("\n")
-        logger.info("Environment variables:\n")
+        logger.info("Environment variables:")
         for var in ENV:
             logger.info(
                 "{} = {}\n".format(
@@ -86,67 +112,54 @@ class Player:
             )
 
         logger.info(
-            "\n==========================================================================================\n"
-            "                         CONTROL variables being used in this run:\n"
-            "------------------------------------------------------------------------------------------\n"
-            "\n"
-        )
-
-        logger.info("\n")
-
-        logger.info(
             "------------------------------------------------------------------------------------------\n"
             "                         DICE variables being used in this run:\n"
             "------------------------------------------------------------------------------------------\n"
-            "\n"
         )
 
-        log_keywords(self.dice.config, DiceDTO)
-
-        logger.info("\n")
+        log_keywords(self.config.dice, DiceConfig)
 
         logger.info(
             "------------------------------------------------------------------------------------------\n"
             "                         GAUSSIAN variables being used in this run:\n"
             "------------------------------------------------------------------------------------------\n"
-            "\n"
         )
 
-        log_keywords(self.gaussian.config, GaussianDTO)
+        log_keywords(self.config.gaussian, GaussianDTO)
 
         logger.info("\n")
 
     def read_potentials(self):
-        ljname_path = Path(self.dice.config.ljname)
+        ljname_path = Path(self.config.dice.ljname)
         if ljname_path.exists():
-            with open(self.dice.config.ljname) as file:
+            with open(self.config.dice.ljname) as file:
                 ljc_data = file.readlines()
         else:
             raise RuntimeError(
-                f"Potential file {self.dice.config.ljname} not found."
+                f"Potential file {self.config.dice.ljname} not found."
             )
 
         combrule = ljc_data.pop(0).split()[0]
         if combrule not in ("*", "+"):
             sys.exit(
                 "Error: expected a '*' or a '+' sign in 1st line of file {}".format(
-                    self.dice.config.ljname
+                    self.config.dice.ljname
                 )
             )
-        self.dice.config.combrule = combrule
+        self.config.dice.combrule = combrule
 
         ntypes = ljc_data.pop(0).split()[0]
         if not ntypes.isdigit():
             sys.exit(
                 "Error: expected an integer in the 2nd line of file {}".format(
-                    self.dice.config.ljname
+                    self.config.dice.ljname
                 )
             )
         ntypes = int(ntypes)
 
-        if ntypes != len(self.dice.config.nmol):
+        if ntypes != len(self.config.dice.nmol):
             sys.exit(
-                f"Error: number of molecule types in file {self.dice.config.ljname} "
+                f"Error: number of molecule types in file {self.config.dice.ljname} "
                 f"must match that of 'nmol' keyword in config file"
             )
 
@@ -165,7 +178,7 @@ class Player:
                 )
 
             nsites = int(nsites)
-            self.system.add_type(nsites, Molecule(molname))
+            self.system.add_type(Molecule(molname))
 
             atom_fields = ["lbl", "na", "rx", "ry", "rz", "chg", "eps", "sig"]
             for j in range(nsites):
@@ -178,20 +191,15 @@ class Player:
                 )
 
     def print_potentials(self) -> None:
-
         formatstr = "{:<3d} {:>3d}  {:>10.5f} {:>10.5f} {:>10.5f}  {:>10.6f} {:>9.5f} {:>7.4f} {:>9.4f}"
         logger.info(
             "==========================================================================================\n"
-        )
-        logger.info(
-            f"                    Potential parameters from file {self.dice.config.ljname}:"
-        )
-        logger.info(
+            f"                    Potential parameters from file {self.config.dice.ljname}:\n"
             "------------------------------------------------------------------------------------------"
             "\n"
         )
 
-        logger.info(f"Combination rule: {self.dice.config.combrule}")
+        logger.info(f"Combination rule: {self.config.dice.combrule}")
         logger.info(
             f"Types of molecules: {len(self.system.molecule)}\n"
         )
@@ -229,28 +237,50 @@ class Player:
 
             logger.info("\n")
 
-        logger.info(
-            "=========================================================================================="
-        )
-
     def dice_start(self, cycle: int):
-        self.dice.configure(
-            StepDTO(
-                ncores=self.config.ncores,
-                nprocs=self.config.nprocs,
-                simulation_dir=self.config.simulation_dir,
-                altsteps=self.config.altsteps,
-                molecule=self.system.molecule,
-                nmol=self.system.nmols,
-            )
+        self.dice_interface.configure(
+            self.config,
+            self.system,
         )
 
-        self.dice.start(cycle)
+        self.dice_interface.start(cycle)
 
-        self.dice.reset()
+        self.dice_interface.reset()
 
     def gaussian_start(self, cycle: int):
-        self.gaussian.start(cycle)
+        self.gaussian_interface.configure(
+            self.config,
+            self.system,
+        )
+
+        result = self.gaussian_interface.start(cycle)
+
+        self.gaussian_interface.reset()
+
+        if self.config.opt:
+            if 'position' not in result:
+                raise RuntimeError(
+                    'Optimization failed. No position found in result.'
+                )
+
+            self.system.update_molecule(result['position'])
+
+        else:
+            if 'charges' not in result:
+                raise RuntimeError(
+                    'Charges optimization failed. No charges found in result.'
+                )
+
+            diff = self.system.molecule[0]\
+                .update_charges(result['charges'])
+
+            self.system.print_charges_and_dipole(cycle)
+
+            if diff < self.config.gaussian.chg_tol:
+                logger.info(
+                    f'Charges converged after {cycle} cycles.'
+                )
+                raise StopIteration()
 
     @staticmethod
     def validate_atom_dict(molecule_type, molecule_site, atom_dict: dict) -> dict:
@@ -326,9 +356,43 @@ class Player:
 
         return atom_dict
 
+    def print_results(self):
+        formatstr = "{:<3d} {:>3d}  {:>10.5f} {:>10.5f} {:>10.5f}  {:>10.6f} {:>9.5f} {:>7.4f} {:>9.4f}"
+
+        mol = self.system.molecule[0]
+        logger.info(
+            "{} atoms in molecule type {}:".format(len(mol.atom), 1)
+        )
+        logger.info(
+            "---------------------------------------------------------------------------------"
+        )
+        logger.info(
+            "Lbl  AN       X          Y          Z         Charge    Epsilon   Sigma     Mass"
+        )
+        logger.info(
+            "---------------------------------------------------------------------------------"
+        )
+
+        for atom in mol.atom:
+            logger.info(
+                formatstr.format(
+                    atom.lbl,
+                    atom.na,
+                    atom.rx,
+                    atom.ry,
+                    atom.rz,
+                    atom.chg,
+                    atom.eps,
+                    atom.sig,
+                    atom.mass,
+                )
+            )
+
+        logger.info("\n")
+
     @staticmethod
-    def set_config(data: dict) -> PlayerDTO:
-        return PlayerDTO.from_dict(data)
+    def set_config(data: dict) -> PlayerConfig:
+        return PlayerConfig.from_dict(data)
 
     @staticmethod
     def read_keywords(infile) -> dict:

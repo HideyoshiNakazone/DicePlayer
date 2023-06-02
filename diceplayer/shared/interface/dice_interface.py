@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from diceplayer.shared.config.dice_dto import DiceDTO
-from diceplayer.shared.config.step_dto import StepDTO
+from diceplayer.shared.config.player_config import PlayerConfig
+from diceplayer.shared.environment.system import System
 from diceplayer.shared.interface import Interface
 from diceplayer import logger
 
@@ -26,22 +26,13 @@ MAX_SEED: Final[int] = 4294967295
 class DiceInterface(Interface):
     title = "Diceplayer run"
 
-    def __init__(self, data: dict):
-        self.config: DiceDTO = self.set_config(data)
-        self.step: StepDTO | None = None
-
-    @staticmethod
-    def set_config(data: dict) -> DiceDTO:
-        return DiceDTO.from_dict(data)
-
-    def configure(self, step: any):
+    def configure(self, step: PlayerConfig, system: System):
         self.step = step
+        self.system = system
 
     def start(self, cycle: int):
         procs = []
         sentinels = []
-
-        logger.info(f"---------------------- DICE - CYCLE {cycle} --------------------------\n")
 
         for proc in range(1, self.step.nprocs + 1):
             p = Process(target=self._simulation_process, args=(cycle, proc))
@@ -66,6 +57,7 @@ class DiceInterface(Interface):
 
     def reset(self):
         del self.step
+        del self.system
 
     def _simulation_process(self, cycle: int, proc: int):
         setproctitle(f"diceplayer-step{cycle:0d}-p{proc:0d}")
@@ -102,7 +94,7 @@ class DiceInterface(Interface):
 
         # This is logic is used to make the initial configuration file
         # for the next cycle using the last.xyz file from the previous cycle.
-        if self.config.randominit == 'first' and cycle > 1:
+        if self.step.dice.randominit == 'first' and cycle > 1:
             last_xyz = Path(
                 self.step.simulation_dir,
                 f"step{(cycle - 1):02d}",
@@ -115,15 +107,15 @@ class DiceInterface(Interface):
             with open(last_xyz, 'r') as last_xyz_file:
                 self._make_init_file(proc_dir, last_xyz_file)
                 last_xyz_file.seek(0)
-                self.config.dens = self._new_density(last_xyz_file)
+                self.step.dice.dens = self._new_density(last_xyz_file)
 
         else:
             self._make_nvt_ter(cycle, proc_dir)
 
-        if len(self.config.nstep) == 2:
-            self._make_nvt_eq(proc_dir)
+        if len(self.step.dice.nstep) == 2:
+            self._make_nvt_eq(cycle, proc_dir)
 
-        elif len(self.config.nstep) == 3:
+        elif len(self.step.dice.nstep) == 3:
             self._make_npt_ter(cycle, proc_dir)
             self._make_npt_eq(proc_dir)
 
@@ -142,13 +134,13 @@ class DiceInterface(Interface):
 
         os.chdir(proc_dir)
 
-        if not (self.config.randominit == 'first' and cycle > 1):
+        if not (self.step.dice.randominit == 'first' and cycle > 1):
             self.run_dice_file(cycle, proc, "NVT.ter")
 
-        if len(self.config.nstep) == 2:
+        if len(self.step.dice.nstep) == 2:
             self.run_dice_file(cycle, proc, "NVT.eq")
 
-        elif len(self.config.nstep) == 3:
+        elif len(self.step.dice.nstep) == 3:
             self.run_dice_file(cycle, proc, "NPT.ter")
             self.run_dice_file(cycle, proc, "NPT.eq")
 
@@ -175,15 +167,15 @@ class DiceInterface(Interface):
         xyz_lines = last_xyz_file.readlines()
 
         nsites_mm = 0
-        for i in range(1, len(self.step.nmol)):
-            nsites_mm += self.step.nmol[i] * len(self.step.molecule[i].atom)
+        for i in range(1, len(self.step.dice.nmol)):
+            nsites_mm += self.step.dice.nmol[i] * len(self.system.molecule[i].atom)
 
         xyz_lines = xyz_lines[-nsites_mm:]
 
-        input_file = Path(proc_dir, self.config.outname + ".xy")
+        input_file = Path(proc_dir, self.step.dice.outname + ".xy")
         with open(input_file, 'w') as f:
 
-            for atom in self.step.molecule[0].atom:
+            for atom in self.system.molecule[0].atom:
                 f.write(
                     f"{atom.rx:>10.6f}  {atom.ry:>10.6f}  {atom.rz:>10.6f}\n"
                 )
@@ -204,8 +196,8 @@ class DiceInterface(Interface):
         volume = float(box[-3]) * float(box[-2]) * float(box[-1])
 
         total_mass = 0
-        for i in range(len(self.step.molecule)):
-            total_mass += self.step.molecule[i].total_mass * self.step.nmol[i]
+        for i in range(len(self.system.molecule)):
+            total_mass += self.system.molecule[i].total_mass * self.step.dice.nmol[i]
 
         density = (total_mass / volume) * UMAANG3_TO_GCM3
 
@@ -216,21 +208,21 @@ class DiceInterface(Interface):
         with open(file, 'w') as f:
             f.write(f"title = {self.title} - NVT Thermalization\n")
             f.write(f"ncores = {self.step.ncores}\n")
-            f.write(f"ljname = {self.config.ljname}\n")
-            f.write(f"outname = {self.config.outname}\n")
+            f.write(f"ljname = {self.step.dice.ljname}\n")
+            f.write(f"outname = {self.step.dice.outname}\n")
 
-            mol_string = " ".join(str(x) for x in self.config.nmol)
+            mol_string = " ".join(str(x) for x in self.step.dice.nmol)
             f.write(f"nmol = {mol_string}\n")
 
-            f.write(f"dens = {self.config.dens}\n")
-            f.write(f"temp = {self.config.temp}\n")
+            f.write(f"dens = {self.step.dice.dens}\n")
+            f.write(f"temp = {self.step.dice.temp}\n")
 
-            if self.config.randominit == "first" and cycle > 1:
+            if self.step.dice.randominit == "first" and cycle > 1:
                 f.write(f"init = yesreadxyz\n")
                 f.write(f"nstep = {self.step.altsteps}\n")
             else:
                 f.write(f"init = yes\n")
-                f.write(f"nstep = {self.config.nstep[0]}\n")
+                f.write(f"nstep = {self.step.dice.nstep[0]}\n")
 
             f.write("vstep = 0\n")
             f.write("mstop = 1\n")
@@ -241,30 +233,36 @@ class DiceInterface(Interface):
 
             seed = int(1e6 * random.random())
             f.write(f"seed = {seed}\n")
-            f.write(f"upbuf = {self.config.upbuf}")
+            f.write(f"upbuf = {self.step.dice.upbuf}")
 
-    def _make_nvt_eq(self, proc_dir):
+    def _make_nvt_eq(self, cycle, proc_dir):
 
         file = Path(proc_dir, "NVT.eq")
         with open(file, 'w') as f:
             f.write(f"title = {self.title} - NVT Production\n")
             f.write(f"ncores = {self.step.ncores}\n")
-            f.write(f"ljname = {self.config.ljname}\n")
-            f.write(f"outname = {self.config.outname}\n")
+            f.write(f"ljname = {self.step.dice.ljname}\n")
+            f.write(f"outname = {self.step.dice.outname}\n")
 
-            mol_string = " ".join(str(x) for x in self.config.nmol)
+            mol_string = " ".join(str(x) for x in self.step.dice.nmol)
             f.write(f"nmol = {mol_string}\n")
 
-            f.write(f"dens = {self.config.dens}\n")
-            f.write(f"temp = {self.config.temp}\n")
-            f.write("init = no\n")
-            f.write(f"nstep = {self.config.nstep[1]}\n")
+            f.write(f"dens = {self.step.dice.dens}\n")
+            f.write(f"temp = {self.step.dice.temp}\n")
+
+            if self.step.dice.randominit == "first" and cycle > 1:
+                f.write("init = yesreadxyz\n")
+            else:
+                f.write("init = no\n")
+
+            f.write(f"nstep = {self.step.dice.nstep[1]}\n")
+
             f.write("vstep = 0\n")
             f.write("mstop = 1\n")
             f.write("accum = no\n")
             f.write("iprint = 1\n")
 
-            f.write(f"isave = {self.config.isave}\n")
+            f.write(f"isave = {self.step.dice.isave}\n")
             f.write(f"irdf = {10 * self.step.nprocs}\n")
 
             seed = int(1e6 * random.random())
@@ -276,22 +274,22 @@ class DiceInterface(Interface):
         with open(file, 'w') as f:
             f.write(f"title = {self.title} - NPT Thermalization\n")
             f.write(f"ncores = {self.step.ncores}\n")
-            f.write(f"ljname = {self.config.ljname}\n")
-            f.write(f"outname = {self.config.outname}\n")
+            f.write(f"ljname = {self.step.dice.ljname}\n")
+            f.write(f"outname = {self.step.dice.outname}\n")
 
-            mol_string = " ".join(str(x) for x in self.config.nmol)
+            mol_string = " ".join(str(x) for x in self.step.dice.nmol)
             f.write(f"nmol = {mol_string}\n")
 
-            f.write(f"press = {self.config.press}\n")
-            f.write(f"temp = {self.config.temp}\n")
+            f.write(f"press = {self.step.dice.press}\n")
+            f.write(f"temp = {self.step.dice.temp}\n")
 
-            if self.config.randominit == "first" and cycle > 1:
+            if self.step.dice.randominit == "first" and cycle > 1:
                 f.write("init = yesreadxyz\n")
-                f.write(f"dens = {self.config.dens:<8.4f}\n")
+                f.write(f"dens = {self.step.dice.dens:<8.4f}\n")
                 f.write(f"vstep = {int(self.step.altsteps / 5)}\n")
             else:
                 f.write("init = no\n")
-                f.write(f"vstep = {int(self.config.nstep[1] / 5)}\n")
+                f.write(f"vstep = {int(self.step.dice.nstep[1] / 5)}\n")
 
             f.write("nstep = 5\n")
             f.write("mstop = 1\n")
@@ -308,23 +306,23 @@ class DiceInterface(Interface):
         with open(file, 'w') as f:
             f.write(f"title = {self.title} - NPT Production\n")
             f.write(f"ncores = {self.step.ncores}\n")
-            f.write(f"ljname = {self.config.ljname}\n")
-            f.write(f"outname = {self.config.outname}\n")
+            f.write(f"ljname = {self.step.dice.ljname}\n")
+            f.write(f"outname = {self.step.dice.outname}\n")
 
-            mol_string = " ".join(str(x) for x in self.config.nmol)
+            mol_string = " ".join(str(x) for x in self.step.dice.nmol)
             f.write(f"nmol = {mol_string}\n")
 
-            f.write(f"press = {self.config.press}\n")
-            f.write(f"temp = {self.config.temp}\n")
+            f.write(f"press = {self.step.dice.press}\n")
+            f.write(f"temp = {self.step.dice.temp}\n")
 
             f.write(f"nstep = 5\n")
 
-            f.write(f"vstep = {int(self.config.nstep[2] / 5)}\n")
+            f.write(f"vstep = {int(self.step.dice.nstep[2] / 5)}\n")
             f.write("init = no\n")
             f.write("mstop = 1\n")
             f.write("accum = no\n")
             f.write("iprint = 1\n")
-            f.write(f"isave = {self.config.isave}\n")
+            f.write(f"isave = {self.step.dice.isave}\n")
             f.write(f"irdf = {10 * self.step.nprocs}\n")
 
             seed = int(1e6 * random.random())
@@ -333,15 +331,15 @@ class DiceInterface(Interface):
     def _make_potentials(self, proc_dir):
         fstr = "{:<3d} {:>3d}  {:>10.5f} {:>10.5f} {:>10.5f}  {:>10.6f} {:>9.5f} {:>7.4f}\n"
 
-        file = Path(proc_dir, self.config.ljname)
+        file = Path(proc_dir, self.step.dice.ljname)
         with open(file, 'w') as f:
-            f.write(f"{self.config.combrule}\n")
-            f.write(f"{len(self.step.nmol)}\n")
+            f.write(f"{self.step.dice.combrule}\n")
+            f.write(f"{len(self.step.dice.nmol)}\n")
 
-            nsites_qm = len(self.step.molecule[0].atom)
-            f.write(f"{nsites_qm} {self.step.molecule[0].molname}\n")
+            nsites_qm = len(self.system.molecule[0].atom)
+            f.write(f"{nsites_qm} {self.system.molecule[0].molname}\n")
 
-            for atom in self.step.molecule[0].atom:
+            for atom in self.system.molecule[0].atom:
                 f.write(
                     fstr.format(
                         atom.lbl,
@@ -355,7 +353,7 @@ class DiceInterface(Interface):
                     )
                 )
 
-            for mol in self.step.molecule[1:]:
+            for mol in self.system.molecule[1:]:
                 f.write(f"{len(mol.atom)} {mol.molname}\n")
                 for atom in mol.atom:
                     f.write(
@@ -378,12 +376,12 @@ class DiceInterface(Interface):
                     [
                         "bash",
                         "-c",
-                        f"exec -a dice-step{cycle}-p{proc} {self.config.progname} < {infile.name} > {outfile.name}",
+                        f"exec -a dice-step{cycle}-p{proc} {self.step.dice.progname} < {infile.name} > {outfile.name}",
                     ]
                 )
             else:
                 exit_status = subprocess.call(
-                    self.config.progname, stdin=infile, stdout=outfile
+                    self.step.dice.progname, stdin=infile, stdout=outfile
                 )
 
         if exit_status != 0:

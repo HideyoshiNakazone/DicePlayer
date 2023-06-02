@@ -1,24 +1,24 @@
 diceplayer:
-    maxcyc: 3
     opt: no
-    ncores: 4
+    mem: 24
+    maxcyc: 10
+    ncores: 5
     nprocs: 4
     qmprog: 'g16'
     lps: no
     ghosts: no
     altsteps: 20000
 
-dice:
-    nmol: [1, 50]
-    dens: 0.75
-    nstep: [2000, 3000, 4000]
-    isave: 1000
-    outname: 'phb'
-    progname: '~/.local/bin/dice'
-    ljname: 'phb.ljc'
-    randominit: 'first'
+    dice:
+        nmol: [1, 1000]
+        dens: 1.0
+        nstep: [2000, 3000]
+        isave: 1000
+        outname: 'phb'
+        progname: '~/.local/bin/dice'
+        ljname: 'phb.ljc'
+        randominit: 'first'
 
-gaussian:
-    qmprog: 'g16'
-    level: 'MP2/aug-cc-pVDZ'
-    keywords: 'freq'
+    gaussian:
+        qmprog: 'g16'
+        level: 'MP2/aug-cc-pVDZ'

@@ -1,20 +1,23 @@
-from diceplayer.shared.utils.dataclass_protocol import Dataclass
+from __future__ import annotations
+
+from diceplayer.shared.config.player_config import PlayerConfig
+from diceplayer.shared.environment.system import System
 
 from abc import ABC, abstractmethod
 
 
 class Interface(ABC):
     __slots__ = [
-        'config'
+        'step',
+        'system'
     ]
 
-    @abstractmethod
-    def __init__(self, data: dict):
-        pass
+    def __init__(self):
+        self.system: System | None = None
+        self.step: PlayerConfig | None = None
 
-    @staticmethod
     @abstractmethod
-    def set_config(data: dict) -> Dataclass:
+    def configure(self, step: PlayerConfig, system: System):
         pass
 
     @abstractmethod

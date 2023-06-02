@@ -55,7 +55,24 @@ def main():
 
     player = Player(args.infile)
 
+    player.print_keywords()
+
+    player.create_simulation_dir()
+
+    player.read_potentials()
+    player.print_potentials()
+
+    player.prepare_system()
+
     player.start()
+
+    logger.info("\n+" + 88 * "-" + "+\n")
+
+    player.print_results()
+
+    logger.info("\n+" + 88 * "-" + "+\n")
+
+    logger.info("Diceplayer finished successfully \n")
 
 
 if __name__ == "__main__":

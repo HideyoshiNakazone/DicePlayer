@@ -13,18 +13,14 @@ class TestSystem(unittest.TestCase):
 
     def test_add_type(self):
         system = System()
-        system.add_type(0, Molecule('test'))
+        system.add_type(Molecule('test'))
 
         self.assertIsInstance(system.molecule, list)
-        self.assertIsInstance(system.nmols, list)
 
         with self.assertRaises(TypeError) as ex:
-            system.add_type(0, 'test')
+            system.add_type('test')
             self.assertEqual(ex.exception, 'Error: molecule is not a Molecule instance')
 
-        with self.assertRaises(TypeError) as ex:
-            system.add_type('test', Molecule('test'))
-            self.assertEqual(ex.exception, 'Error: nmols is not an integer')
 
 
 if __name__ == '__main__':

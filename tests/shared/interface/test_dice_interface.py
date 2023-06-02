@@ -1,11 +1,14 @@
 from diceplayer.shared.interface.dice_interface import DiceInterface
+from diceplayer.shared.config.player_config import PlayerConfig
 from diceplayer.shared.environment.molecule import Molecule
+from diceplayer.shared.environment.system import System
 from diceplayer.shared.environment.atom import Atom
-from diceplayer.shared.config.step_dto import StepDTO
 from diceplayer import logger
 
+import yaml
 import io
 
+from tests.mocks.mock_inputs import get_config_example
 from tests.mocks.mock_proc import MockConnection, MockProc
 
 from unittest import mock
@@ -16,122 +19,58 @@ class TestDiceInterface(unittest.TestCase):
     def setUp(self):
         logger.set_logger(stream=io.StringIO())
 
+        config = yaml.load(get_config_example(), Loader=yaml.Loader)
+        self.config = PlayerConfig.from_dict(config['diceplayer'])
+
     def test_class_instantiation(self):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
+        dice = DiceInterface()
 
         self.assertIsInstance(dice, DiceInterface)
 
     def test_configure(self):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
+        dice = DiceInterface()
 
         self.assertIsNone(dice.step)
+        self.assertIsNone(dice.system)
 
-        dice.configure('test')
+        # Ignoring the types for testing purposes
+        dice.configure(self.config, System())
 
         self.assertIsNotNone(dice.step)
+        self.assertIsNotNone(dice.system)
 
     def test_reset(self):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
+        dice = DiceInterface()
 
-        dice.configure('test')
+        dice.configure(self.config, System())
 
         self.assertTrue(hasattr(dice, 'step'))
+        self.assertTrue(hasattr(dice, 'system'))
 
         dice.reset()
 
         self.assertFalse(hasattr(dice, 'step'))
+        self.assertFalse(hasattr(dice, 'system'))
 
     @mock.patch('diceplayer.shared.interface.dice_interface.Process', MockProc())
     @mock.patch('diceplayer.shared.interface.dice_interface.connection', MockConnection)
     def test_start(self):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         dice.start(1)
 
     @mock.patch('diceplayer.shared.interface.dice_interface.connection', MockConnection)
     @mock.patch('diceplayer.shared.interface.dice_interface.Process', MockProc(exitcode=1))
     def test_start_with_process_error(self):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=2,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         with self.assertRaises(SystemExit):
             dice.start(1)
 
     def test_simulation_process_raises_exception(self):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
+        dice = DiceInterface()
 
         with self.assertRaises(SystemExit):
             dice._simulation_process(1, 1)
@@ -140,16 +79,7 @@ class TestDiceInterface(unittest.TestCase):
     @mock.patch('diceplayer.shared.interface.dice_interface.DiceInterface._make_dice_inputs')
     @mock.patch('diceplayer.shared.interface.dice_interface.DiceInterface._run_dice')
     def test_simulation_process(self, mock_run_dice, mock_make_dice_inputs, mock_make_proc_dir):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
+        dice = DiceInterface()
 
         dice._simulation_process(1, 1)
 
@@ -160,26 +90,8 @@ class TestDiceInterface(unittest.TestCase):
     @mock.patch('diceplayer.shared.interface.dice_interface.Path.mkdir')
     @mock.patch('diceplayer.shared.interface.dice_interface.Path.exists')
     def test_make_proc_dir_if_simdir_exists(self, mock_path_exists, mock_path_mkdir):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         mock_path_exists.return_value = False
 
@@ -190,26 +102,8 @@ class TestDiceInterface(unittest.TestCase):
     @mock.patch('diceplayer.shared.interface.dice_interface.Path.mkdir')
     @mock.patch('diceplayer.shared.interface.dice_interface.Path.exists')
     def test_make_proc_dir_if_simdir_doesnt_exists(self, mock_path_exists, mock_path_mkdir):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         mock_path_exists.return_value = False
 
@@ -218,42 +112,15 @@ class TestDiceInterface(unittest.TestCase):
         self.assertEqual(mock_path_mkdir.call_count, 2)
 
     def test_make_dice_seed(self):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-
-        seed = dice._make_dice_seed()
+        seed = DiceInterface._make_dice_seed()
 
         self.assertIsInstance(seed, int)
 
     def test_make_dice_inputs_nstep_len_two_with_randoninit_first_cycle_one(self):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
+
+        dice.step.dice.nstep = [1, 1]
 
         dice._make_potentials = mock.Mock()
 
@@ -281,26 +148,10 @@ class TestDiceInterface(unittest.TestCase):
     @mock.patch('builtins.open', new_callable=mock.mock_open, read_data='test')
     @mock.patch('diceplayer.shared.interface.dice_interface.Path.exists', return_value=True)
     def test_make_dice_inputs_nstep_len_two_with_randoninit_first_cycle_two(self, mock_path_exists, mock_open):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
+
+        dice.step.dice.nstep = [1, 1]
 
         dice._make_potentials = mock.Mock()
 
@@ -327,26 +178,10 @@ class TestDiceInterface(unittest.TestCase):
 
     @mock.patch('diceplayer.shared.interface.dice_interface.Path.exists', return_value=False)
     def test_make_dice_inputs_raises_exception_on_last_not_found(self, mock_path_exists):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
+
+        dice.step.dice.nstep = [1, 1]
 
         dice._make_potentials = mock.Mock()
 
@@ -362,26 +197,8 @@ class TestDiceInterface(unittest.TestCase):
             dice._make_dice_inputs(2, 1)
 
     def test_make_dice_inputs_nstep_len_three_with_randoninit_first_cycle_one(self):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         dice._make_potentials = mock.Mock()
 
@@ -410,26 +227,10 @@ class TestDiceInterface(unittest.TestCase):
     @mock.patch('diceplayer.shared.interface.dice_interface.shutil')
     @mock.patch('diceplayer.shared.interface.dice_interface.Path.exists', return_value=True)
     def test_run_dice_on_first_cycle_run_successful(self, mock_path_exists, mock_shutils, mock_os):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
+
+        dice.step.dice.nstep = [1, 1, 1]
 
         dice.run_dice_file = mock.Mock()
 
@@ -441,26 +242,10 @@ class TestDiceInterface(unittest.TestCase):
         self.assertEqual(dice.run_dice_file.call_count, 3)
         self.assertTrue(mock_shutils.copy.called)
 
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
+
+        dice.step.dice.nstep = [1, 1]
 
         dice.run_dice_file = mock.Mock()
 
@@ -476,26 +261,8 @@ class TestDiceInterface(unittest.TestCase):
     @mock.patch('diceplayer.shared.interface.dice_interface.shutil')
     @mock.patch('diceplayer.shared.interface.dice_interface.Path.exists', return_value=True)
     def test_run_dice_on_second_cycle_run_successful(self, mock_path_exists, mock_shutils, mock_os):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         dice.run_dice_file = mock.Mock()
 
@@ -507,26 +274,8 @@ class TestDiceInterface(unittest.TestCase):
         self.assertEqual(dice.run_dice_file.call_count, 2)
         self.assertTrue(mock_shutils.copy.called)
 
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         dice.run_dice_file = mock.Mock()
 
@@ -542,26 +291,8 @@ class TestDiceInterface(unittest.TestCase):
     @mock.patch('diceplayer.shared.interface.dice_interface.shutil')
     @mock.patch('diceplayer.shared.interface.dice_interface.Path.exists', return_value=False)
     def test_run_dice_on_second_cycle_run_successful(self, mock_path_exists, mock_shutils, mock_os):
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         dice.run_dice_file = mock.Mock()
 
@@ -587,32 +318,14 @@ class TestDiceInterface(unittest.TestCase):
         secondary_molecule = Molecule('secondary_molecule')
         secondary_molecule.add_atom(example_atom)
 
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[
-                    main_molecule,
-                    secondary_molecule,
-                ],
-                nmol=[
-                    len(main_molecule.atom),
-                    len(secondary_molecule.atom),
-                ],
-            )
-        )
+        system = System()
+        system.add_type(main_molecule)
+        system.add_type(secondary_molecule)
+
+        dice = DiceInterface()
+        dice.configure(self.config, system)
+
+        dice.step.dice.nmol = [1, 1]
 
         last_xyz_file = io.StringIO()
         last_xyz_file.writelines([
@@ -657,32 +370,12 @@ class TestDiceInterface(unittest.TestCase):
         secondary_molecule = Molecule('secondary_molecule')
         secondary_molecule.add_atom(example_atom)
 
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[
-                    main_molecule,
-                    secondary_molecule,
-                ],
-                nmol=[
-                    len(main_molecule.atom),
-                    len(secondary_molecule.atom),
-                ],
-            )
-        )
+        system = System()
+        system.add_type(main_molecule)
+        system.add_type(secondary_molecule)
+
+        dice = DiceInterface()
+        dice.configure(self.config, system)
 
         last_xyz_file = io.StringIO()
         last_xyz_file.writelines([
@@ -695,33 +388,15 @@ class TestDiceInterface(unittest.TestCase):
 
         density = dice._new_density(last_xyz_file)
 
-        self.assertEqual(density, 3.3472359000000003)
+        self.assertEqual(density, 85.35451545000001)
 
     @mock.patch('builtins.open', new_callable=mock.mock_open)
     @mock.patch('diceplayer.shared.interface.dice_interface.random')
     def test_make_nvt_ter(self, mock_random, mock_open):
         mock_random.random.return_value = 1
 
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         dice._make_nvt_ter(1, 'test')
 
@@ -730,7 +405,7 @@ class TestDiceInterface(unittest.TestCase):
 
         lines = list(map(lambda x: x[0][0], calls))
 
-        expected_lines = ['title = Diceplayer run - NVT Thermalization\n', 'ncores = 1\n', 'ljname = test\n', 'outname = test\n', 'nmol = 1\n', 'dens = 1.0\n', 'temp = 300.0\n', 'init = yes\n', 'nstep = 1\n', 'vstep = 0\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 0\n', 'irdf = 0\n', 'seed = 1000000\n', 'upbuf = 360']
+        expected_lines = ['title = Diceplayer run - NVT Thermalization\n', 'ncores = 4\n', 'ljname = phb.ljc\n', 'outname = phb\n', 'nmol = 1 50\n', 'dens = 0.75\n', 'temp = 300.0\n', 'init = yes\n', 'nstep = 2000\n', 'vstep = 0\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 0\n', 'irdf = 0\n', 'seed = 1000000\n', 'upbuf = 360']
 
         self.assertEqual(lines, expected_lines)
 
@@ -739,26 +414,8 @@ class TestDiceInterface(unittest.TestCase):
     def test_make_nvt_eq(self, mock_random, mock_open):
         mock_random.random.return_value = 1
 
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         dice._make_nvt_eq('test')
 
@@ -767,7 +424,7 @@ class TestDiceInterface(unittest.TestCase):
 
         lines = list(map(lambda x: x[0][0], calls))
 
-        expected_lines = ['title = Diceplayer run - NVT Production\n', 'ncores = 1\n', 'ljname = test\n', 'outname = test\n', 'nmol = 1\n', 'dens = 1.0\n', 'temp = 300.0\n', 'init = no\n', 'nstep = 1\n', 'vstep = 0\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 1000\n', 'irdf = 10\n', 'seed = 1000000\n']
+        expected_lines = ['title = Diceplayer run - NVT Production\n', 'ncores = 4\n', 'ljname = phb.ljc\n', 'outname = phb\n', 'nmol = 1 50\n', 'dens = 0.75\n', 'temp = 300.0\n', 'init = no\n', 'nstep = 3000\n', 'vstep = 0\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 1000\n', 'irdf = 40\n', 'seed = 1000000\n']
 
         self.assertEqual(lines, expected_lines)
 
@@ -776,26 +433,8 @@ class TestDiceInterface(unittest.TestCase):
     def test_make_npt_ter(self, mock_random, mock_open):
         mock_random.random.return_value = 1
 
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         dice._make_npt_ter(1, 'test')
 
@@ -804,7 +443,7 @@ class TestDiceInterface(unittest.TestCase):
 
         lines = list(map(lambda x: x[0][0], calls))
 
-        expected_lines = ['title = Diceplayer run - NPT Thermalization\n', 'ncores = 1\n', 'ljname = test\n', 'outname = test\n', 'nmol = 1\n', 'press = 1.0\n', 'temp = 300.0\n', 'init = no\n', 'vstep = 0\n', 'nstep = 5\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 0\n', 'irdf = 0\n', 'seed = 1000000\n']
+        expected_lines = ['title = Diceplayer run - NPT Thermalization\n', 'ncores = 4\n', 'ljname = phb.ljc\n', 'outname = phb\n', 'nmol = 1 50\n', 'press = 1.0\n', 'temp = 300.0\n', 'init = no\n', 'vstep = 600\n', 'nstep = 5\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 0\n', 'irdf = 0\n', 'seed = 1000000\n']
 
         self.assertEqual(lines, expected_lines)
 
@@ -813,26 +452,8 @@ class TestDiceInterface(unittest.TestCase):
     def test_make_npt_eq(self, mock_random, mock_open):
         mock_random.random.return_value = 1
 
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[],
-                nmol=[],
-            )
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         dice._make_npt_eq('test')
 
@@ -841,7 +462,7 @@ class TestDiceInterface(unittest.TestCase):
 
         lines = list(map(lambda x: x[0][0], calls))
 
-        expected_lines = ['title = Diceplayer run - NPT Production\n', 'ncores = 1\n', 'ljname = test\n', 'outname = test\n', 'nmol = 1\n', 'press = 1.0\n', 'temp = 300.0\n', 'nstep = 5\n', 'vstep = 0\n', 'init = no\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 1000\n', 'irdf = 10\n', 'seed = 1000000\n']
+        expected_lines = ['title = Diceplayer run - NPT Production\n', 'ncores = 4\n', 'ljname = phb.ljc\n', 'outname = phb\n', 'nmol = 1 50\n', 'press = 1.0\n', 'temp = 300.0\n', 'nstep = 5\n', 'vstep = 800\n', 'init = no\n', 'mstop = 1\n', 'accum = no\n', 'iprint = 1\n', 'isave = 1000\n', 'irdf = 40\n', 'seed = 1000000\n']
 
         self.assertEqual(lines, expected_lines)
 
@@ -864,32 +485,12 @@ class TestDiceInterface(unittest.TestCase):
         secondary_molecule = Molecule('secondary_molecule')
         secondary_molecule.add_atom(example_atom)
 
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
-        dice.configure(
-            StepDTO(
-                ncores=1,
-                nprocs=1,
-                simulation_dir='test',
-                altsteps=1,
-                molecule=[
-                    main_molecule,
-                    secondary_molecule,
-                ],
-                nmol=[
-                    len(main_molecule.atom),
-                    len(secondary_molecule.atom),
-                ],
-            )
-        )
+        system = System()
+        system.add_type(main_molecule)
+        system.add_type(secondary_molecule)
+
+        dice = DiceInterface()
+        dice.configure(self.config, system)
 
         dice._make_potentials('test')
 
@@ -906,16 +507,8 @@ class TestDiceInterface(unittest.TestCase):
     @mock.patch('builtins.open', new_callable=mock.mock_open, read_data='End of simulation\nBLABLA')
     def test_run_dice_file(self, mock_open, mock_subprocess):
         mock_subprocess.call.return_value = 0
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         dice.run_dice_file(1, 1, 'test')
 
@@ -926,16 +519,8 @@ class TestDiceInterface(unittest.TestCase):
     @mock.patch('builtins.open', new_callable=mock.mock_open, read_data='Error\nBLABLA')
     def test_run_dice_file_raises_runtime_error_on_dice_file(self, mock_open, mock_subprocess):
         mock_subprocess.call.return_value = 0
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         with self.assertRaises(RuntimeError):
             dice.run_dice_file(1, 1, 'test')
@@ -944,16 +529,8 @@ class TestDiceInterface(unittest.TestCase):
     @mock.patch('builtins.open', new_callable=mock.mock_open, read_data='End of simulation\nBLABLA')
     def test_run_dice_file_raises_runtime_error_of_dice_exit_code(self, mock_open, mock_subprocess):
         mock_subprocess.call.return_value = 1
-        dice = DiceInterface(
-            {
-                'ljname': 'test',
-                'outname': 'test',
-                'ncores': 1,
-                'dens': 1.0,
-                'nmol': [1],
-                'nstep': [1, 1],
-            }
-        )
+        dice = DiceInterface()
+        dice.configure(self.config, System())
 
         with self.assertRaises(RuntimeError):
             dice.run_dice_file(1, 1, 'test')

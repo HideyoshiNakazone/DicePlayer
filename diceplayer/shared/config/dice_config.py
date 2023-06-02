@@ -6,7 +6,7 @@ from typing import List
 
 
 @dataclass
-class DiceDTO(Dataclass):
+class DiceConfig(Dataclass):
     """
     Data Transfer Object for the Dice configuration.
     """
@@ -53,4 +53,4 @@ class DiceDTO(Dataclass):
 
     @classmethod
     def from_dict(cls, param: dict):
-        return from_dict(DiceDTO, param)
+        return from_dict(DiceConfig, param)

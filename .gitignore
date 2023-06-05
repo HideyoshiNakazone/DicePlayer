@@ -13,3 +13,4 @@ simfiles/*
 
 .vscode/*
 .idea/*
+*.pkl

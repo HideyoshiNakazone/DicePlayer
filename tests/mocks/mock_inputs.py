@@ -107,5 +107,7 @@ def mock_open(file, *args, **kwargs):
         "phb.error.nsites.ljc": get_potentials_error_nsites(),
         "phb.error.molname.ljc": get_potentials_error_molname(),
     }
-    mock_file = mock.mock_open(read_data=values[file])
-    return mock_file()
+    if file in values:
+        return mock.mock_open(read_data=values[file])()
+
+    return mock.mock_open(read_data="")()

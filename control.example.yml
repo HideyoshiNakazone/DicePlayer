@@ -1,16 +1,16 @@
 diceplayer:
     opt: no
     mem: 24
-    maxcyc: 10
+    maxcyc: 5
     ncores: 5
     nprocs: 4
     qmprog: 'g16'
     lps: no
     ghosts: no
-    altsteps: 20000
+    altsteps: 2000
 
     dice:
-        nmol: [1, 1000]
+        nmol: [1, 100]
         dens: 1.0
         nstep: [2000, 3000]
         isave: 1000

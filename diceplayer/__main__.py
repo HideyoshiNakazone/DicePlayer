@@ -43,23 +43,17 @@ def main():
     # Open OUTFILE for writing and print keywords and initial info
     logger.set_logger(args.outfile, logging.INFO)
 
-    try:
+    if args.opt_continue:
+        player = Player.from_save()
+    else:
+        player = Player.from_file(args.infile)
 
-        pickle_path = Path("latest-step.pkl")
-        if args.opt_continue and pickle_path.exists():
-            with open(pickle_path) as pickle_file:
-                save = pickle.load(pickle_file)
+        player.read_potentials()
 
-    except Exception as err:
-        sys.exit(err)
-
-    player = Player(args.infile)
+        player.create_simulation_dir()
 
     player.print_keywords()
 
-    player.create_simulation_dir()
-
-    player.read_potentials()
     player.print_potentials()
 
     player.prepare_system()

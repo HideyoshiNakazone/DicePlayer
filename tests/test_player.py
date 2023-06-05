@@ -27,7 +27,7 @@ class TestPlayer(unittest.TestCase):
         player.gaussian_start = mock.MagicMock()
         player.dice_start = mock.MagicMock()
 
-        player.start(1)
+        player.start()
 
         self.assertEqual(player.dice_start.call_count, 3)
         self.assertEqual(player.gaussian_start.call_count, 3)
@@ -66,21 +66,30 @@ class TestPlayer(unittest.TestCase):
             player.print_keywords()
 
         expected_output = [
-            'INFO:diceplayer:##########################################################################################\n#############               Welcome to DICEPLAYER version 1.0                #############\n##########################################################################################\n\n',
-            'INFO:diceplayer:Your python version is TEST\n', 'INFO:diceplayer:\n',
-            'INFO:diceplayer:Program started on 00 Test 0000 at 00:00:00\n', 'INFO:diceplayer:\n',
-            'INFO:diceplayer:Environment variables:\n', 'INFO:diceplayer:OMP_STACKSIZE = Not set\n',
-            'INFO:diceplayer:\n==========================================================================================\n                         CONTROL variables being used in this run:\n------------------------------------------------------------------------------------------\n\n',
-            'INFO:diceplayer:\n',
-            'INFO:diceplayer:------------------------------------------------------------------------------------------\n                         DICE variables being used in this run:\n------------------------------------------------------------------------------------------\n\n',
-            'INFO:diceplayer:dens = 0.75', 'INFO:diceplayer:isave = 1000', 'INFO:diceplayer:ljname = phb.ljc',
-            'INFO:diceplayer:nmol = [ 1 50 ]', 'INFO:diceplayer:nstep = [ 2000 3000 4000 ]',
-            'INFO:diceplayer:outname = phb', 'INFO:diceplayer:press = 1.0',
-            'INFO:diceplayer:progname = ~/.local/bin/dice', 'INFO:diceplayer:randominit = first',
-            'INFO:diceplayer:temp = 300.0', 'INFO:diceplayer:\n',
-            'INFO:diceplayer:------------------------------------------------------------------------------------------\n                         GAUSSIAN variables being used in this run:\n------------------------------------------------------------------------------------------\n\n',
-            'INFO:diceplayer:keywords = freq', 'INFO:diceplayer:level = MP2/aug-cc-pVDZ',
-            'INFO:diceplayer:pop = chelpg', 'INFO:diceplayer:qmprog = g16', 'INFO:diceplayer:\n']
+            'INFO:diceplayer:##########################################################################################\n#############               Welcome to DICEPLAYER version 1.0                #############\n##########################################################################################\n',
+            'INFO:diceplayer:Your python version is TEST\n',
+            'INFO:diceplayer:Program started on 00 Test 0000 at 00:00:00\n',
+            'INFO:diceplayer:Environment variables:',
+            'INFO:diceplayer:OMP_STACKSIZE = Not set\n',
+            'INFO:diceplayer:------------------------------------------------------------------------------------------\n                         DICE variables being used in this run:\n------------------------------------------------------------------------------------------\n',
+            'INFO:diceplayer:dens = 0.75',
+            'INFO:diceplayer:isave = 1000',
+            'INFO:diceplayer:ljname = phb.ljc',
+            'INFO:diceplayer:nmol = [ 1 50 ]',
+            'INFO:diceplayer:nstep = [ 2000 3000 4000 ]',
+            'INFO:diceplayer:outname = phb',
+            'INFO:diceplayer:press = 1.0',
+            'INFO:diceplayer:progname = ~/.local/bin/dice',
+            'INFO:diceplayer:randominit = first',
+            'INFO:diceplayer:temp = 300.0',
+            'INFO:diceplayer:------------------------------------------------------------------------------------------\n                         GAUSSIAN variables being used in this run:\n------------------------------------------------------------------------------------------\n',
+            'INFO:diceplayer:chg_tol = 0.01',
+            'INFO:diceplayer:keywords = freq',
+            'INFO:diceplayer:level = MP2/aug-cc-pVDZ',
+            'INFO:diceplayer:pop = chelpg',
+            'INFO:diceplayer:qmprog = g16',
+            'INFO:diceplayer:\n'
+        ]
 
         self.assertEqual(cm.output, expected_output)
 
@@ -294,22 +303,22 @@ class TestPlayer(unittest.TestCase):
             player.print_potentials()
 
         expected_output = [
-            'INFO:diceplayer:==========================================================================================\n',
-            'INFO:diceplayer:                    Potential parameters from file phb.ljc:',
-            'INFO:diceplayer:------------------------------------------------------------------------------------------\n',
-            'INFO:diceplayer:Combination rule: *', 'INFO:diceplayer:Types of molecules: 2\n',
+            'INFO:diceplayer:==========================================================================================\n                    Potential parameters from file phb.ljc:\n------------------------------------------------------------------------------------------\n',
+            'INFO:diceplayer:Combination rule: *',
+            'INFO:diceplayer:Types of molecules: 2\n',
             'INFO:diceplayer:1 atoms in molecule type 1:',
             'INFO:diceplayer:---------------------------------------------------------------------------------',
             'INFO:diceplayer:Lbl  AN       X          Y          Z         Charge    Epsilon   Sigma     Mass',
             'INFO:diceplayer:---------------------------------------------------------------------------------',
             'INFO:diceplayer:1     1     0.00000    0.00000    0.00000    0.000000   0.00000  0.0000    1.0079',
-            'INFO:diceplayer:\n', 'INFO:diceplayer:1 atoms in molecule type 2:',
+            'INFO:diceplayer:\n',
+            'INFO:diceplayer:1 atoms in molecule type 2:',
             'INFO:diceplayer:---------------------------------------------------------------------------------',
             'INFO:diceplayer:Lbl  AN       X          Y          Z         Charge    Epsilon   Sigma     Mass',
             'INFO:diceplayer:---------------------------------------------------------------------------------',
             'INFO:diceplayer:1     1     0.00000    0.00000    0.00000    0.000000   0.00000  0.0000    1.0079',
-            'INFO:diceplayer:\n',
-            'INFO:diceplayer:==========================================================================================']
+            'INFO:diceplayer:\n'
+        ]
 
         self.assertEqual(
             context.output,

@@ -417,7 +417,7 @@ class TestDiceInterface(unittest.TestCase):
         dice = DiceInterface()
         dice.configure(self.config, System())
 
-        dice._make_nvt_eq('test')
+        dice._make_nvt_eq(1, 'test')
 
         mock_handler = mock_open()
         calls = mock_handler.write.call_args_list

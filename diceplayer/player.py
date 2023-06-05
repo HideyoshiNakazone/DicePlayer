@@ -1,3 +1,5 @@
+import pickle
+
 from diceplayer.shared.interface.gaussian_interface import GaussianInterface
 from diceplayer.shared.interface.dice_interface import DiceInterface
 from diceplayer.shared.utils.dataclass_protocol import Dataclass
@@ -11,38 +13,54 @@ from diceplayer.shared.environment.atom import Atom
 from diceplayer import logger
 
 from dataclasses import fields
+from typing import Type, Tuple
 from pathlib import Path
-from typing import Type, List
-import logging
 import yaml
 import sys
 import os
-
 
 ENV = ["OMP_STACKSIZE"]
 
 
 class Player:
-    def __init__(self, infile: str):
-        config_data = self.read_keywords(infile)
+    def __init__(self, infile: str = None, optimization: bool = False):
+        if infile is None and optimization is False:
+            raise ValueError("Must specify either infile or optimization")
 
-        self.system = System()
+        elif infile is not None:
+            config_data = self.read_keywords(infile)
 
-        self.config = self.set_config(
-            config_data.get("diceplayer")
-        )
+            self.config = self.set_config(
+                config_data.get("diceplayer")
+            )
+
+            self.system = System()
+
+            self.initial_cycle = 1
+
+        elif optimization is True:
+            save = self.load_run_from_pickle()
+
+            self.config = save[0]
+
+            self.system = save[1]
+
+            self.initial_cycle = save[2]
+
+        else:
+            raise ValueError("Must specify either infile or config")
 
         self.dice_interface = DiceInterface()
         self.gaussian_interface = GaussianInterface()
 
-    def start(self, initial_cycle: int = 1):
+    def start(self):
         logger.info(
             "==========================================================================================\n"
             "Starting the iterative process.\n"
             "==========================================================================================\n"
         )
 
-        for cycle in range(initial_cycle, self.config.maxcyc + 1):
+        for cycle in range(self.initial_cycle, self.config.maxcyc + 1):
 
             logger.info(
                 f"------------------------------------------------------------------------------------------\n"
@@ -54,8 +72,11 @@ class Player:
 
             try:
                 self.gaussian_start(cycle)
+                pass
             except StopIteration as e:
                 break
+
+            self.save_run_in_pickle(cycle)
 
     def prepare_system(self):
         for i, mol in enumerate(self.system.molecule):
@@ -74,7 +95,6 @@ class Player:
             mol.print_mol_info()
 
             logger.info("\n")
-
 
     def create_simulation_dir(self):
         simulation_dir_path = Path(self.config.simulation_dir)
@@ -169,12 +189,12 @@ class Player:
                 nsites, molname = ljc_data.pop(0).split()[:2]
             except ValueError:
                 raise ValueError(
-                    f"Error: expected nsites and molname for the molecule type {i+1}"
+                    f"Error: expected nsites and molname for the molecule type {i + 1}"
                 )
 
             if not nsites.isdigit():
                 raise ValueError(
-                    f"Error: expected nsites to be an integer for molecule type {i+1}"
+                    f"Error: expected nsites to be an integer for molecule type {i + 1}"
                 )
 
             nsites = int(nsites)
@@ -271,7 +291,7 @@ class Player:
                     'Charges optimization failed. No charges found in result.'
                 )
 
-            diff = self.system.molecule[0]\
+            diff = self.system.molecule[0] \
                 .update_charges(result['charges'])
 
             self.system.print_charges_and_dipole(cycle)
@@ -390,6 +410,31 @@ class Player:
 
         logger.info("\n")
 
+    def save_run_in_pickle(self, cycle):
+        try:
+            with open('latest-step.pkl', 'wb') as pickle_file:
+                pickle.dump(
+                    (self.config, self.system, cycle),
+                    pickle_file
+                )
+        except Exception:
+            raise RuntimeError(
+                f'Could not save pickle file latest-step.pkl.'
+            )
+
+    @staticmethod
+    def load_run_from_pickle() -> Tuple[PlayerConfig, System, int]:
+        pickle_path = Path("latest-step.pkl")
+        try:
+            with open(pickle_path, 'rb') as pickle_file:
+                save = pickle.load(pickle_file)
+            return save[0], save[1], save[2] + 1
+
+        except Exception:
+            raise RuntimeError(
+                f'Could not load pickle file {pickle_path}.'
+            )
+
     @staticmethod
     def set_config(data: dict) -> PlayerConfig:
         return PlayerConfig.from_dict(data)
@@ -398,3 +443,11 @@ class Player:
     def read_keywords(infile) -> dict:
         with open(infile, 'r') as yml_file:
             return yaml.load(yml_file, Loader=yaml.SafeLoader)
+
+    @classmethod
+    def from_file(cls, infile: str) -> 'Player':
+        return cls(infile=infile)
+
+    @classmethod
+    def from_save(cls):
+        return cls(optimization=True)

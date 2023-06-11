@@ -1,5 +1,4 @@
-from diceplayer.DPpack.Utils.PTable import *
-from diceplayer.DPpack.Utils.Misc import *
+from diceplayer.shared.utils.ptable import atommass
 
 
 class Atom:
@@ -16,16 +15,17 @@ class Atom:
         eps (float): quantum number epsilon of the represented atom.
         sig (float): quantum number sigma of the represented atom.
     """
+
     def __init__(
-        self,
-        lbl: int,
-        na: int,
-        rx: float,
-        ry: float,
-        rz: float,
-        chg: float,
-        eps: float,
-        sig: float,
+            self,
+            lbl: int,
+            na: int,
+            rx: float,
+            ry: float,
+            rz: float,
+            chg: float,
+            eps: float,
+            sig: float,
     ) -> None:
         """
         The constructor function __init__ is used to create new instances of the Atom class.

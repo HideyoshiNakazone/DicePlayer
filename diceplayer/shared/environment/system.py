@@ -1,13 +1,14 @@
-from diceplayer.shared.environment.molecule import Molecule
-from diceplayer.shared.utils.ptable import atomsymb
-from diceplayer.shared.utils.misc import BOHR2ANG
 from diceplayer import logger
+from diceplayer.shared.environment.molecule import Molecule
+from diceplayer.shared.utils.misc import BOHR2ANG
+from diceplayer.shared.utils.ptable import atomsymb
 
-from typing import List, Tuple, TextIO
-from copy import deepcopy
-from numpy import linalg
 import numpy as np
+from numpy import linalg
+
 import math
+from copy import deepcopy
+from typing import List, TextIO, Tuple
 
 
 class System:
@@ -59,7 +60,6 @@ class System:
         logger.info(f"RMSD = {rmsd:>8.5f} Angstrom")
 
     def rmsd_fit(self, p_index: int, r_index: int) -> Tuple[float, Molecule]:
-
         projecting_mol = self.molecule[p_index]
         reference_mol = self.molecule[r_index]
 
@@ -117,9 +117,9 @@ class System:
         rmsd = 0
         for i in range(dim):
             rmsd += (
-                    (x[i, 0] - y[i, 0]) ** 2
-                    + (x[i, 1] - y[i, 1]) ** 2
-                    + (x[i, 2] - y[i, 2]) ** 2
+                (x[i, 0] - y[i, 0]) ** 2
+                + (x[i, 1] - y[i, 1]) ** 2
+                + (x[i, 2] - y[i, 2]) ** 2
             )
         rmsd = math.sqrt(rmsd / dim)
 
@@ -214,12 +214,12 @@ class System:
     #
     def print_charges_and_dipole(self, cycle: int) -> None:
         """
-                Print the charges and dipole of the molecule in the Output file
+        Print the charges and dipole of the molecule in the Output file
 
-                Args:
-                    cycle (int): Number of the cycle
-                    fh (TextIO): Output file
-                """
+        Args:
+            cycle (int): Number of the cycle
+            fh (TextIO): Output file
+        """
 
         logger.info("Cycle # {}\n".format(cycle))
         logger.info("Number of site: {}\n".format(len(self.molecule[0].atom)))
@@ -228,6 +228,10 @@ class System:
 
         logger.info(
             "{:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(
-                chargesAndDipole[0], chargesAndDipole[1], chargesAndDipole[2], chargesAndDipole[3], chargesAndDipole[4]
+                chargesAndDipole[0],
+                chargesAndDipole[1],
+                chargesAndDipole[2],
+                chargesAndDipole[3],
+                chargesAndDipole[4],
             )
         )

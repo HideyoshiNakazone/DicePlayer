@@ -1,12 +1,12 @@
-from diceplayer.shared.interface.dice_interface import DiceInterface
-from diceplayer.player import Player
 from diceplayer import logger
+from diceplayer.player import Player
+from diceplayer.shared.interface.dice_interface import DiceInterface
 
-from pathlib import Path
 import argparse
 import logging
 import pickle
 import sys
+from pathlib import Path
 
 __VERSION = "v0.0.1"
 
@@ -25,18 +25,20 @@ def main():
         "-v", "--version", action="version", version="diceplayer-" + __VERSION
     )
     parser.add_argument(
-        "-i", "--input",
+        "-i",
+        "--input",
         dest="infile",
         default="control.yml",
         metavar="INFILE",
-        help="input file of diceplayer [default = control.in]"
+        help="input file of diceplayer [default = control.in]",
     )
     parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         dest="outfile",
         default="run.log",
         metavar="OUTFILE",
-        help="output file of diceplayer [default = run.log]"
+        help="output file of diceplayer [default = run.log]",
     )
     args = parser.parse_args()
 

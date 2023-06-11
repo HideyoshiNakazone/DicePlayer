@@ -1,20 +1,21 @@
 from __future__ import annotations
 
+from diceplayer import logger
 from diceplayer.shared.config.player_config import PlayerConfig
 from diceplayer.shared.environment.system import System
 from diceplayer.shared.interface import Interface
-from diceplayer import logger
 
-from multiprocessing import Process, connection
 from setproctitle import setproctitle
-from typing import Final, TextIO
-from pathlib import Path
-import subprocess
-import shutil
-import random
-import time
-import sys
+
 import os
+import random
+import shutil
+import subprocess
+import sys
+import time
+from multiprocessing import Process, connection
+from pathlib import Path
+from typing import Final, TextIO
 
 DICE_END_FLAG: Final[str] = "End of simulation"
 DICE_FLAG_LINE: Final[int] = -2
@@ -74,19 +75,11 @@ class DiceInterface(Interface):
         if not simulation_dir.exists():
             simulation_dir.mkdir(parents=True)
 
-        proc_dir = Path(
-            simulation_dir,
-            f"step{cycle:02d}",
-            f"p{proc:02d}"
-        )
+        proc_dir = Path(simulation_dir, f"step{cycle:02d}", f"p{proc:02d}")
         proc_dir.mkdir(parents=True, exist_ok=True)
 
     def _make_dice_inputs(self, cycle, proc):
-        proc_dir = Path(
-            self.step.simulation_dir,
-            f"step{cycle:02d}",
-            f"p{proc:02d}"
-        )
+        proc_dir = Path(self.step.simulation_dir, f"step{cycle:02d}", f"p{proc:02d}")
 
         self._make_potentials(proc_dir)
 
@@ -94,17 +87,17 @@ class DiceInterface(Interface):
 
         # This is logic is used to make the initial configuration file
         # for the next cycle using the last.xyz file from the previous cycle.
-        if self.step.dice.randominit == 'first' and cycle > 1:
+        if self.step.dice.randominit == "first" and cycle > 1:
             last_xyz = Path(
                 self.step.simulation_dir,
                 f"step{(cycle - 1):02d}",
                 f"p{proc:02d}",
-                "last.xyz"
+                "last.xyz",
             )
             if not last_xyz.exists():
                 raise FileNotFoundError(f"File {last_xyz} not found.")
 
-            with open(last_xyz, 'r') as last_xyz_file:
+            with open(last_xyz, "r") as last_xyz_file:
                 self._make_init_file(proc_dir, last_xyz_file)
                 last_xyz_file.seek(0)
                 self.step.dice.dens = self._new_density(last_xyz_file)
@@ -122,11 +115,7 @@ class DiceInterface(Interface):
     def _run_dice(self, cycle: int, proc: int):
         working_dir = os.getcwd()
 
-        proc_dir = Path(
-            self.step.simulation_dir,
-            f"step{cycle:02d}",
-            f"p{proc:02d}"
-        )
+        proc_dir = Path(self.step.simulation_dir, f"step{cycle:02d}", f"p{proc:02d}")
 
         logger.info(
             f"Simulation process {str(proc_dir)} initiated with pid {os.getpid()}"
@@ -134,7 +123,7 @@ class DiceInterface(Interface):
 
         os.chdir(proc_dir)
 
-        if not (self.step.dice.randominit == 'first' and cycle > 1):
+        if not (self.step.dice.randominit == "first" and cycle > 1):
             self.run_dice_file(cycle, proc, "NVT.ter")
 
         if len(self.step.dice.nstep) == 2:
@@ -168,17 +157,16 @@ class DiceInterface(Interface):
 
         SECONDARY_MOLECULE_LENGTH = 0
         for i in range(1, len(self.step.dice.nmol)):
-            SECONDARY_MOLECULE_LENGTH += self.step.dice.nmol[i] * len(self.system.molecule[i].atom)
+            SECONDARY_MOLECULE_LENGTH += self.step.dice.nmol[i] * len(
+                self.system.molecule[i].atom
+            )
 
         xyz_lines = xyz_lines[-SECONDARY_MOLECULE_LENGTH:]
 
         input_file = Path(proc_dir, self.step.dice.outname + ".xy")
-        with open(input_file, 'w') as f:
-
+        with open(input_file, "w") as f:
             for atom in self.system.molecule[0].atom:
-                f.write(
-                    f"{atom.rx:>10.6f}  {atom.ry:>10.6f}  {atom.rz:>10.6f}\n"
-                )
+                f.write(f"{atom.rx:>10.6f}  {atom.ry:>10.6f}  {atom.rz:>10.6f}\n")
 
             for line in xyz_lines:
                 atom = line.split()
@@ -205,7 +193,7 @@ class DiceInterface(Interface):
 
     def _make_nvt_ter(self, cycle, proc_dir):
         file = Path(proc_dir, "NVT.ter")
-        with open(file, 'w') as f:
+        with open(file, "w") as f:
             f.write(f"title = {self.title} - NVT Thermalization\n")
             f.write(f"ncores = {self.step.ncores}\n")
             f.write(f"ljname = {self.step.dice.ljname}\n")
@@ -236,9 +224,8 @@ class DiceInterface(Interface):
             f.write(f"upbuf = {self.step.dice.upbuf}")
 
     def _make_nvt_eq(self, cycle, proc_dir):
-
         file = Path(proc_dir, "NVT.eq")
-        with open(file, 'w') as f:
+        with open(file, "w") as f:
             f.write(f"title = {self.title} - NVT Production\n")
             f.write(f"ncores = {self.step.ncores}\n")
             f.write(f"ljname = {self.step.dice.ljname}\n")
@@ -269,9 +256,8 @@ class DiceInterface(Interface):
             f.write("seed = {}\n".format(seed))
 
     def _make_npt_ter(self, cycle, proc_dir):
-
         file = Path(proc_dir, "NPT.ter")
-        with open(file, 'w') as f:
+        with open(file, "w") as f:
             f.write(f"title = {self.title} - NPT Thermalization\n")
             f.write(f"ncores = {self.step.ncores}\n")
             f.write(f"ljname = {self.step.dice.ljname}\n")
@@ -303,7 +289,7 @@ class DiceInterface(Interface):
 
     def _make_npt_eq(self, proc_dir):
         file = Path(proc_dir, "NPT.eq")
-        with open(file, 'w') as f:
+        with open(file, "w") as f:
             f.write(f"title = {self.title} - NPT Production\n")
             f.write(f"ncores = {self.step.ncores}\n")
             f.write(f"ljname = {self.step.dice.ljname}\n")
@@ -332,7 +318,7 @@ class DiceInterface(Interface):
         fstr = "{:<3d} {:>3d}  {:>10.5f} {:>10.5f} {:>10.5f}  {:>10.6f} {:>9.5f} {:>7.4f}\n"
 
         file = Path(proc_dir, self.step.dice.ljname)
-        with open(file, 'w') as f:
+        with open(file, "w") as f:
             f.write(f"{self.step.dice.combrule}\n")
             f.write(f"{len(self.step.dice.nmol)}\n")
 
@@ -370,7 +356,9 @@ class DiceInterface(Interface):
                     )
 
     def run_dice_file(self, cycle: int, proc: int, file_name: str):
-        with open(Path(file_name), 'r') as infile, open(Path(file_name + ".out"), 'w') as outfile:
+        with open(Path(file_name), "r") as infile, open(
+            Path(file_name + ".out"), "w"
+        ) as outfile:
             if shutil.which("bash") is not None:
                 exit_status = subprocess.call(
                     [
@@ -385,11 +373,15 @@ class DiceInterface(Interface):
                 )
 
         if exit_status != 0:
-            raise RuntimeError(f"Dice process step{cycle:02d}-p{proc:02d} did not exit properly")
+            raise RuntimeError(
+                f"Dice process step{cycle:02d}-p{proc:02d} did not exit properly"
+            )
 
-        with open(Path(file_name + ".out"), 'r') as outfile:
+        with open(Path(file_name + ".out"), "r") as outfile:
             flag = outfile.readlines()[DICE_FLAG_LINE].strip()
             if flag != DICE_END_FLAG:
-                raise RuntimeError(f"Dice process step{cycle:02d}-p{proc:02d} did not exit properly")
+                raise RuntimeError(
+                    f"Dice process step{cycle:02d}-p{proc:02d} did not exit properly"
+                )
 
         logger.info(f"Dice {file_name} - step{cycle:02d}-p{proc:02d} exited properly")

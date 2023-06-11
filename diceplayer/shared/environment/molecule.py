@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-from diceplayer.shared.utils.ptable import ghost_number
+from diceplayer import logger
 from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.utils.misc import BOHR2ANG
-from diceplayer import logger
+from diceplayer.shared.utils.ptable import ghost_number
 
-from nptyping import NDArray, Shape, Float
-from numpy.linalg import linalg
 import numpy as np
+from nptyping import Float, NDArray, Shape
+from numpy.linalg import linalg
 
-from typing import List, Any, Tuple, Union
-from copy import deepcopy
 import logging
 import math
+from copy import deepcopy
+from typing import Any, List, Tuple, Union
 
 
 class Molecule:
@@ -127,9 +127,9 @@ class Molecule:
                     dx = atom1.rx - atom2.rx
                     dy = atom1.ry - atom2.ry
                     dz = atom1.rz - atom2.rz
-                    distances.append(math.sqrt(dx ** 2 + dy ** 2 + dz ** 2))
+                    distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
 
-        return np.array(distances).reshape(dim, dim-1)
+        return np.array(distances).reshape(dim, dim - 1)
 
     def inertia_tensor(self) -> NDArray[Shape["3, 3"], Float]:
         """
@@ -147,9 +147,9 @@ class Molecule:
             dy = atom.ry - self.com[1]
             dz = atom.rz - self.com[2]
 
-            Ixx += atom.mass * (dy ** 2 + dz ** 2)
-            Iyy += atom.mass * (dz ** 2 + dx ** 2)
-            Izz += atom.mass * (dx ** 2 + dy ** 2)
+            Ixx += atom.mass * (dy**2 + dz**2)
+            Iyy += atom.mass * (dz**2 + dx**2)
+            Izz += atom.mass * (dx**2 + dy**2)
 
             Ixy += atom.mass * dx * dy * -1
             Ixz += atom.mass * dx * dz * -1
@@ -169,7 +169,9 @@ class Molecule:
         try:
             evals, evecs = linalg.eigh(self.inertia_tensor())
         except ValueError:
-            raise RuntimeError("Error: diagonalization of inertia tensor did not converge")
+            raise RuntimeError(
+                "Error: diagonalization of inertia tensor did not converge"
+            )
 
         return evals, evecs
 
@@ -355,7 +357,7 @@ class Molecule:
             )
         )
 
-    def minimum_distance(self, molec: 'Molecule') -> float:
+    def minimum_distance(self, molec: "Molecule") -> float:
         """
         Return the minimum distance between two molecules
 
@@ -374,6 +376,6 @@ class Molecule:
                         dx = atom1.rx - atom2.rx
                         dy = atom1.ry - atom2.ry
                         dz = atom1.rz - atom2.rz
-                        distances.append(math.sqrt(dx ** 2 + dy ** 2 + dz ** 2))
+                        distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
 
         return min(distances)

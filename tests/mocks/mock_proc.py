@@ -1,5 +1,5 @@
-from typing import List
 import itertools
+from typing import List
 
 
 class MockProc:
@@ -8,8 +8,8 @@ class MockProc:
     def __init__(self, *args, **kwargs):
         self.pid = next(MockProc.pid_counter)
 
-        if 'exitcode' in kwargs:
-            self.exitcode = kwargs['exitcode']
+        if "exitcode" in kwargs:
+            self.exitcode = kwargs["exitcode"]
         else:
             self.exitcode = 0
 

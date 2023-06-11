@@ -1,12 +1,11 @@
-from pathlib import Path
 import logging
+from pathlib import Path
 
 
 def valid_logger(func):
     def wrapper(*args, **kwargs):
         logger = args[0]
-        assert logger._was_set, \
-            "Logger is not set. Please call set_logger() first."
+        assert logger._was_set, "Logger is not set. Please call set_logger() first."
 
         return func(*args, **kwargs)
 
@@ -24,7 +23,7 @@ class Logger:
         if self._logger is None:
             self._logger = logging.getLogger(logger_name)
 
-    def set_logger(self, outfile='run.log', level=logging.INFO, stream=None):
+    def set_logger(self, outfile="run.log", level=logging.INFO, stream=None):
         outfile_path = None
         if outfile is not None and stream is None:
             outfile_path = Path(outfile)
@@ -57,14 +56,14 @@ class Logger:
     def _create_handlers(self, outfile_path: Path, stream):
         handlers = []
         if outfile_path is not None:
-            handlers.append(logging.FileHandler(outfile_path, mode='a+'))
+            handlers.append(logging.FileHandler(outfile_path, mode="a+"))
         elif stream is not None:
             handlers.append(logging.StreamHandler(stream))
         else:
             handlers.append(logging.StreamHandler())
 
         for handler in handlers:
-            handler.setFormatter(logging.Formatter('%(message)s'))
+            handler.setFormatter(logging.Formatter("%(message)s"))
             self._logger.addHandler(handler)
 
     def close(self):

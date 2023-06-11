@@ -1,45 +1,45 @@
+from diceplayer.shared.config.dice_config import DiceConfig
 from diceplayer.shared.config.gaussian_config import GaussianDTO
 from diceplayer.shared.config.player_config import PlayerConfig
-from diceplayer.shared.config.dice_config import DiceConfig
 
 import unittest
 
 
 def get_config_dict():
     return {
-        'opt': True,
-        'mem': 12,
-        'maxcyc': 100,
-        'nprocs': 4,
-        'ncores': 4,
-        'dice': {
-            'ljname': 'test',
-            'outname': 'test',
-            'dens': 1.0,
-            'nmol': [1],
-            'nstep': [1, 1],
+        "opt": True,
+        "mem": 12,
+        "maxcyc": 100,
+        "nprocs": 4,
+        "ncores": 4,
+        "dice": {
+            "ljname": "test",
+            "outname": "test",
+            "dens": 1.0,
+            "nmol": [1],
+            "nstep": [1, 1],
         },
-        'gaussian': {
-            'level': 'test',
-            'qmprog': 'g16',
-            'keywords': 'test',
-        }
+        "gaussian": {
+            "level": "test",
+            "qmprog": "g16",
+            "keywords": "test",
+        },
     }
 
 
 class TestPlayerDTO(unittest.TestCase):
     def setUp(self) -> None:
         self.dice_dto = DiceConfig(
-            ljname='test',
-            outname='test',
+            ljname="test",
+            outname="test",
             dens=1.0,
             nmol=[1],
             nstep=[1, 1],
         )
         self.gaussian_dto = GaussianDTO(
-            level='test',
-            qmprog='g16',
-            keywords='test',
+            level="test",
+            qmprog="g16",
+            keywords="test",
         )
 
     def test_class_instantiation(self):
@@ -50,7 +50,7 @@ class TestPlayerDTO(unittest.TestCase):
             nprocs=4,
             ncores=4,
             dice=self.dice_dto,
-            gaussian=self.gaussian_dto
+            gaussian=self.gaussian_dto,
         )
 
         self.assertIsInstance(player_dto, PlayerConfig)
@@ -66,20 +66,18 @@ class TestPlayerDTO(unittest.TestCase):
             ncores=4,
             altsteps=100,
             dice=self.dice_dto,
-            gaussian=self.gaussian_dto
+            gaussian=self.gaussian_dto,
         )
 
         self.assertEqual(player_dto.altsteps, 20000)
 
     def test_from_dict(self):
-        player_dto = PlayerConfig.from_dict(
-            get_config_dict()
-        )
+        player_dto = PlayerConfig.from_dict(get_config_dict())
 
         self.assertIsInstance(player_dto, PlayerConfig)
         self.assertIsInstance(player_dto.dice, DiceConfig)
         self.assertIsInstance(player_dto.gaussian, GaussianDTO)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

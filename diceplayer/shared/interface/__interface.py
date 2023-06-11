@@ -7,10 +7,7 @@ from abc import ABC, abstractmethod
 
 
 class Interface(ABC):
-    __slots__ = [
-        'step',
-        'system'
-    ]
+    __slots__ = ["step", "system"]
 
     def __init__(self):
         self.system: System | None = None

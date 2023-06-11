@@ -16,6 +16,8 @@ dacite = "^1.8.1"
 nptyping = "^2.5.0"
 poethepoet = "^0.20.0"
 pre-commit = "^3.3.2"
+isort = "^5.12.0"
+black = "^23.3.0"
 
 [tool.poetry.scripts]
 diceplayer = "diceplayer.__main__:main"

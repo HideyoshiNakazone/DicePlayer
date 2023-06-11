@@ -1,7 +1,8 @@
 from diceplayer.shared.utils.dataclass_protocol import Dataclass
 
-from dataclasses import dataclass
 from dacite import from_dict
+
+from dataclasses import dataclass
 from typing import List
 
 
@@ -10,6 +11,7 @@ class DiceConfig(Dataclass):
     """
     Data Transfer Object for the Dice configuration.
     """
+
     ljname: str
     outname: str
     dens: float
@@ -22,24 +24,17 @@ class DiceConfig(Dataclass):
     press: float = 1.0
     temp: float = 300.0
     progname: str = "dice"
-    randominit: str = 'first'
+    randominit: str = "first"
 
     def __post_init__(self):
-
         if not isinstance(self.ljname, str):
-            raise ValueError(
-                "Error: 'ljname' keyword not specified in config file"
-            )
+            raise ValueError("Error: 'ljname' keyword not specified in config file")
 
         if not isinstance(self.outname, str):
-            raise ValueError(
-                "Error: 'outname' keyword not specified in config file"
-            )
+            raise ValueError("Error: 'outname' keyword not specified in config file")
 
         if not isinstance(self.dens, float):
-            raise ValueError(
-                "Error: 'dens' keyword not specified in config file"
-            )
+            raise ValueError("Error: 'dens' keyword not specified in config file")
 
         if not isinstance(self.nmol, list):
             raise ValueError(

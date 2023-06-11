@@ -14,6 +14,7 @@ ANG2BOHR: Final[float] = 1 / BOHR2ANG
 
 #######################################  functions  ######################################
 
+
 def weekday_date_time():
     return time.strftime("%A, %d %b %Y at %H:%M:%S")
 
@@ -31,8 +32,8 @@ def compress_files_1mb(path):
         if os.path.getsize(file) > 1024 * 1024:  ## If bigger than 1MB
             filegz = file + ".gz"
             try:
-                with open(file, 'rb') as f_in:
-                    with gzip.open(filegz, 'wb') as f_out:
+                with open(file, "rb") as f_in:
+                    with gzip.open(filegz, "wb") as f_out:
                         shutil.copyfileobj(f_in, f_out)
             except:
                 sys.exit("Error: cannot compress file {}".format(file))

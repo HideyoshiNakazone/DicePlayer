@@ -17,15 +17,15 @@ class Atom:
     """
 
     def __init__(
-            self,
-            lbl: int,
-            na: int,
-            rx: float,
-            ry: float,
-            rz: float,
-            chg: float,
-            eps: float,
-            sig: float,
+        self,
+        lbl: int,
+        na: int,
+        rx: float,
+        ry: float,
+        rz: float,
+        chg: float,
+        eps: float,
+        sig: float,
     ) -> None:
         """
         The constructor function __init__ is used to create new instances of the Atom class.

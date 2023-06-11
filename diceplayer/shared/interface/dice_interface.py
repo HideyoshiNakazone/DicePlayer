@@ -166,11 +166,14 @@ class DiceInterface(Interface):
     def _make_init_file(self, proc_dir: Path, last_xyz_file: TextIO):
         xyz_lines = last_xyz_file.readlines()
 
-        nsites_mm = 0
-        for i in range(1, len(self.step.dice.nmol)):
-            nsites_mm += self.step.dice.nmol[i] * len(self.system.molecule[i].atom)
+        HEADER_LENGTH = 2
+        MAIN_MOLECULE_LENGTH = len(self.system.molecule[0].atom)
 
-        xyz_lines = xyz_lines[-nsites_mm:]
+        SECONDARY_MOLECULES_LENGTH = HEADER_LENGTH + MAIN_MOLECULE_LENGTH
+        for i in range(1, len(self.step.dice.nmol)):
+            SECONDARY_MOLECULES_LENGTH += self.step.dice.nmol[i] * len(self.system.molecule[i].atom)
+
+        xyz_lines = xyz_lines[HEADER_LENGTH + MAIN_MOLECULE_LENGTH: SECONDARY_MOLECULES_LENGTH]
 
         input_file = Path(proc_dir, self.step.dice.outname + ".xy")
         with open(input_file, 'w') as f:

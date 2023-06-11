@@ -23,6 +23,7 @@ class PlayerConfig(Dataclass):
     switchcyc: int = 3
     qmprog: str = 'g16'
     altsteps: int = 20000
+    geoms_file = 'geoms.xyz'
     simulation_dir = 'simfiles'
 
     def __post_init__(self):

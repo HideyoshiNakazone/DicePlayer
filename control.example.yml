@@ -11,13 +11,13 @@ diceplayer:
 
     dice:
         nmol: [1, 100]
-        dens: 1.0
+        dens: 1.5
         nstep: [2000, 3000]
         isave: 1000
         outname: 'phb'
         progname: '~/.local/bin/dice'
         ljname: 'phb.ljc'
-        randominit: 'first'
+        randominit: 'always'
 
     gaussian:
         qmprog: 'g16'

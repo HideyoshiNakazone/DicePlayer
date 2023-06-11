@@ -51,6 +51,7 @@ def main():
         player.read_potentials()
 
         player.create_simulation_dir()
+        player.create_geoms_file()
 
     player.print_keywords()
 

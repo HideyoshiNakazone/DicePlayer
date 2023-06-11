@@ -10,6 +10,7 @@ from diceplayer.shared.utils.misc import weekday_date_time
 from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.environment.system import System
 from diceplayer.shared.environment.atom import Atom
+from diceplayer.shared.utils.ptable import atomsymb
 from diceplayer import logger
 
 from dataclasses import fields
@@ -18,6 +19,7 @@ from pathlib import Path
 import yaml
 import sys
 import os
+
 
 ENV = ["OMP_STACKSIZE"]
 
@@ -28,10 +30,8 @@ class Player:
             raise ValueError("Must specify either infile or optimization")
 
         elif infile is not None:
-            config_data = self.read_keywords(infile)
-
             self.config = self.set_config(
-                config_data.get("diceplayer")
+                self.read_keywords(infile)
             )
 
             self.system = System()
@@ -45,7 +45,7 @@ class Player:
 
             self.system = save[1]
 
-            self.initial_cycle = save[2]
+            self.initial_cycle = save[2] + 1
 
         else:
             raise ValueError("Must specify either infile or config")
@@ -60,7 +60,7 @@ class Player:
             "==========================================================================================\n"
         )
 
-        for cycle in range(self.initial_cycle, self.config.maxcyc + 1):
+        for cycle in range(self.initial_cycle, self.initial_cycle + self.config.maxcyc + 1):
 
             logger.info(
                 f"------------------------------------------------------------------------------------------\n"
@@ -72,8 +72,7 @@ class Player:
 
             try:
                 self.gaussian_start(cycle)
-                pass
-            except StopIteration as e:
+            except StopIteration:
                 break
 
             self.save_run_in_pickle(cycle)
@@ -104,6 +103,15 @@ class Player:
                 f" move or delete the simfiles directory to continue."
             )
         simulation_dir_path.mkdir()
+
+    def create_geoms_file(self):
+        geoms_file_path = Path(self.config.geoms_file)
+        if geoms_file_path.exists():
+            raise FileExistsError(
+                f"Error: a file or a directory {self.config.geoms_file} already exists,"
+                f" move or delete the simfiles directory to continue."
+            )
+        geoms_file_path.touch()
 
     def print_keywords(self) -> None:
 
@@ -295,12 +303,25 @@ class Player:
                 .update_charges(result['charges'])
 
             self.system.print_charges_and_dipole(cycle)
+            self.print_geoms(cycle)
 
             if diff < self.config.gaussian.chg_tol:
                 logger.info(
                     f'Charges converged after {cycle} cycles.'
                 )
                 raise StopIteration()
+
+    def print_geoms(self, cycle: int):
+        with open(self.config.geoms_file, 'a') as file:
+            file.write(f'Cycle # {cycle}\n')
+
+            for atom in self.system.molecule[0].atom:
+                symbol = atomsymb[atom.na]
+                file.write(
+                    f'{symbol:<2s}    {atom.rx:>10.6f}  {atom.ry:>10.6f}  {atom.rz:>10.6f}\n'
+                )
+
+            file.write('\n')
 
     @staticmethod
     def validate_atom_dict(molecule_type, molecule_site, atom_dict: dict) -> dict:
@@ -442,7 +463,14 @@ class Player:
     @staticmethod
     def read_keywords(infile) -> dict:
         with open(infile, 'r') as yml_file:
-            return yaml.load(yml_file, Loader=yaml.SafeLoader)
+            config = yaml.load(yml_file, Loader=yaml.SafeLoader)
+
+        if "diceplayer" in config:
+            return config.get("diceplayer")
+
+        raise RuntimeError(
+            f'Could not find diceplayer section in {infile}.'
+        )
 
     @classmethod
     def from_file(cls, infile: str) -> 'Player':

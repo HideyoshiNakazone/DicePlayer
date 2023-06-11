@@ -1,0 +1,20 @@
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+.vscode/settings.json
+
+*.ljc
+*.log
+*.log.backup
+
+simfiles/*
+
+.vscode/*
+.idea/*
+*.pkl
+
+*.xyz
+
+dist/

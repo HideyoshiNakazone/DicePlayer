@@ -59,7 +59,7 @@ class Player:
             "==========================================================================================\n"
         )
 
-        for cycle in range(self.initial_cycle, self.initial_cycle + self.config.maxcyc + 1):
+        for cycle in range(self.initial_cycle, self.initial_cycle + self.config.maxcyc):
 
             logger.info(
                 f"------------------------------------------------------------------------------------------\n"

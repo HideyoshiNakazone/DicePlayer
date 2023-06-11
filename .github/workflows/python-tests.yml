@@ -23,8 +23,8 @@ jobs:
         python-version: "3.8"
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip pipenv
-        if [ -f Pipfile ]; then pipenv install; fi
+        python -m pip install --upgrade pip poetry;
+        [ -f pyproject.toml ] && poetry install;
     - name: Test with unittest
       run: |
-        pipenv run python -m unittest -v
+        poetry run python -m unittest -v

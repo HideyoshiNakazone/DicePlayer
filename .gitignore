@@ -16,3 +16,5 @@ simfiles/*
 *.pkl
 
 *.xyz
+
+dist/

@@ -335,16 +335,6 @@ class TestPlayer(unittest.TestCase):
 
         player.dice_interface.start.assert_called_once()
 
-    # @mock.patch("builtins.open", mock_open)
-    # def test_gaussian_start(self):
-    #     player = Player("control.test.yml")
-    #     player.gaussian_interface = mock.MagicMock()
-    #     player.gaussian_interface.start = mock.MagicMock()
-    #
-    #     player.gaussian_start(1)
-    #
-    #     player.gaussian_interface.start.assert_called_once()
-
 
 if __name__ == '__main__':
     unittest.main()

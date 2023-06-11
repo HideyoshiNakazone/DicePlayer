@@ -1,5 +1,3 @@
-import pickle
-
 from diceplayer.shared.interface.gaussian_interface import GaussianInterface
 from diceplayer.shared.interface.dice_interface import DiceInterface
 from diceplayer.shared.utils.dataclass_protocol import Dataclass
@@ -16,6 +14,7 @@ from diceplayer import logger
 from dataclasses import fields
 from typing import Type, Tuple
 from pathlib import Path
+import pickle
 import yaml
 import sys
 import os

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "diceplayer"
-version = "0.0.1"
+version = "0.0.2"
 description = ""
 authors = ["Vitor Hideyoshi <vitor.h.n.batista@gmail.com>", "Herbert Georg <hcgeorg@ufg.br>"]
 license = "GPL-2.0-only"

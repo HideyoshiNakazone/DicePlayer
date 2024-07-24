@@ -55,7 +55,7 @@ jobs:
                 run: |
                     poetry build -f sdist
                     poetry install
-                    echo "Builded yoshi-seals - $(poetry version)"
+                    echo "Builded DicePlayer - $(poetry version)"
             -   name: Configure PyPI
                 run: |
                     poetry config repositories.pypi https://upload.pypi.org/legacy/

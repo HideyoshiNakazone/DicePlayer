@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from nptyping import Float, NDArray, Shape
+
 from diceplayer import logger
 from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.utils.misc import BOHR2ANG
 from diceplayer.shared.utils.ptable import ghost_number
 
 import numpy as np
-from nptyping import Float, NDArray, Shape
 from numpy.linalg import linalg
 
-import logging
 import math
 from copy import deepcopy
 from typing import Any, List, Tuple, Union

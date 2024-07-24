@@ -2,9 +2,7 @@ from diceplayer.shared.config.dice_config import DiceConfig
 from diceplayer.shared.config.gaussian_config import GaussianDTO
 from diceplayer.shared.utils.dataclass_protocol import Dataclass
 
-from dacite import from_dict
-
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 
 @dataclass
@@ -34,13 +32,15 @@ class PlayerConfig(Dataclass):
         self.altsteps = round(max(MIN_STEP, self.altsteps) / 1000) * 1000
 
     @classmethod
-    def from_dict(cls, param: dict):
-        if param["dice"] is None:
+    def from_dict(cls, params: dict):
+        if params["dice"] is None:
             raise ValueError("Error: 'dice' keyword not specified in config file.")
-        param["dice"] = DiceConfig.from_dict(param["dice"])
+        params["dice"] = DiceConfig.from_dict(params["dice"])
 
-        if param["gaussian"] is None:
+        if params["gaussian"] is None:
             raise ValueError("Error: 'gaussian' keyword not specified in config file.")
-        param["gaussian"] = GaussianDTO.from_dict(param["gaussian"])
+        params["gaussian"] = GaussianDTO.from_dict(params["gaussian"])
 
-        return from_dict(PlayerConfig, param)
+        params = {f.name: params[f.name] for f in fields(cls) if f.name in params}
+
+        return cls(**params)

@@ -169,20 +169,6 @@ files = [
 ]
 
 [[package]]
-name = "dunamai"
-version = "1.21.2"
-description = "Dynamic version generation"
-optional = false
-python-versions = ">=3.5"
-files = [
-    {file = "dunamai-1.21.2-py3-none-any.whl", hash = "sha256:87db76405bf9366f9b4925ff5bb1db191a9a1bd9f9693f81c4d3abb8298be6f0"},
-    {file = "dunamai-1.21.2.tar.gz", hash = "sha256:05827fb5f032f5596bfc944b23f613c147e676de118681f3bb1559533d8a65c4"},
-]
-
-[package.dependencies]
-packaging = ">=20.9"
-
-[[package]]
 name = "filelock"
 version = "3.15.4"
 description = "A platform independent file lock."
@@ -605,4 +591,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0"
-content-hash = "9725a4cd55a5fc1ae0ac3f5d8bb5c6f6a35275e50b30365843f7fa2e5a3b5037"
+content-hash = "80ecbda1b826475e5eef19c940136c907a9687c7f4a6a0577a65ddd9b8a3343b"

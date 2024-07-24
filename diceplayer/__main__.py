@@ -1,14 +1,8 @@
-from diceplayer import logger
+from diceplayer import VERSION, logger
 from diceplayer.player import Player
-from diceplayer.shared.interface.dice_interface import DiceInterface
 
 import argparse
 import logging
-import pickle
-import sys
-from pathlib import Path
-
-__VERSION = "v0.0.1"
 
 
 def main():
@@ -22,7 +16,7 @@ def main():
         "-c", "--continue", dest="opt_continue", default=False, action="store_true"
     )
     parser.add_argument(
-        "-v", "--version", action="version", version="diceplayer-" + __VERSION
+        "-v", "--version", action="version", version="diceplayer-" + VERSION
     )
     parser.add_argument(
         "-i",

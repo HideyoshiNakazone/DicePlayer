@@ -1,8 +1,6 @@
 from diceplayer.shared.utils.dataclass_protocol import Dataclass
 
-from dacite import from_dict
-
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 
 @dataclass
@@ -26,5 +24,7 @@ class GaussianDTO(Dataclass):
             raise ValueError("Error: 'level' keyword not specified in config file.")
 
     @classmethod
-    def from_dict(cls, param: dict):
-        return from_dict(GaussianDTO, param)
+    def from_dict(cls, params: dict):
+        params = {f.name: params[f.name] for f in fields(cls) if f.name in params}
+
+        return cls(**params)

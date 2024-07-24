@@ -1,4 +1,4 @@
-from diceplayer import logger
+from diceplayer import VERSION, logger
 from diceplayer.shared.config.dice_config import DiceConfig
 from diceplayer.shared.config.gaussian_config import GaussianDTO
 from diceplayer.shared.config.player_config import PlayerConfig
@@ -118,9 +118,9 @@ class Player:
                         logger.info(f"{key} = {getattr(config, key)}")
 
         logger.info(
-            "##########################################################################################\n"
-            "#############               Welcome to DICEPLAYER version 1.0                #############\n"
-            "##########################################################################################\n"
+            f"##########################################################################################\n"
+            f"#############               Welcome to DICEPLAYER version {VERSION}                #############\n"
+            f"##########################################################################################\n"
         )
         logger.info("Your python version is {}\n".format(sys.version))
         logger.info("Program started on {}\n".format(weekday_date_time()))

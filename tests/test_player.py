@@ -1,4 +1,4 @@
-from diceplayer import logger
+from diceplayer import VERSION, logger
 from diceplayer.player import Player
 from tests.mocks.mock_inputs import mock_open
 
@@ -51,9 +51,10 @@ class TestPlayer(unittest.TestCase):
 
         self.assertTrue(mock_path.called)
 
+    @mock.patch("builtins.open", mock_open)
+    @mock.patch("diceplayer.player.VERSION", "test")
     @mock.patch("diceplayer.player.sys")
     @mock.patch("diceplayer.player.weekday_date_time")
-    @mock.patch("builtins.open", mock_open)
     def test_print_keywords(self, mock_date_func, mock_sys):
         player = Player("control.test.yml")
 
@@ -64,7 +65,7 @@ class TestPlayer(unittest.TestCase):
             player.print_keywords()
 
         expected_output = [
-            "INFO:diceplayer:##########################################################################################\n#############               Welcome to DICEPLAYER version 1.0                #############\n##########################################################################################\n",
+            "INFO:diceplayer:##########################################################################################\n#############               Welcome to DICEPLAYER version test                #############\n##########################################################################################\n",
             "INFO:diceplayer:Your python version is TEST\n",
             "INFO:diceplayer:Program started on 00 Test 0000 at 00:00:00\n",
             "INFO:diceplayer:Environment variables:",

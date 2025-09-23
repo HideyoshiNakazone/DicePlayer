@@ -1,9 +1,6 @@
-from __future__ import annotations
+# from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from nptyping import Float, NDArray, Shape
+import numpy.typing as npt
 
 from diceplayer import logger
 from diceplayer.shared.environment.atom import Atom
@@ -25,12 +22,12 @@ class Molecule:
     Atributes:
         molname (str): The name of the represented molecule
         atom (List[Atom]): List of atoms of the represented molecule
-        position (NDArray[Any, Any]): The position relative to the internal atoms of the represented molecule
-        energy (NDArray[Any, Any]): The energy of the represented molecule
-        gradient (NDArray[Any, Any]): The first derivative of the energy relative to the position
-        hessian (NDArray[Any, Any]): The second derivative of the energy relative to the position
+        position (npt.NDArray[Any, Any]): The position relative to the internal atoms of the represented molecule
+        energy (npt.NDArray[Any, Any]): The energy of the represented molecule
+        gradient (npt.NDArray[Any, Any]): The first derivative of the energy relative to the position
+        hessian (npt.NDArray[Any, Any]): The second derivative of the energy relative to the position
         total_mass (int): The total mass of the molecule
-        com (NDArray[Any, Any]): The center of mass of the molecule
+        com (npt.NDArray[Any, Any]): The center of mass of the molecule
     """
 
     def __init__(self, molname: str) -> None:
@@ -43,16 +40,16 @@ class Molecule:
         self.molname: str = molname
 
         self.atom: List[Atom] = []
-        self.position: NDArray[Any, Any]
-        self.energy: NDArray[Any, Any]
-        self.gradient: NDArray[Any, Any]
-        self.hessian: NDArray[Any, Any]
+        self.position: npt.NDArray[Any, Any]
+        self.energy: npt.NDArray[Any, Any]
+        self.gradient: npt.NDArray[Any, Any]
+        self.hessian: npt.NDArray[Any, Any]
 
         self.ghost_atoms: List[Atom] = []
         self.lp_atoms: List[Atom] = []
 
         self.total_mass: int = 0
-        self.com: Union[None, NDArray[Any, Any]] = None
+        self.com: Union[None, npt.NDArray[Any, Any]] = None
 
     def add_atom(self, a: Atom) -> None:
         """
@@ -67,7 +64,7 @@ class Molecule:
 
         self.center_of_mass()
 
-    def center_of_mass(self) -> NDArray[Any, Any]:
+    def center_of_mass(self) -> npt.NDArray[Any]:
         """
         Calculates the center of mass of the molecule
         """
@@ -97,7 +94,7 @@ class Molecule:
         Calculates the charges and dipole of the molecule atoms
 
         Returns:
-            List[float]: Respectivly magnitude of the: charge magnitude, first dipole,
+            List[npt.Float]: Respectivly magnitude of the: charge magnitude, first dipole,
             second dipole, third dipole and total dipole.
         """
 
@@ -114,12 +111,12 @@ class Molecule:
 
         return [charge, dipole[0], dipole[1], dipole[2], total_dipole]
 
-    def distances_between_atoms(self) -> NDArray[Shape["Any,Any"], Float]:
+    def distances_between_atoms(self) -> npt.NDArray[np.float64]:
         """
         Calculates distances between the atoms of the molecule
 
         Returns:
-           NDArray[Shape["Any,Any"],Float]: distances between the atoms.
+           npt.NDArray[npt.Shape["Any,Any"],npt.Float]: distances between the atoms.
         """
 
         distances = []
@@ -134,12 +131,12 @@ class Molecule:
 
         return np.array(distances).reshape(dim, dim - 1)
 
-    def inertia_tensor(self) -> NDArray[Shape["3, 3"], Float]:
+    def inertia_tensor(self) -> npt.NDArray[np.float64]:
         """
         Calculates the inertia tensor of the molecule.
 
         Returns:
-            NDArray[Shape["3, 3"], Float]: inertia tensor of the molecule.
+            npt.NDArray[npt.Shape["3, 3"], npt.Float]: inertia tensor of the molecule.
         """
 
         self.center_of_mass()
@@ -160,12 +157,12 @@ class Molecule:
 
         return np.array([[Ixx, Ixy, Ixz], [Ixy, Iyy, Iyz], [Ixz, Iyz, Izz]])
 
-    def principal_axes(self) -> Tuple[np.ndarray, np.ndarray]:
+    def principal_axes(self) -> Tuple[npt.NDArray, npt.NDArray]:
         """
         Calculates the principal axes of the molecule
 
         Returns:
-            Tuple[np.ndarray, np.ndarray]: Tuple where the first value is the Eigen Values and the second is the Eigen Vectors,
+            Tuple[npt.NDArray, npt.NDArray]: Tuple where the first value is the Eigen Values and the second is the Eigen Vectors,
              representing the principal axes of the molecule.
         """
 
@@ -178,11 +175,11 @@ class Molecule:
 
         return evals, evecs
 
-    def read_position(self) -> np.ndarray:
+    def read_position(self) -> npt.NDArray:
         """Reads the position of the molecule from the position values of the atoms
 
         Returns:
-            np.ndarray: internal position relative to atoms of the molecule
+            npt.NDArray: internal position relative to atoms of the molecule
         """
 
         position_list = []
@@ -193,7 +190,7 @@ class Molecule:
 
         return position
 
-    def update_charges(self, charges: NDArray) -> int:
+    def update_charges(self, charges: npt.NDArray) -> int:
         """
         Updates the charges of the atoms of the molecule and
         returns the max difference between the new and old charges
@@ -207,22 +204,22 @@ class Molecule:
 
     # @staticmethod
     # def update_hessian(
-    #         step: np.ndarray,
-    #         cur_gradient: np.ndarray,
-    #         old_gradient: np.ndarray,
-    #         hessian: np.ndarray,
-    # ) -> np.ndarray:
+    #         step: npt.NDArray,
+    #         cur_gradient: npt.NDArray,
+    #         old_gradient: npt.NDArray,
+    #         hessian: npt.NDArray,
+    # ) -> npt.NDArray:
     #     """
     #     Updates the Hessian of the molecule based on the current hessian, the current gradient and the previous gradient
     #
     #     Args:
-    #         step (np.ndarray): step value of the iteration
-    #         cur_gradient (np.ndarray): current gradient
-    #         old_gradient (np.ndarray): previous gradient
-    #         hessian (np.ndarray): current hessian
+    #         step (npt.NDArray): step value of the iteration
+    #         cur_gradient (npt.NDArray): current gradient
+    #         old_gradient (npt.NDArray): previous gradient
+    #         hessian (npt.NDArray): current hessian
     #
     #     Returns:
-    #         np.ndarray: updated hessian of the molecule
+    #         npt.NDArray: updated hessian of the molecule
     #     """
     #
     #     dif_gradient = cur_gradient - old_gradient
@@ -238,7 +235,7 @@ class Molecule:
         Calculates sides of the smallest box that the molecule could fit
 
         Returns:
-            List[float]: list of the sizes of the molecule
+            List[npt.Float]: list of the sizes of the molecule
         """
 
         x_list = []
@@ -289,12 +286,12 @@ class Molecule:
             atom.ry = new_position[1]
             atom.rz = new_position[2]
 
-    def translate(self, vector: np.ndarray) -> "Molecule":
+    def translate(self, vector: npt.NDArray) -> "Molecule":
         """
         Creates a new Molecule object where its' atoms has been translated by a vector
 
         Args:
-            vector (np.ndarray): translation vector
+            vector (npt.NDArray): translation vector
 
         Returns:
             Molecule: new Molecule object translated by a vector
@@ -368,7 +365,7 @@ class Molecule:
             molec (Molecule): Molecule object to be compared
 
         Returns:
-            float: minimum distance between the two molecules
+            npt.Float: minimum distance between the two molecules
         """
 
         distances = []

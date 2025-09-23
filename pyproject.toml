@@ -19,18 +19,17 @@ diceplayer = "diceplayer.__main__:main"
 
 # POETRY
 [tool.poetry]
-version = "0.0.0"
 packages = [
     { include = "diceplayer" }
 ]
+version = "0.0.0"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4.0"
-numpy = "^1.26.4"
+python = ">=3.10,<4.0"
+numpy = "^2.2.6"
 argparse = "^1.4.0"
 setproctitle = "^1.3.2"
 pyyaml = "^6.0"
-nptyping = "^2.5.0"
 
 [tool.poetry.group.dev.dependencies]
 coverage = "^7.2.7"

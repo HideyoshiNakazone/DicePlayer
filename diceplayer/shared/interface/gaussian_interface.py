@@ -10,7 +10,7 @@ from diceplayer.shared.utils.misc import date_time
 from diceplayer.shared.utils.ptable import atomsymb
 
 import numpy as np
-from nptyping import NDArray
+import numpy.typing as npt
 
 import os
 import shutil
@@ -25,7 +25,7 @@ class GaussianInterface(Interface):
         self.system = system
         self.step = step_dto
 
-    def start(self, cycle: int) -> Dict[str, NDArray]:
+    def start(self, cycle: int) -> Dict[str, npt.NDArray]:
         self._make_qm_dir(cycle)
 
         if cycle > 1:

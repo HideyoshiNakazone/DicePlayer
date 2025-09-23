@@ -1,6 +1,5 @@
 [project]
 name = "diceplayer"
-version = "0.0.0"
 description = ""
 authors = [
     {name="Vitor Hideyoshi", email="vitor.h.n.batista@gmail.com"},
@@ -9,6 +8,7 @@ authors = [
 license = "GPL-2.0-only"
 readme = "README.md"
 dynamic = [
+    "version",
     "dependencies",
     "requires-python"
 ]
@@ -19,6 +19,7 @@ diceplayer = "diceplayer.__main__:main"
 
 # POETRY
 [tool.poetry]
+version = "0.0.0"
 packages = [
     { include = "diceplayer" }
 ]
@@ -38,12 +39,15 @@ black = "^24.4.2"
 pre-commit = "^3.7.1"
 poethepoet = "^0.27.0"
 
+[tool.poetry.requires-plugins]
+poetry-dynamic-versioning = { version = ">=1.0.0,<2.0.0", extras = ["plugin"] }
+
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
 build-backend = "poetry_dynamic_versioning.backend"
 
 

@@ -1,0 +1,36 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Run Tests
+
+on:
+  push
+
+permissions:
+  contents: read
+
+jobs:
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.10", "3.11", "3.12"]
+    steps:
+      -   uses: actions/checkout@v3
+          with:
+            fetch-depth: 0
+      -   name: Install poetry
+          run: pipx install poetry
+
+      -   name: Set up Python 3.10
+          uses: actions/setup-python@v3
+          with:
+            python-version: ${{ matrix.python }}
+      -   name: Install dependencies
+          run: |
+            poetry self add "poetry-dynamic-versioning[plugin]"
+            if [ -f pyproject.toml ]; then poetry install; fi
+      -   name: Run unittest
+          run: |
+            poetry run python -m unittest

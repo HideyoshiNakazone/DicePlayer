@@ -6,6 +6,7 @@ import shutil
 import sys
 import time
 
+
 #######################################  constants  ######################################
 
 
@@ -36,7 +37,7 @@ def compress_files_1mb(path):
                 with open(file, "rb") as f_in:
                     with gzip.open(filegz, "wb") as f_out:
                         shutil.copyfileobj(f_in, f_out)
-            except:
+            except Exception as _:
                 sys.exit("Error: cannot compress file {}".format(file))
 
     os.chdir(working_dir)
@@ -52,7 +53,7 @@ def make_step_dir(cycle):
         sys.exit("Error: a file or directory {} already exists".format(step_dir))
     try:
         os.makedirs(path)
-    except:
+    except Exception as _:
         sys.exit("Error: cannot make directory {}".format(step_dir))
 
 
@@ -62,5 +63,5 @@ def make_qm_dir(cycle):
     path = sim_dir + os.sep + step_dir + os.sep + "qm"
     try:
         os.makedirs(path)
-    except:
+    except Exception as _:
         sys.exit("Error: cannot make directory {}".format(path))

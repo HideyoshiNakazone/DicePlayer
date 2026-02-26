@@ -1,11 +1,10 @@
 from diceplayer import logger
 from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.utils.misc import BOHR2ANG
-from diceplayer.shared.utils.ptable import atomsymb
 
 import numpy as np
 from numpy import linalg
-from typing_extensions import List, TextIO, Tuple
+from typing_extensions import List, Tuple
 
 import math
 from copy import deepcopy
@@ -92,8 +91,10 @@ class System:
 
         try:
             evals, evecs = linalg.eigh(rr)
-        except:
-            raise RuntimeError("Error: diagonalization of RR matrix did not converge")
+        except Exception as err:
+            raise RuntimeError(
+                "Error: diagonalization of RR matrix did not converge"
+            ) from err
 
         a1 = evecs[:, 2].T
         a2 = evecs[:, 1].T

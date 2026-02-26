@@ -60,13 +60,13 @@ class GaussianInterface(Interface):
 
     def _copy_chk_file_from_previous_step(self, cycle: int):
         current_chk_file_path = Path(
-            self.step.simulation_dir, f"step{cycle:02d}", "qm", f"asec.chk"
+            self.step.simulation_dir, f"step{cycle:02d}", "qm", "asec.chk"
         )
         if current_chk_file_path.exists():
             raise FileExistsError(f"File {current_chk_file_path} already exists.")
 
         previous_chk_file_path = Path(
-            self.step.simulation_dir, f"step{(cycle - 1):02d}", "qm", f"asec.chk"
+            self.step.simulation_dir, f"step{(cycle - 1):02d}", "qm", "asec.chk"
         )
         if not previous_chk_file_path.exists():
             raise FileNotFoundError(f"File {previous_chk_file_path} does not exist.")
@@ -139,7 +139,7 @@ class GaussianInterface(Interface):
             charges_nsites = int(charges.pop(0))
             if int(charges_nsites) != total_nsites:
                 raise ValueError(
-                    f"Number of sites does not match total number of sites."
+                    "Number of sites does not match total number of sites."
                 )
 
             thickness.append(self._calculate_proc_thickness(charges))
@@ -166,7 +166,7 @@ class GaussianInterface(Interface):
                             ].strip()
                         ):
                             raise SyntaxError(
-                                f"Error: Invalid Dice Output. Atom type does not match."
+                                "Error: Invalid Dice Output. Atom type does not match."
                             )
 
                         new_molecule.add_atom(
@@ -216,7 +216,7 @@ class GaussianInterface(Interface):
 
     def _make_gaussian_input_file(self, cycle: int, asec_charges: list[dict]) -> None:
         gaussian_input_file_path = Path(
-            self.step.simulation_dir, f"step{cycle:02d}", "qm", f"asec.gjf"
+            self.step.simulation_dir, f"step{cycle:02d}", "qm", "asec.gjf"
         )
 
         with open(gaussian_input_file_path, "w") as gaussian_input_file:

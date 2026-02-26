@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing_extensions import TYPE_CHECKING
 
+
 if TYPE_CHECKING:
     from nptyping import Float, NDArray, Shape
 
@@ -319,7 +320,7 @@ class Molecule:
                 self.com[0], self.com[1], self.com[2]
             )
         )
-        inertia = self.inertia_tensor()
+        self.inertia_tensor()
         evals, evecs = self.principal_axes()
 
         logger.info(

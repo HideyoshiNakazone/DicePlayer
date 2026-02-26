@@ -17,6 +17,7 @@ import time
 from multiprocessing import Process, connection
 from pathlib import Path
 
+
 DICE_END_FLAG: Final[str] = "End of simulation"
 DICE_FLAG_LINE: Final[int] = -2
 UMAANG3_TO_GCM3: Final[float] = 1.6605
@@ -206,10 +207,10 @@ class DiceInterface(Interface):
             f.write(f"temp = {self.step.dice.temp}\n")
 
             if self.step.dice.randominit == "first" and cycle > 1:
-                f.write(f"init = yesreadxyz\n")
+                f.write("init = yesreadxyz\n")
                 f.write(f"nstep = {self.step.altsteps}\n")
             else:
-                f.write(f"init = yes\n")
+                f.write("init = yes\n")
                 f.write(f"nstep = {self.step.dice.nstep[0]}\n")
 
             f.write("vstep = 0\n")
@@ -301,7 +302,7 @@ class DiceInterface(Interface):
             f.write(f"press = {self.step.dice.press}\n")
             f.write(f"temp = {self.step.dice.temp}\n")
 
-            f.write(f"nstep = 5\n")
+            f.write("nstep = 5\n")
 
             f.write(f"vstep = {int(self.step.dice.nstep[2] / 5)}\n")
             f.write("init = no\n")

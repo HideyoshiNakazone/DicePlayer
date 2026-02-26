@@ -1,12 +1,11 @@
 from diceplayer.config.dice_config import DiceConfig
 from diceplayer.config.gaussian_config import GaussianConfig
-from diceplayer.shared.utils.dataclass_protocol import Dataclass
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, model_validator
 from typing_extensions import Self
 
-from dataclasses import dataclass, fields
 from pathlib import Path
+
 
 MIN_STEP = 20000
 

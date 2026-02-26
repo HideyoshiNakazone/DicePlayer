@@ -103,11 +103,14 @@ class TestMolecule(unittest.TestCase):
             Atom(lbl=1, na=1, rx=0.0, ry=0.0, rz=0.0, chg=1.0, eps=1.0, sig=1.0)
         )
 
-        expected_evals, expected_evecs = [0.0, 0.0, 0.0], [
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0],
-        ]
+        expected_evals, expected_evecs = (
+            [0.0, 0.0, 0.0],
+            [
+                [1.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0],
+                [0.0, 0.0, 1.0],
+            ],
+        )
 
         evals, evecs = mol.principal_axes()
 

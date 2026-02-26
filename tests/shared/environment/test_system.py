@@ -1,4 +1,3 @@
-from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.environment.system import System
 

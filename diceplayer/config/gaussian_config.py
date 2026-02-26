@@ -1,9 +1,5 @@
-from diceplayer.shared.utils.dataclass_protocol import Dataclass
-
 from pydantic import BaseModel, Field
 from typing_extensions import Literal
-
-from dataclasses import dataclass, fields
 
 
 class GaussianConfig(BaseModel):

@@ -16,7 +16,7 @@ class TestGaussianInterface(unittest.TestCase):
         logger.set_logger(stream=io.StringIO())
 
         config = yaml.load(get_config_example(), Loader=yaml.Loader)
-        self.config = PlayerConfig.from_dict(config["diceplayer"])
+        self.config = PlayerConfig.model_validate(config["diceplayer"])
 
     def test_class_instantiation(self):
         gaussian_interface = GaussianInterface()

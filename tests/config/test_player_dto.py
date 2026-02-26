@@ -72,7 +72,7 @@ class TestPlayerDTO(unittest.TestCase):
         self.assertEqual(player_dto.altsteps, 20000)
 
     def test_from_dict(self):
-        player_dto = PlayerConfig.from_dict(get_config_dict())
+        player_dto = PlayerConfig.model_validate(get_config_dict())
 
         self.assertIsInstance(player_dto, PlayerConfig)
         self.assertIsInstance(player_dto.dice, DiceConfig)

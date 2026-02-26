@@ -356,9 +356,10 @@ class DiceInterface(Interface):
                     )
 
     def run_dice_file(self, cycle: int, proc: int, file_name: str):
-        with open(Path(file_name), "r") as infile, open(
-            Path(file_name + ".out"), "w"
-        ) as outfile:
+        with (
+            open(Path(file_name), "r") as infile,
+            open(Path(file_name + ".out"), "w") as outfile,
+        ):
             if shutil.which("bash") is not None:
                 exit_status = subprocess.call(
                     [

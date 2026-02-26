@@ -1,5 +1,3 @@
-from pydantic import BaseModel
-
 from diceplayer import VERSION, logger
 from diceplayer.config.dice_config import DiceConfig
 from diceplayer.config.gaussian_config import GaussianConfig
@@ -14,6 +12,7 @@ from diceplayer.shared.utils.misc import weekday_date_time
 from diceplayer.shared.utils.ptable import atomsymb
 
 import yaml
+from pydantic import BaseModel
 
 import os
 import pickle
@@ -118,7 +117,6 @@ class Player:
                     logger.info(f"{key} = [ {string} ]")
                 else:
                     logger.info(f"{key} = {value}")
-
 
         logger.info(
             f"##########################################################################################\n"
@@ -430,7 +428,7 @@ class Player:
 
     @staticmethod
     def set_config(data: dict) -> PlayerConfig:
-        return PlayerConfig.from_dict(data)
+        return PlayerConfig.model_validate(data)
 
     @staticmethod
     def read_keywords(infile) -> dict:

@@ -1,12 +1,8 @@
 from diceplayer import VERSION, logger
 from diceplayer.config.player_config import PlayerConfig
-from diceplayer.shared.environment.atom import Atom
-from diceplayer.shared.environment.molecule import Molecule
-from diceplayer.shared.environment.system import System
-from diceplayer.shared.interface.dice_interface import DiceInterface
-from diceplayer.shared.interface.gaussian_interface import GaussianInterface
-from diceplayer.shared.utils.misc import weekday_date_time
-from diceplayer.shared.utils.ptable import atomsymb
+from diceplayer.environment import Atom, Molecule, System
+from diceplayer.interface import DiceInterface, GaussianInterface
+from diceplayer.utils import atomsymb, weekday_date_time
 
 import yaml
 from pydantic import BaseModel

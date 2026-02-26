@@ -1,9 +1,7 @@
 from diceplayer import logger
 from diceplayer.config.player_config import PlayerConfig
-from diceplayer.shared.environment.atom import Atom
-from diceplayer.shared.environment.molecule import Molecule
-from diceplayer.shared.environment.system import System
-from diceplayer.shared.interface.dice_interface import DiceInterface
+from diceplayer.environment import Atom, Molecule, System
+from diceplayer.interface import DiceInterface
 from tests.mocks.mock_inputs import get_config_example
 from tests.mocks.mock_proc import MockConnection, MockProc
 
@@ -51,18 +49,16 @@ class TestDiceInterface(unittest.TestCase):
         self.assertFalse(hasattr(dice, "step"))
         self.assertFalse(hasattr(dice, "system"))
 
-    @mock.patch("diceplayer.shared.interface.dice_interface.Process", MockProc())
-    @mock.patch("diceplayer.shared.interface.dice_interface.connection", MockConnection)
+    @mock.patch("diceplayer.interface.dice_interface.Process", MockProc())
+    @mock.patch("diceplayer.interface.dice_interface.connection", MockConnection)
     def test_start(self):
         dice = DiceInterface()
         dice.configure(self.config, System())
 
         dice.start(1)
 
-    @mock.patch("diceplayer.shared.interface.dice_interface.connection", MockConnection)
-    @mock.patch(
-        "diceplayer.shared.interface.dice_interface.Process", MockProc(exitcode=1)
-    )
+    @mock.patch("diceplayer.interface.dice_interface.connection", MockConnection)
+    @mock.patch("diceplayer.interface.dice_interface.Process", MockProc(exitcode=1))
     def test_start_with_process_error(self):
         dice = DiceInterface()
         dice.configure(self.config, System())
@@ -76,13 +72,9 @@ class TestDiceInterface(unittest.TestCase):
         with self.assertRaises(SystemExit):
             dice._simulation_process(1, 1)
 
-    @mock.patch(
-        "diceplayer.shared.interface.dice_interface.DiceInterface._make_proc_dir"
-    )
-    @mock.patch(
-        "diceplayer.shared.interface.dice_interface.DiceInterface._make_dice_inputs"
-    )
-    @mock.patch("diceplayer.shared.interface.dice_interface.DiceInterface._run_dice")
+    @mock.patch("diceplayer.interface.dice_interface.DiceInterface._make_proc_dir")
+    @mock.patch("diceplayer.interface.dice_interface.DiceInterface._make_dice_inputs")
+    @mock.patch("diceplayer.interface.dice_interface.DiceInterface._run_dice")
     def test_simulation_process(
         self, mock_run_dice, mock_make_dice_inputs, mock_make_proc_dir
     ):
@@ -94,8 +86,8 @@ class TestDiceInterface(unittest.TestCase):
         self.assertTrue(dice._make_dice_inputs.called)
         self.assertTrue(dice._run_dice.called)
 
-    @mock.patch("diceplayer.shared.interface.dice_interface.Path.mkdir")
-    @mock.patch("diceplayer.shared.interface.dice_interface.Path.exists")
+    @mock.patch("diceplayer.interface.dice_interface.Path.mkdir")
+    @mock.patch("diceplayer.interface.dice_interface.Path.exists")
     def test_make_proc_dir_if_simdir_exists(self, mock_path_exists, mock_path_mkdir):
         dice = DiceInterface()
         dice.configure(self.config, System())
@@ -106,8 +98,8 @@ class TestDiceInterface(unittest.TestCase):
 
         self.assertEqual(mock_path_mkdir.call_count, 2)
 
-    @mock.patch("diceplayer.shared.interface.dice_interface.Path.mkdir")
-    @mock.patch("diceplayer.shared.interface.dice_interface.Path.exists")
+    @mock.patch("diceplayer.interface.dice_interface.Path.mkdir")
+    @mock.patch("diceplayer.interface.dice_interface.Path.exists")
     def test_make_proc_dir_if_simdir_doesnt_exists(
         self, mock_path_exists, mock_path_mkdir
     ):
@@ -155,9 +147,7 @@ class TestDiceInterface(unittest.TestCase):
         self.assertFalse(dice._make_npt_eq.called)
 
     @mock.patch("builtins.open", new_callable=mock.mock_open, read_data="test")
-    @mock.patch(
-        "diceplayer.shared.interface.dice_interface.Path.exists", return_value=True
-    )
+    @mock.patch("diceplayer.interface.dice_interface.Path.exists", return_value=True)
     def test_make_dice_inputs_nstep_len_two_with_randoninit_first_cycle_two(
         self, mock_path_exists, mock_open
     ):
@@ -189,9 +179,7 @@ class TestDiceInterface(unittest.TestCase):
         self.assertFalse(dice._make_npt_ter.called)
         self.assertFalse(dice._make_npt_eq.called)
 
-    @mock.patch(
-        "diceplayer.shared.interface.dice_interface.Path.exists", return_value=False
-    )
+    @mock.patch("diceplayer.interface.dice_interface.Path.exists", return_value=False)
     def test_make_dice_inputs_raises_exception_on_last_not_found(
         self, mock_path_exists
     ):
@@ -240,11 +228,9 @@ class TestDiceInterface(unittest.TestCase):
         self.assertTrue(dice._make_npt_ter.called)
         self.assertTrue(dice._make_npt_eq.called)
 
-    @mock.patch("diceplayer.shared.interface.dice_interface.os")
-    @mock.patch("diceplayer.shared.interface.dice_interface.shutil")
-    @mock.patch(
-        "diceplayer.shared.interface.dice_interface.Path.exists", return_value=True
-    )
+    @mock.patch("diceplayer.interface.dice_interface.os")
+    @mock.patch("diceplayer.interface.dice_interface.shutil")
+    @mock.patch("diceplayer.interface.dice_interface.Path.exists", return_value=True)
     def test_run_dice_on_first_cycle_run_successful(
         self, mock_path_exists, mock_shutils, mock_os
     ):
@@ -278,11 +264,9 @@ class TestDiceInterface(unittest.TestCase):
         self.assertEqual(dice.run_dice_file.call_count, 2)
         self.assertTrue(mock_shutils.copy.called)
 
-    @mock.patch("diceplayer.shared.interface.dice_interface.os")
-    @mock.patch("diceplayer.shared.interface.dice_interface.shutil")
-    @mock.patch(
-        "diceplayer.shared.interface.dice_interface.Path.exists", return_value=True
-    )
+    @mock.patch("diceplayer.interface.dice_interface.os")
+    @mock.patch("diceplayer.interface.dice_interface.shutil")
+    @mock.patch("diceplayer.interface.dice_interface.Path.exists", return_value=True)
     def test_run_dice_on_second_cycle_run_successful(
         self, mock_path_exists, mock_shutils, mock_os
     ):
@@ -312,11 +296,9 @@ class TestDiceInterface(unittest.TestCase):
         self.assertEqual(dice.run_dice_file.call_count, 2)
         self.assertTrue(mock_shutils.copy.called)
 
-    @mock.patch("diceplayer.shared.interface.dice_interface.os")
-    @mock.patch("diceplayer.shared.interface.dice_interface.shutil")
-    @mock.patch(
-        "diceplayer.shared.interface.dice_interface.Path.exists", return_value=False
-    )
+    @mock.patch("diceplayer.interface.dice_interface.os")
+    @mock.patch("diceplayer.interface.dice_interface.shutil")
+    @mock.patch("diceplayer.interface.dice_interface.Path.exists", return_value=False)
     def test_run_dice_raises_filenotfound_on_invalid_file(
         self, mock_path_exists, mock_shutils, mock_os
     ):
@@ -424,7 +406,7 @@ class TestDiceInterface(unittest.TestCase):
         self.assertEqual(density, 85.35451545000001)
 
     @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("diceplayer.shared.interface.dice_interface.random")
+    @mock.patch("diceplayer.interface.dice_interface.random")
     def test_make_nvt_ter(self, mock_random, mock_open):
         mock_random.random.return_value = 1
 
@@ -461,7 +443,7 @@ class TestDiceInterface(unittest.TestCase):
         self.assertEqual(lines, expected_lines)
 
     @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("diceplayer.shared.interface.dice_interface.random")
+    @mock.patch("diceplayer.interface.dice_interface.random")
     def test_make_nvt_eq(self, mock_random, mock_open):
         mock_random.random.return_value = 1
 
@@ -497,7 +479,7 @@ class TestDiceInterface(unittest.TestCase):
         self.assertEqual(lines, expected_lines)
 
     @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("diceplayer.shared.interface.dice_interface.random")
+    @mock.patch("diceplayer.interface.dice_interface.random")
     def test_make_npt_ter(self, mock_random, mock_open):
         mock_random.random.return_value = 1
 
@@ -533,7 +515,7 @@ class TestDiceInterface(unittest.TestCase):
         self.assertEqual(lines, expected_lines)
 
     @mock.patch("builtins.open", new_callable=mock.mock_open)
-    @mock.patch("diceplayer.shared.interface.dice_interface.random")
+    @mock.patch("diceplayer.interface.dice_interface.random")
     def test_make_npt_eq(self, mock_random, mock_open):
         mock_random.random.return_value = 1
 
@@ -612,7 +594,7 @@ class TestDiceInterface(unittest.TestCase):
 
         self.assertEqual(lines, expected_lines)
 
-    @mock.patch("diceplayer.shared.interface.dice_interface.subprocess")
+    @mock.patch("diceplayer.interface.dice_interface.subprocess")
     @mock.patch(
         "builtins.open",
         new_callable=mock.mock_open,
@@ -628,7 +610,7 @@ class TestDiceInterface(unittest.TestCase):
         self.assertTrue(mock_subprocess.call.called)
         self.assertTrue(mock_open.called)
 
-    @mock.patch("diceplayer.shared.interface.dice_interface.subprocess")
+    @mock.patch("diceplayer.interface.dice_interface.subprocess")
     @mock.patch("builtins.open", new_callable=mock.mock_open, read_data="Error\nBLABLA")
     def test_run_dice_file_raises_runtime_error_on_dice_file(
         self, mock_open, mock_subprocess
@@ -640,7 +622,7 @@ class TestDiceInterface(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             dice.run_dice_file(1, 1, "test")
 
-    @mock.patch("diceplayer.shared.interface.dice_interface.subprocess")
+    @mock.patch("diceplayer.interface.dice_interface.subprocess")
     @mock.patch(
         "builtins.open",
         new_callable=mock.mock_open,

@@ -1,4 +1,4 @@
-from diceplayer.shared.utils.logger import Logger, valid_logger
+from diceplayer.utils import Logger, valid_logger
 
 import io
 import logging
@@ -53,8 +53,8 @@ class TestLogger(unittest.TestCase):
         self.assertEqual(logger._logger.name, "test")
 
     @mock.patch("builtins.open", mock.mock_open())
-    @mock.patch("diceplayer.shared.utils.logger.Path.exists")
-    @mock.patch("diceplayer.shared.utils.logger.Path.rename")
+    @mock.patch("diceplayer.utils.logger.Path.exists")
+    @mock.patch("diceplayer.utils.logger.Path.rename")
     def test_set_logger_if_file_exists(self, mock_rename, mock_exists):
         logger = Logger("test")
 
@@ -66,8 +66,8 @@ class TestLogger(unittest.TestCase):
         self.assertEqual(logger._logger.name, "test")
 
     @mock.patch("builtins.open", mock.mock_open())
-    @mock.patch("diceplayer.shared.utils.logger.Path.exists")
-    @mock.patch("diceplayer.shared.utils.logger.Path.rename")
+    @mock.patch("diceplayer.utils.logger.Path.exists")
+    @mock.patch("diceplayer.utils.logger.Path.rename")
     def test_set_logger_if_file_not_exists(self, mock_rename, mock_exists):
         logger = Logger("test")
 

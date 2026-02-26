@@ -1,5 +1,4 @@
-from diceplayer.shared.environment.atom import Atom
-from diceplayer.shared.environment.molecule import Molecule
+from diceplayer.environment import Atom, Molecule
 
 import numpy as np
 import numpy.testing as npt

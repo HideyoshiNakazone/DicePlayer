@@ -1,7 +1,7 @@
 from diceplayer import logger
 from diceplayer.config.player_config import PlayerConfig
-from diceplayer.shared.environment.system import System
-from diceplayer.shared.interface.gaussian_interface import GaussianInterface
+from diceplayer.environment import System
+from diceplayer.interface import GaussianInterface
 from tests.mocks.mock_inputs import get_config_example
 
 import yaml
@@ -46,8 +46,8 @@ class TestGaussianInterface(unittest.TestCase):
         self.assertFalse(hasattr(gaussian_interface, "step"))
         self.assertFalse(hasattr(gaussian_interface, "system"))
 
-    @mock.patch("diceplayer.shared.interface.gaussian_interface.Path.mkdir")
-    @mock.patch("diceplayer.shared.interface.gaussian_interface.Path.exists")
+    @mock.patch("diceplayer.interface.gaussian_interface.Path.mkdir")
+    @mock.patch("diceplayer.interface.gaussian_interface.Path.exists")
     def test_make_qm_dir(self, mock_exists, mock_mkdir):
         mock_exists.return_value = False
 
@@ -59,8 +59,8 @@ class TestGaussianInterface(unittest.TestCase):
         mock_exists.assert_called_once()
         mock_mkdir.assert_called_once()
 
-    @mock.patch("diceplayer.shared.interface.gaussian_interface.shutil.copy")
-    @mock.patch("diceplayer.shared.interface.gaussian_interface.Path.exists")
+    @mock.patch("diceplayer.interface.gaussian_interface.shutil.copy")
+    @mock.patch("diceplayer.interface.gaussian_interface.Path.exists")
     def test_copy_chk_file_from_previous_step(self, mock_exists, mock_copy):
         gaussian_interface = GaussianInterface()
         gaussian_interface.configure(self.config, System())
@@ -72,8 +72,8 @@ class TestGaussianInterface(unittest.TestCase):
         self.assertTrue(mock_exists.called)
         self.assertTrue(mock_copy.called)
 
-    @mock.patch("diceplayer.shared.interface.gaussian_interface.shutil.copy")
-    @mock.patch("diceplayer.shared.interface.gaussian_interface.Path.exists")
+    @mock.patch("diceplayer.interface.gaussian_interface.shutil.copy")
+    @mock.patch("diceplayer.interface.gaussian_interface.Path.exists")
     def test_copy_chk_file_from_previous_step_no_previous_step(
         self, mock_exists, mock_copy
     ):
@@ -85,8 +85,8 @@ class TestGaussianInterface(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             gaussian_interface._copy_chk_file_from_previous_step(2)
 
-    @mock.patch("diceplayer.shared.interface.gaussian_interface.shutil.copy")
-    @mock.patch("diceplayer.shared.interface.gaussian_interface.Path.exists")
+    @mock.patch("diceplayer.interface.gaussian_interface.shutil.copy")
+    @mock.patch("diceplayer.interface.gaussian_interface.Path.exists")
     def test_copy_chk_file_from_previous_step_current_exists(
         self, mock_exists, mock_copy
     ):

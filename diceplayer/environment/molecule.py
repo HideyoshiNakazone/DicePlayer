@@ -7,9 +7,9 @@ if TYPE_CHECKING:
     from nptyping import Float, NDArray, Shape
 
 from diceplayer import logger
-from diceplayer.shared.environment.atom import Atom
-from diceplayer.shared.utils.misc import BOHR2ANG
-from diceplayer.shared.utils.ptable import ghost_number
+from diceplayer.environment.atom import Atom
+from diceplayer.utils.misc import BOHR2ANG
+from diceplayer.utils.ptable import ghost_number
 
 import numpy as np
 from numpy.linalg import linalg

@@ -1,4 +1,4 @@
-from diceplayer.shared.utils.ptable import atommass
+from diceplayer.utils.ptable import atommass
 
 
 class Atom:

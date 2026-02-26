@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from diceplayer import logger
-from diceplayer.shared.config.player_config import PlayerConfig
+from diceplayer.config.player_config import PlayerConfig
 from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.environment.system import System

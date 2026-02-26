@@ -1,5 +1,5 @@
-from diceplayer.shared.config.dice_config import DiceConfig
-from diceplayer.shared.config.gaussian_config import GaussianDTO
+from diceplayer.config.dice_config import DiceConfig
+from diceplayer.config.gaussian_config import GaussianConfig
 from diceplayer.shared.utils.dataclass_protocol import Dataclass
 
 from dataclasses import dataclass, fields
@@ -17,7 +17,7 @@ class PlayerConfig(Dataclass):
     ncores: int
 
     dice: DiceConfig
-    gaussian: GaussianDTO
+    gaussian: GaussianConfig
 
     mem: int = None
     switchcyc: int = 3
@@ -35,11 +35,11 @@ class PlayerConfig(Dataclass):
     def from_dict(cls, params: dict):
         if params["dice"] is None:
             raise ValueError("Error: 'dice' keyword not specified in config file.")
-        params["dice"] = DiceConfig.from_dict(params["dice"])
+        params["dice"] = DiceConfig.model_validate(params["dice"])
 
         if params["gaussian"] is None:
             raise ValueError("Error: 'gaussian' keyword not specified in config file.")
-        params["gaussian"] = GaussianDTO.from_dict(params["gaussian"])
+        params["gaussian"] = GaussianConfig.model_validate(params["gaussian"])
 
         params = {f.name: params[f.name] for f in fields(cls) if f.name in params}
 

@@ -1,4 +1,4 @@
-from diceplayer import VERSION, logger
+from diceplayer import logger
 from diceplayer.player import Player
 from tests.mocks.mock_inputs import mock_open
 

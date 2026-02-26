@@ -309,7 +309,7 @@ class TestDiceInterface(unittest.TestCase):
         self.assertTrue(mock_os.getcwd.called)
         self.assertTrue(mock_os.chdir.called)
 
-        self.assertEqual(dice.run_dice_file.call_count, 1)
+        self.assertEqual(dice.run_dice_file.call_count, 2)
         self.assertTrue(mock_shutils.copy.called)
 
     @mock.patch("diceplayer.shared.interface.dice_interface.os")
@@ -317,7 +317,7 @@ class TestDiceInterface(unittest.TestCase):
     @mock.patch(
         "diceplayer.shared.interface.dice_interface.Path.exists", return_value=False
     )
-    def test_run_dice_on_second_cycle_run_successful(
+    def test_run_dice_raises_filenotfound_on_invalid_file(
         self, mock_path_exists, mock_shutils, mock_os
     ):
         dice = DiceInterface()

@@ -15,7 +15,7 @@ class TestGaussianDTO(unittest.TestCase):
 
     def test_is_valid_qmprog(self):
         with self.assertRaises(ValueError):
-            gaussian_dto = GaussianConfig(
+            GaussianConfig(
                 level="test",
                 qmprog="test",
                 keywords="test",
@@ -23,7 +23,7 @@ class TestGaussianDTO(unittest.TestCase):
 
     def test_is_valid_level(self):
         with self.assertRaises(ValueError):
-            gaussian_dto = GaussianConfig(
+            GaussianConfig(
                 level=None,
                 qmprog="g16",
                 keywords="test",

@@ -33,6 +33,7 @@ isort = "^5.13.2"
 black = "^24.4.2"
 pre-commit = "^3.7.1"
 poethepoet = "^0.27.0"
+ruff = "^0.15.2"
 
 
 # Build system
@@ -45,17 +46,38 @@ requires = ["poetry-core"]
 build-backend = "poetry_dynamic_versioning.backend"
 
 
-# Development tools
+# POE Tasks
 [tool.poe.tasks]
-hooks = "pre-commit install --config .pre-commit-config.yaml"
+create-hooks        = "bash .githooks/set-hooks.sh"
+tests               = "python -m coverage run -m unittest discover -v"
+tests-report        = "python -m coverage xml"
 
-[tool.isort]
-profile = "black"
-line_length = 79
-sections=[
-    "FUTURE",
-    "FIRSTPARTY",
-    "LOCALFOLDER",
-    "THIRDPARTY",
-    "STDLIB",
+
+
+# Tests
+[tool.coverage.run]
+omit = [
+    "tests/*",
 ]
+
+
+
+# Linters
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["jambo"]
+section-order=[
+    "future",
+    "first-party",
+    "local-folder",
+    "third-party",
+    "standard-library",
+]
+lines-after-imports = 2
+
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"

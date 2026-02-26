@@ -1,24 +1,22 @@
 from diceplayer import VERSION, logger
-from diceplayer.config.dice_config import DiceConfig
-from diceplayer.config.gaussian_config import GaussianConfig
 from diceplayer.config.player_config import PlayerConfig
 from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.environment.system import System
 from diceplayer.shared.interface.dice_interface import DiceInterface
 from diceplayer.shared.interface.gaussian_interface import GaussianInterface
-from diceplayer.shared.utils.dataclass_protocol import Dataclass
 from diceplayer.shared.utils.misc import weekday_date_time
 from diceplayer.shared.utils.ptable import atomsymb
 
 import yaml
 from pydantic import BaseModel
-from typing_extensions import Tuple, Type
+from typing_extensions import Tuple
 
 import os
 import pickle
 import sys
 from pathlib import Path
+
 
 ENV = ["OMP_STACKSIZE"]
 
@@ -413,7 +411,7 @@ class Player:
             with open("latest-step.pkl", "wb") as pickle_file:
                 pickle.dump((self.config, self.system, cycle), pickle_file)
         except Exception:
-            raise RuntimeError(f"Could not save pickle file latest-step.pkl.")
+            raise RuntimeError("Could not save pickle file latest-step.pkl.")
 
     @staticmethod
     def load_run_from_pickle() -> Tuple[PlayerConfig, System, int]:

@@ -11,13 +11,13 @@ from diceplayer.shared.utils.ptable import atomsymb
 
 import numpy as np
 from nptyping import NDArray
+from typing_extensions import Any, Dict, List, Tuple
 
 import os
 import shutil
 import subprocess
 import textwrap
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
 
 
 class GaussianInterface(Interface):

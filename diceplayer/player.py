@@ -13,12 +13,12 @@ from diceplayer.shared.utils.ptable import atomsymb
 
 import yaml
 from pydantic import BaseModel
+from typing_extensions import Tuple, Type
 
 import os
 import pickle
 import sys
 from pathlib import Path
-from typing import Tuple, Type
 
 ENV = ["OMP_STACKSIZE"]
 

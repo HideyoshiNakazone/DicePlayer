@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing_extensions import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from nptyping import Float, NDArray, Shape
@@ -12,10 +12,10 @@ from diceplayer.shared.utils.ptable import ghost_number
 
 import numpy as np
 from numpy.linalg import linalg
+from typing_extensions import Any, List, Tuple, Union
 
 import math
 from copy import deepcopy
-from typing import Any, List, Tuple, Union
 
 
 class Molecule:

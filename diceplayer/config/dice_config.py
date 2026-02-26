@@ -1,9 +1,9 @@
 from diceplayer.shared.utils.dataclass_protocol import Dataclass
 
 from pydantic import BaseModel, Field
+from typing_extensions import List, Literal
 
 from dataclasses import dataclass, fields
-from typing import List, Literal
 
 
 class DiceConfig(BaseModel):

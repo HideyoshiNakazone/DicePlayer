@@ -6,6 +6,7 @@ from diceplayer.shared.environment.system import System
 from diceplayer.shared.interface import Interface
 
 from setproctitle import setproctitle
+from typing_extensions import Final, TextIO
 
 import os
 import random
@@ -15,7 +16,6 @@ import sys
 import time
 from multiprocessing import Process, connection
 from pathlib import Path
-from typing import Final, TextIO
 
 DICE_END_FLAG: Final[str] = "End of simulation"
 DICE_FLAG_LINE: Final[int] = -2

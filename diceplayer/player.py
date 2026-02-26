@@ -1,7 +1,7 @@
 from diceplayer import VERSION, logger
-from diceplayer.shared.config.dice_config import DiceConfig
-from diceplayer.shared.config.gaussian_config import GaussianDTO
-from diceplayer.shared.config.player_config import PlayerConfig
+from diceplayer.config.dice_config import DiceConfig
+from diceplayer.config.gaussian_config import GaussianConfig
+from diceplayer.config.player_config import PlayerConfig
 from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.environment.system import System
@@ -12,13 +12,13 @@ from diceplayer.shared.utils.misc import weekday_date_time
 from diceplayer.shared.utils.ptable import atomsymb
 
 import yaml
+from pydantic import BaseModel
+from typing_extensions import Tuple, Type
 
 import os
 import pickle
 import sys
-from dataclasses import fields
 from pathlib import Path
-from typing import Tuple, Type
 
 ENV = ["OMP_STACKSIZE"]
 
@@ -108,14 +108,15 @@ class Player:
         geoms_file_path.touch()
 
     def print_keywords(self) -> None:
-        def log_keywords(config: Dataclass, dto: Type[Dataclass]):
-            for key in sorted(list(map(lambda f: f.name, fields(dto)))):
-                if getattr(config, key) is not None:
-                    if isinstance(getattr(config, key), list):
-                        string = " ".join(str(x) for x in getattr(config, key))
-                        logger.info(f"{key} = [ {string} ]")
-                    else:
-                        logger.info(f"{key} = {getattr(config, key)}")
+        def log_keywords(config: BaseModel):
+            for key, value in sorted(config.model_dump().items()):
+                if value is None:
+                    continue
+                if isinstance(value, list):
+                    string = " ".join(str(x) for x in value)
+                    logger.info(f"{key} = [ {string} ]")
+                else:
+                    logger.info(f"{key} = {value}")
 
         logger.info(
             f"##########################################################################################\n"
@@ -138,7 +139,7 @@ class Player:
             "------------------------------------------------------------------------------------------\n"
         )
 
-        log_keywords(self.config.dice, DiceConfig)
+        log_keywords(self.config.dice)
 
         logger.info(
             "------------------------------------------------------------------------------------------\n"
@@ -146,7 +147,7 @@ class Player:
             "------------------------------------------------------------------------------------------\n"
         )
 
-        log_keywords(self.config.gaussian, GaussianDTO)
+        log_keywords(self.config.gaussian)
 
         logger.info("\n")
 
@@ -427,7 +428,7 @@ class Player:
 
     @staticmethod
     def set_config(data: dict) -> PlayerConfig:
-        return PlayerConfig.from_dict(data)
+        return PlayerConfig.model_validate(data)
 
     @staticmethod
     def read_keywords(infile) -> dict:

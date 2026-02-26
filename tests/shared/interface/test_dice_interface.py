@@ -1,5 +1,5 @@
 from diceplayer import logger
-from diceplayer.shared.config.player_config import PlayerConfig
+from diceplayer.config.player_config import PlayerConfig
 from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.environment.system import System
@@ -19,7 +19,7 @@ class TestDiceInterface(unittest.TestCase):
         logger.set_logger(stream=io.StringIO())
 
         config = yaml.load(get_config_example(), Loader=yaml.Loader)
-        self.config = PlayerConfig.from_dict(config["diceplayer"])
+        self.config = PlayerConfig.model_validate(config["diceplayer"])
 
     def test_class_instantiation(self):
         dice = DiceInterface()

@@ -1,5 +1,6 @@
+from typing_extensions import List
+
 import itertools
-from typing import List
 
 
 class MockProc:

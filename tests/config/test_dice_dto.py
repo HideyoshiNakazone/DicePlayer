@@ -1,4 +1,4 @@
-from diceplayer.shared.config.dice_config import DiceConfig
+from diceplayer.config.dice_config import DiceConfig
 
 import unittest
 
@@ -83,7 +83,7 @@ class TestDiceDto(unittest.TestCase):
             )
 
     def test_from_dict(self):
-        dice_dto = DiceConfig.from_dict(
+        dice_dto = DiceConfig.model_validate(
             {
                 "ljname": "test",
                 "outname": "test",

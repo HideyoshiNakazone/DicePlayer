@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from diceplayer import logger
-from diceplayer.shared.config.player_config import PlayerConfig
+from diceplayer.config.player_config import PlayerConfig
 from diceplayer.shared.environment.system import System
 from diceplayer.shared.interface import Interface
 
 from setproctitle import setproctitle
+from typing_extensions import Final, TextIO
 
 import os
 import random
@@ -15,7 +16,6 @@ import sys
 import time
 from multiprocessing import Process, connection
 from pathlib import Path
-from typing import Final, TextIO
 
 DICE_END_FLAG: Final[str] = "End of simulation"
 DICE_FLAG_LINE: Final[int] = -2
@@ -356,9 +356,10 @@ class DiceInterface(Interface):
                     )
 
     def run_dice_file(self, cycle: int, proc: int, file_name: str):
-        with open(Path(file_name), "r") as infile, open(
-            Path(file_name + ".out"), "w"
-        ) as outfile:
+        with (
+            open(Path(file_name), "r") as infile,
+            open(Path(file_name + ".out"), "w") as outfile,
+        ):
             if shutil.which("bash") is not None:
                 exit_status = subprocess.call(
                     [

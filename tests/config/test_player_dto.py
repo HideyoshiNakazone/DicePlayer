@@ -1,6 +1,6 @@
-from diceplayer.shared.config.dice_config import DiceConfig
-from diceplayer.shared.config.gaussian_config import GaussianDTO
-from diceplayer.shared.config.player_config import PlayerConfig
+from diceplayer.config.dice_config import DiceConfig
+from diceplayer.config.gaussian_config import GaussianConfig
+from diceplayer.config.player_config import PlayerConfig
 
 import unittest
 
@@ -36,7 +36,7 @@ class TestPlayerDTO(unittest.TestCase):
             nmol=[1],
             nstep=[1, 1],
         )
-        self.gaussian_dto = GaussianDTO(
+        self.gaussian_dto = GaussianConfig(
             level="test",
             qmprog="g16",
             keywords="test",
@@ -55,7 +55,7 @@ class TestPlayerDTO(unittest.TestCase):
 
         self.assertIsInstance(player_dto, PlayerConfig)
         self.assertIsInstance(player_dto.dice, DiceConfig)
-        self.assertIsInstance(player_dto.gaussian, GaussianDTO)
+        self.assertIsInstance(player_dto.gaussian, GaussianConfig)
 
     def test_min_altsteps(self):
         player_dto = PlayerConfig(
@@ -72,11 +72,11 @@ class TestPlayerDTO(unittest.TestCase):
         self.assertEqual(player_dto.altsteps, 20000)
 
     def test_from_dict(self):
-        player_dto = PlayerConfig.from_dict(get_config_dict())
+        player_dto = PlayerConfig.model_validate(get_config_dict())
 
         self.assertIsInstance(player_dto, PlayerConfig)
         self.assertIsInstance(player_dto.dice, DiceConfig)
-        self.assertIsInstance(player_dto.gaussian, GaussianDTO)
+        self.assertIsInstance(player_dto.gaussian, GaussianConfig)
 
 
 if __name__ == "__main__":

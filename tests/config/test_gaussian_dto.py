@@ -1,21 +1,21 @@
-from diceplayer.shared.config.gaussian_config import GaussianDTO
+from diceplayer.config.gaussian_config import GaussianConfig
 
 import unittest
 
 
 class TestGaussianDTO(unittest.TestCase):
     def test_class_instantiation(self):
-        gaussian_dto = GaussianDTO(
+        gaussian_dto = GaussianConfig(
             level="test",
             qmprog="g16",
             keywords="test",
         )
 
-        self.assertIsInstance(gaussian_dto, GaussianDTO)
+        self.assertIsInstance(gaussian_dto, GaussianConfig)
 
     def test_is_valid_qmprog(self):
         with self.assertRaises(ValueError):
-            gaussian_dto = GaussianDTO(
+            gaussian_dto = GaussianConfig(
                 level="test",
                 qmprog="test",
                 keywords="test",
@@ -23,14 +23,14 @@ class TestGaussianDTO(unittest.TestCase):
 
     def test_is_valid_level(self):
         with self.assertRaises(ValueError):
-            gaussian_dto = GaussianDTO(
+            gaussian_dto = GaussianConfig(
                 level=None,
                 qmprog="g16",
                 keywords="test",
             )
 
     def test_from_dict(self):
-        gaussian_dto = GaussianDTO.from_dict(
+        gaussian_dto = GaussianConfig.model_validate(
             {
                 "level": "test",
                 "qmprog": "g16",
@@ -38,7 +38,7 @@ class TestGaussianDTO(unittest.TestCase):
             }
         )
 
-        self.assertIsInstance(gaussian_dto, GaussianDTO)
+        self.assertIsInstance(gaussian_dto, GaussianConfig)
 
 
 if __name__ == "__main__":

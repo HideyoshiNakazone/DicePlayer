@@ -1,9 +1,10 @@
+from typing_extensions import Final
+
 import gzip
 import os
 import shutil
 import sys
 import time
-from typing import Final
 
 #######################################  constants  ######################################
 

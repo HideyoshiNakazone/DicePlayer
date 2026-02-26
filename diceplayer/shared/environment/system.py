@@ -5,10 +5,10 @@ from diceplayer.shared.utils.ptable import atomsymb
 
 import numpy as np
 from numpy import linalg
+from typing_extensions import List, TextIO, Tuple
 
 import math
 from copy import deepcopy
-from typing import List, TextIO, Tuple
 
 
 class System:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from diceplayer import logger
-from diceplayer.shared.config.player_config import PlayerConfig
+from diceplayer.config.player_config import PlayerConfig
 from diceplayer.shared.environment.atom import Atom
 from diceplayer.shared.environment.molecule import Molecule
 from diceplayer.shared.environment.system import System
@@ -11,13 +11,13 @@ from diceplayer.shared.utils.ptable import atomsymb
 
 import numpy as np
 from nptyping import NDArray
+from typing_extensions import Any, Dict, List, Tuple
 
 import os
 import shutil
 import subprocess
 import textwrap
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
 
 
 class GaussianInterface(Interface):

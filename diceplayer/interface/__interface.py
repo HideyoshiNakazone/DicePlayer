@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from diceplayer.config.player_config import PlayerConfig
-from diceplayer.shared.environment.system import System
+from diceplayer.environment.system import System
 
 from abc import ABC, abstractmethod
 

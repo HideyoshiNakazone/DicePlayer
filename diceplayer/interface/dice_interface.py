@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from diceplayer import logger
 from diceplayer.config.player_config import PlayerConfig
-from diceplayer.shared.environment.system import System
-from diceplayer.shared.interface import Interface
+from diceplayer.environment.system import System
+from diceplayer.interface import Interface
 
 from setproctitle import setproctitle
 from typing_extensions import Final, TextIO

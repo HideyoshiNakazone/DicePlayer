@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from diceplayer import logger
 from diceplayer.config.player_config import PlayerConfig
-from diceplayer.shared.environment.atom import Atom
-from diceplayer.shared.environment.molecule import Molecule
-from diceplayer.shared.environment.system import System
-from diceplayer.shared.interface import Interface
-from diceplayer.shared.utils.misc import date_time
-from diceplayer.shared.utils.ptable import atomsymb
+from diceplayer.environment.atom import Atom
+from diceplayer.environment.molecule import Molecule
+from diceplayer.environment.system import System
+from diceplayer.interface import Interface
+from diceplayer.utils.misc import date_time
+from diceplayer.utils.ptable import atomsymb
 
 import numpy as np
 from nptyping import NDArray

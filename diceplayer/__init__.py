@@ -1,4 +1,4 @@
-from diceplayer.shared.utils.logger import Logger
+from diceplayer.utils import Logger
 
 from importlib import metadata
 

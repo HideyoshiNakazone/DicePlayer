@@ -1,4 +1,4 @@
-from diceplayer.shared.environment.atom import Atom
+from diceplayer.environment import Atom
 
 import unittest
 

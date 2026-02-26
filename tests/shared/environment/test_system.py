@@ -1,5 +1,4 @@
-from diceplayer.shared.environment.molecule import Molecule
-from diceplayer.shared.environment.system import System
+from diceplayer.environment import Molecule, System
 
 import unittest
 

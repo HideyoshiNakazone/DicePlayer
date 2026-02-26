@@ -1,6 +1,6 @@
 from diceplayer import logger
-from diceplayer.shared.environment.molecule import Molecule
-from diceplayer.shared.utils.misc import BOHR2ANG
+from diceplayer.environment.molecule import Molecule
+from diceplayer.utils.misc import BOHR2ANG
 
 import numpy as np
 from numpy import linalg

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from diceplayer import logger
 from diceplayer.config.player_config import PlayerConfig
-from diceplayer.environment.atom import Atom
+from diceplayer.environment import Atom
 from diceplayer.environment.molecule import Molecule
 from diceplayer.environment.system import System
 from diceplayer.interface import Interface
 from diceplayer.utils.misc import date_time
-from diceplayer.utils.ptable import atomsymb
+from diceplayer.utils.ptable import PTable
 
 import numpy as np
 from nptyping import NDArray
@@ -161,9 +161,9 @@ class GaussianInterface(Interface):
 
                         if (
                             line[0].title()
-                            != atomsymb[
+                            != PTable.get_atomic_symbol(
                                 self.system.molecule[type].atom[site].na
-                            ].strip()
+                            ).strip()
                         ):
                             raise SyntaxError(
                                 "Error: Invalid Dice Output. Atom type does not match."
@@ -188,7 +188,7 @@ class GaussianInterface(Interface):
                         for atom in new_molecule.atom:
                             asec_charges.append(
                                 {
-                                    "lbl": atomsymb[atom.na],
+                                    "lbl": PTable.get_atomic_symbol(atom.na),
                                     "rx": atom.rx,
                                     "ry": atom.ry,
                                     "rz": atom.rz,
@@ -258,7 +258,7 @@ class GaussianInterface(Interface):
         )
 
         for atom in self.system.molecule[0].atom:
-            symbol = atomsymb[atom.na]
+            symbol = PTable.get_atomic_symbol(atom.na)
             gaussian_input.append(
                 "{:<2s}    {:>10.5f}   {:>10.5f}   {:>10.5f}\n".format(
                     symbol, atom.rx, atom.ry, atom.rz

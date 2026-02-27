@@ -7,11 +7,12 @@ if TYPE_CHECKING:
     from nptyping import Float, NDArray, Shape
 
 from diceplayer import logger
-from diceplayer.environment.atom import Atom
+from diceplayer.environment import Atom
 from diceplayer.utils.misc import BOHR2ANG
-from diceplayer.utils.ptable import ghost_number
+from diceplayer.utils.ptable import GHOST_NUMBER
 
 import numpy as np
+import numpy.typing as npt
 from numpy.linalg import linalg
 from typing_extensions import Any, List, Tuple, Union
 
@@ -26,12 +27,12 @@ class Molecule:
     Atributes:
         molname (str): The name of the represented molecule
         atom (List[Atom]): List of atoms of the represented molecule
-        position (NDArray[Any, Any]): The position relative to the internal atoms of the represented molecule
-        energy (NDArray[Any, Any]): The energy of the represented molecule
-        gradient (NDArray[Any, Any]): The first derivative of the energy relative to the position
-        hessian (NDArray[Any, Any]): The second derivative of the energy relative to the position
+        position (npt.NDArray[np.float64]): The position relative to the internal atoms of the represented molecule
+        energy (npt.NDArray[np.float64]): The energy of the represented molecule
+        gradient (npt.NDArray[np.float64]): The first derivative of the energy relative to the position
+        hessian (npt.NDArray[np.float64]): The second derivative of the energy relative to the position
         total_mass (int): The total mass of the molecule
-        com (NDArray[Any, Any]): The center of mass of the molecule
+        com (npt.NDArray[np.float64]): The center of mass of the molecule
     """
 
     def __init__(self, molname: str) -> None:
@@ -44,16 +45,16 @@ class Molecule:
         self.molname: str = molname
 
         self.atom: List[Atom] = []
-        self.position: NDArray[Any, Any]
-        self.energy: NDArray[Any, Any]
-        self.gradient: NDArray[Any, Any]
-        self.hessian: NDArray[Any, Any]
+        self.position: npt.NDArray[np.float64]
+        self.energy: npt.NDArray[np.float64]
+        self.gradient: npt.NDArray[np.float64]
+        self.hessian: npt.NDArray[np.float64]
 
         self.ghost_atoms: List[Atom] = []
         self.lp_atoms: List[Atom] = []
 
         self.total_mass: int = 0
-        self.com: Union[None, NDArray[Any, Any]] = None
+        self.com: Union[None, npt.NDArray[np.float64]] = None
 
     def add_atom(self, a: Atom) -> None:
         """
@@ -68,7 +69,7 @@ class Molecule:
 
         self.center_of_mass()
 
-    def center_of_mass(self) -> NDArray[Any, Any]:
+    def center_of_mass(self) -> npt.NDArray[np.float64]:
         """
         Calculates the center of mass of the molecule
         """
@@ -115,7 +116,7 @@ class Molecule:
 
         return [charge, dipole[0], dipole[1], dipole[2], total_dipole]
 
-    def distances_between_atoms(self) -> NDArray[Shape["Any,Any"], Float]:
+    def distances_between_atoms(self) -> npt.NDArray[np.float64]:
         """
         Calculates distances between the atoms of the molecule
 
@@ -135,16 +136,22 @@ class Molecule:
 
         return np.array(distances).reshape(dim, dim - 1)
 
-    def inertia_tensor(self) -> NDArray[Shape["3, 3"], Float]:
+    def inertia_tensor(self) -> npt.NDArray[np.float64]:
         """
         Calculates the inertia tensor of the molecule.
 
         Returns:
-            NDArray[Shape["3, 3"], Float]: inertia tensor of the molecule.
+            npt.NDArray[np.float64]: inertia tensor of the molecule.
         """
 
         self.center_of_mass()
-        Ixx = Ixy = Ixz = Iyy = Iyz = Izz = 0.0
+
+        Ixx = 0.0
+        Ixy = 0.0
+        Ixz = 0.0
+        Iyy = 0.0
+        Iyz = 0.0
+        Izz = 0.0
 
         for atom in self.atom:
             dx = atom.rx - self.com[0]
@@ -374,9 +381,9 @@ class Molecule:
 
         distances = []
         for atom1 in self.atom:
-            if atom1.na != ghost_number:
+            if atom1.na != GHOST_NUMBER:
                 for atom2 in molec.atom:
-                    if atom2.na != ghost_number:
+                    if atom2.na != GHOST_NUMBER:
                         dx = atom1.rx - atom2.rx
                         dy = atom1.ry - atom2.ry
                         dz = atom1.rz - atom2.rz

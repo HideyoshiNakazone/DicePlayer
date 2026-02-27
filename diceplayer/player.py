@@ -2,7 +2,7 @@ from diceplayer import VERSION, logger
 from diceplayer.config.player_config import PlayerConfig
 from diceplayer.environment import Atom, Molecule, System
 from diceplayer.interface import DiceInterface, GaussianInterface
-from diceplayer.utils import atomsymb, weekday_date_time
+from diceplayer.utils import PTable, weekday_date_time
 
 import yaml
 from pydantic import BaseModel
@@ -289,7 +289,7 @@ class Player:
             file.write(f"Cycle # {cycle}\n")
 
             for atom in self.system.molecule[0].atom:
-                symbol = atomsymb[atom.na]
+                symbol = PTable.get_atomic_symbol(atom.na)
                 file.write(
                     f"{symbol:<2s}    {atom.rx:>10.6f}  {atom.ry:>10.6f}  {atom.rz:>10.6f}\n"
                 )

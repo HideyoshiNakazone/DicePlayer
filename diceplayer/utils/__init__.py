@@ -6,14 +6,14 @@ from .misc import (
     make_step_dir,
     weekday_date_time,
 )
-from .ptable import atommass, atomsymb
+from .ptable import AtomInfo, PTable
 
 
 __all__ = [
     "Logger",
     "valid_logger",
-    "atomsymb",
-    "atommass",
+    "PTable",
+    "AtomInfo",
     "weekday_date_time",
     "date_time",
     "compress_files_1mb",

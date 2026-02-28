@@ -1,24 +1,23 @@
 from __future__ import annotations
 
-from typing_extensions import TYPE_CHECKING
-
-
-if TYPE_CHECKING:
-    from nptyping import Float, NDArray, Shape
-
 from diceplayer import logger
-from diceplayer.environment.atom import Atom
-from diceplayer.utils.misc import BOHR2ANG
-from diceplayer.utils.ptable import ghost_number
+from diceplayer.environment import Atom
+from diceplayer.utils.cache import invalidate_computed_properties
+from diceplayer.utils.misc import BOHR2ANG, EA_2_DEBYE
+from diceplayer.utils.ptable import GHOST_NUMBER
 
 import numpy as np
-from numpy.linalg import linalg
-from typing_extensions import Any, List, Tuple, Union
+import numpy.typing as npt
+import numpy.linalg as linalg
+from typing_extensions import List, Self, Tuple
 
 import math
 from copy import deepcopy
+from dataclasses import dataclass, field
+from functools import cached_property
 
 
+@dataclass
 class Molecule:
     """
     Molecule class declaration. This class is used throughout the DicePlayer program to represent molecules.
@@ -26,35 +25,60 @@ class Molecule:
     Atributes:
         molname (str): The name of the represented molecule
         atom (List[Atom]): List of atoms of the represented molecule
-        position (NDArray[Any, Any]): The position relative to the internal atoms of the represented molecule
-        energy (NDArray[Any, Any]): The energy of the represented molecule
-        gradient (NDArray[Any, Any]): The first derivative of the energy relative to the position
-        hessian (NDArray[Any, Any]): The second derivative of the energy relative to the position
         total_mass (int): The total mass of the molecule
-        com (NDArray[Any, Any]): The center of mass of the molecule
+        com (npt.NDArray[np.float64]): The center of mass of the molecule
+        inertia_tensor (npt.NDArray[np.float64]): The inertia tensor of the molecule
     """
 
-    def __init__(self, molname: str) -> None:
+    molname: str
+    atom: List[Atom] = field(default_factory=list)
+
+    @cached_property
+    def total_mass(self) -> float:
+        return sum(atom.mass for atom in self.atom)
+
+    @cached_property
+    def com(self) -> npt.NDArray[np.float64]:
+        com = np.zeros(3)
+
+        for atom in self.atom:
+            com += atom.mass * np.array([atom.rx, atom.ry, atom.rz])
+
+        com = com / self.total_mass
+
+        return com
+
+    @cached_property
+    def inertia_tensor(self) -> npt.NDArray[np.float64]:
         """
-        The constructor function __init__ is used to create new instances of the Molecule class.
+        Calculates the inertia tensor of the molecule.
 
-        Args:
-            molname (str): Molecule name
+        Returns:
+            npt.NDArray[np.float64]: inertia tensor of the molecule.
         """
-        self.molname: str = molname
+        inertia_tensor = np.zeros((3, 3), dtype=np.float64)
 
-        self.atom: List[Atom] = []
-        self.position: NDArray[Any, Any]
-        self.energy: NDArray[Any, Any]
-        self.gradient: NDArray[Any, Any]
-        self.hessian: NDArray[Any, Any]
+        for atom in self.atom:
+            dx = atom.rx - self.com[0]
+            dy = atom.ry - self.com[1]
+            dz = atom.rz - self.com[2]
 
-        self.ghost_atoms: List[Atom] = []
-        self.lp_atoms: List[Atom] = []
+            inertia_tensor[0, 0] += atom.mass * (dy**2 + dz**2)
+            inertia_tensor[1, 1] += atom.mass * (dz**2 + dx**2)
+            inertia_tensor[2, 2] += atom.mass * (dx**2 + dy**2)
 
-        self.total_mass: int = 0
-        self.com: Union[None, NDArray[Any, Any]] = None
+            inertia_tensor[0, 1] -= atom.mass * dx * dy
+            inertia_tensor[0, 2] -= atom.mass * dx * dz
+            inertia_tensor[1, 2] -= atom.mass * dy * dz
 
+        # enforce symmetry
+        inertia_tensor[1, 0] = inertia_tensor[0, 1]
+        inertia_tensor[2, 0] = inertia_tensor[0, 2]
+        inertia_tensor[2, 1] = inertia_tensor[1, 2]
+
+        return inertia_tensor
+
+    @invalidate_computed_properties()
     def add_atom(self, a: Atom) -> None:
         """
         Adds Atom instance to the molecule.
@@ -64,25 +88,20 @@ class Molecule:
         """
 
         self.atom.append(a)
-        self.total_mass += a.mass
 
-        self.center_of_mass()
-
-    def center_of_mass(self) -> NDArray[Any, Any]:
+    @invalidate_computed_properties()
+    def remove_atom(self, a: Atom) -> None:
         """
-        Calculates the center of mass of the molecule
+        Removes Atom instance from the molecule.
+
+        Args:
+            a (Atom): Atom instance to be removed from atom list.
         """
 
-        self.com = np.zeros(3)
+        self.atom.remove(a)
 
-        for atom in self.atom:
-            self.com += atom.mass * np.array([atom.rx, atom.ry, atom.rz])
-
-        self.com = self.com / self.total_mass
-
-        return self.com
-
-    def center_of_mass_to_origin(self) -> None:
+    @invalidate_computed_properties()
+    def move_center_of_mass_to_origin(self) -> None:
         """
         Updated positions based on the center of mass of the molecule
         """
@@ -91,7 +110,28 @@ class Molecule:
             atom.ry -= self.com[1]
             atom.rz -= self.com[2]
 
-        self.center_of_mass()
+    @invalidate_computed_properties()
+    def rotate_to_standard_orientation(self) -> None:
+        """
+        Rotates the molecule to the standard orientation
+        """
+
+        self.move_center_of_mass_to_origin()
+        evals, evecs = self.principal_axes()
+
+        if np.isclose(linalg.det(evecs), -1):
+            evecs[:, 2] *= -1
+
+        if not np.isclose(linalg.det(evecs), 1):
+            raise RuntimeError(
+                "Error: could not make a rotation matrix while adopting the standard orientation"
+            )
+
+        coords = np.array([(a.rx, a.ry, a.rz) for a in self.atom])
+        rotated = coords @ evecs.T
+
+        for atom, pos in zip(self.atom, rotated):
+            atom.rx, atom.ry, atom.rz = pos
 
     def charges_and_dipole(self) -> List[float]:
         """
@@ -102,7 +142,6 @@ class Molecule:
             second dipole, third dipole and total dipole.
         """
 
-        eA_to_Debye = 1 / 0.20819434
         charge = 0
         dipole = np.zeros(3)
         for atom in self.atom:
@@ -110,58 +149,23 @@ class Molecule:
             dipole += atom.chg * position
             charge += atom.chg
 
-        dipole *= eA_to_Debye
+        dipole *= EA_2_DEBYE
         total_dipole = math.sqrt(dipole[0] ** 2 + dipole[1] ** 2 + dipole[2] ** 2)
 
         return [charge, dipole[0], dipole[1], dipole[2], total_dipole]
 
-    def distances_between_atoms(self) -> NDArray[Shape["Any,Any"], Float]:
+    def distances_between_atoms(self) -> npt.NDArray[np.float64]:
         """
         Calculates distances between the atoms of the molecule
 
         Returns:
            NDArray[Shape["Any,Any"],Float]: distances between the atoms.
         """
+        coords = np.array([(a.rx, a.ry, a.rz) for a in self.atom], dtype=np.float64)
+        diff = coords[:, None, :] - coords[None, :, :]
+        return np.linalg.norm(diff, axis=-1)
 
-        distances = []
-        dim = len(self.atom)
-        for index1, atom1 in enumerate(self.atom):
-            for index2, atom2 in enumerate(self.atom):
-                if index1 != index2:
-                    dx = atom1.rx - atom2.rx
-                    dy = atom1.ry - atom2.ry
-                    dz = atom1.rz - atom2.rz
-                    distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
-
-        return np.array(distances).reshape(dim, dim - 1)
-
-    def inertia_tensor(self) -> NDArray[Shape["3, 3"], Float]:
-        """
-        Calculates the inertia tensor of the molecule.
-
-        Returns:
-            NDArray[Shape["3, 3"], Float]: inertia tensor of the molecule.
-        """
-
-        self.center_of_mass()
-        Ixx = Ixy = Ixz = Iyy = Iyz = Izz = 0.0
-
-        for atom in self.atom:
-            dx = atom.rx - self.com[0]
-            dy = atom.ry - self.com[1]
-            dz = atom.rz - self.com[2]
-
-            Ixx += atom.mass * (dy**2 + dz**2)
-            Iyy += atom.mass * (dz**2 + dx**2)
-            Izz += atom.mass * (dx**2 + dy**2)
-
-            Ixy += atom.mass * dx * dy * -1
-            Ixz += atom.mass * dx * dz * -1
-            Iyz += atom.mass * dy * dz * -1
-
-        return np.array([[Ixx, Ixy, Ixz], [Ixy, Iyy, Iyz], [Ixz, Iyz, Izz]])
-
-    def principal_axes(self) -> Tuple[np.ndarray, np.ndarray]:
+    def principal_axes(self) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         """
         Calculates the principal axes of the molecule
 
@@ -171,7 +175,11 @@ class Molecule:
         """
 
         try:
-            evals, evecs = linalg.eigh(self.inertia_tensor())
+            evals, evecs = linalg.eigh(self.inertia_tensor)
+
+            idx = np.argsort(evals)
+            evals = evals[idx]
+            evecs = evecs[:, idx]
         except ValueError:
             raise RuntimeError(
                 "Error: diagonalization of inertia tensor did not converge"
@@ -179,22 +187,16 @@ class Molecule:
 
         return evals, evecs
 
-    def read_position(self) -> np.ndarray:
+    def read_position(self) -> npt.NDArray[np.float64]:
         """Reads the position of the molecule from the position values of the atoms
 
         Returns:
             np.ndarray: internal position relative to atoms of the molecule
         """
+        coords = np.array([(a.rx, a.ry, a.rz) for a in self.atom], dtype=np.float64)
+        return coords.ravel() * BOHR2ANG
 
-        position_list = []
-        for atom in self.atom:
-            position_list.extend([atom.rx, atom.ry, atom.rz])
-        position = np.array(position_list)
-        position *= BOHR2ANG
-
-        return position
-
-    def update_charges(self, charges: NDArray) -> int:
+    def update_charges(self, charges: npt.NDArray[np.float64]) -> int:
         """
         Updates the charges of the atoms of the molecule and
         returns the max difference between the new and old charges
@@ -206,34 +208,6 @@ class Molecule:
 
         return diff
 
-    # @staticmethod
-    # def update_hessian(
-    #         step: np.ndarray,
-    #         cur_gradient: np.ndarray,
-    #         old_gradient: np.ndarray,
-    #         hessian: np.ndarray,
-    # ) -> np.ndarray:
-    #     """
-    #     Updates the Hessian of the molecule based on the current hessian, the current gradient and the previous gradient
-    #
-    #     Args:
-    #         step (np.ndarray): step value of the iteration
-    #         cur_gradient (np.ndarray): current gradient
-    #         old_gradient (np.ndarray): previous gradient
-    #         hessian (np.ndarray): current hessian
-    #
-    #     Returns:
-    #         np.ndarray: updated hessian of the molecule
-    #     """
-    #
-    #     dif_gradient = cur_gradient - old_gradient
-    #
-    #     mat1 = 1 / np.dot(dif_gradient, step) * np.matmul(dif_gradient.T, dif_gradient)
-    #     mat2 = 1 / np.dot(step, np.matmul(hessian, step.T).T)
-    #     mat2 *= np.matmul(np.matmul(hessian, step.T), np.matmul(step, hessian))
-    #
-    #     return hessian + mat1 - mat2
-
     def sizes_of_molecule(self) -> List[float]:
         """
         Calculates sides of the smallest box that the molecule could fit
@@ -241,56 +215,10 @@ class Molecule:
         Returns:
             List[float]: list of the sizes of the molecule
         """
+        coords = np.array([(a.rx, a.ry, a.rz) for a in self.atom], dtype=np.float64)
+        return (coords.max(axis=0) - coords.min(axis=0)).tolist()
 
-        x_list = []
-        y_list = []
-        z_list = []
-
-        for atom in self.atom:
-            x_list.append(atom.rx)
-            y_list.append(atom.ry)
-            z_list.append(atom.rz)
-
-        x_max = max(x_list)
-        x_min = min(x_list)
-        y_max = max(y_list)
-        y_min = min(y_list)
-        z_max = max(z_list)
-        z_min = min(z_list)
-
-        sizes = [x_max - x_min, y_max - y_min, z_max - z_min]
-
-        return sizes
-
-    def standard_orientation(self) -> None:
-        """
-        Rotates the molecule to the standard orientation
-        """
-
-        self.center_of_mass_to_origin()
-        evals, evecs = self.principal_axes()
-
-        if round(linalg.det(evecs)) == -1:
-            evecs[0, 2] *= -1
-            evecs[1, 2] *= -1
-            evecs[2, 2] *= -1
-
-        if round(linalg.det(evecs)) != 1:
-            raise RuntimeError(
-                "Error: could not make a rotation matrix while adopting the standard orientation"
-            )
-
-        rot_matrix = evecs.T
-
-        for atom in self.atom:
-            position = np.array([atom.rx, atom.ry, atom.rz])
-            new_position = np.matmul(rot_matrix, position.T).T
-
-            atom.rx = new_position[0]
-            atom.ry = new_position[1]
-            atom.rz = new_position[2]
-
-    def translate(self, vector: np.ndarray) -> "Molecule":
+    def translate(self, vector: np.ndarray) -> Self:
         """
         Creates a new Molecule object where its' atoms has been translated by a vector
 
@@ -300,6 +228,9 @@ class Molecule:
         Returns:
             Molecule: new Molecule object translated by a vector
         """
+        vec = np.asarray(vector, dtype=np.float64)
+        if vec.shape != (3,):
+            raise ValueError("translation vector must be shape (3,)")
 
         new_molecule = deepcopy(self)
 
@@ -320,7 +251,6 @@ class Molecule:
                 self.com[0], self.com[1], self.com[2]
             )
         )
-        self.inertia_tensor()
         evals, evecs = self.principal_axes()
 
         logger.info(
@@ -361,7 +291,7 @@ class Molecule:
             )
         )
 
-    def minimum_distance(self, molec: "Molecule") -> float:
+    def minimum_distance(self, molec: Self) -> float:
         """
         Return the minimum distance between two molecules
 
@@ -371,15 +301,16 @@ class Molecule:
         Returns:
             float: minimum distance between the two molecules
         """
+        coords_a = np.array(
+            [(a.rx, a.ry, a.rz) for a in self.atom if a.na != GHOST_NUMBER]
+        )
+        coords_b = np.array(
+            [(a.rx, a.ry, a.rz) for a in molec.atom if a.na != GHOST_NUMBER]
+        )
 
-        distances = []
-        for atom1 in self.atom:
-            if atom1.na != ghost_number:
-                for atom2 in molec.atom:
-                    if atom2.na != ghost_number:
-                        dx = atom1.rx - atom2.rx
-                        dy = atom1.ry - atom2.ry
-                        dz = atom1.rz - atom2.rz
-                        distances.append(math.sqrt(dx**2 + dy**2 + dz**2))
+        if len(coords_a) == 0 or len(coords_b) == 0:
+            raise ValueError("No real atoms to compare")
 
-        return min(distances)
+        diff = coords_a[:, None, :] - coords_b[None, :, :]
+        d2 = np.sum(diff**2, axis=-1)
+        return np.sqrt(d2.min())

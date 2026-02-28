@@ -2,7 +2,7 @@ from diceplayer import VERSION, logger
 from diceplayer.config.player_config import PlayerConfig
 from diceplayer.environment import Atom, Molecule, System
 from diceplayer.interface import DiceInterface, GaussianInterface
-from diceplayer.utils import atomsymb, weekday_date_time
+from diceplayer.utils import PTable, weekday_date_time
 
 import yaml
 from pydantic import BaseModel
@@ -76,7 +76,7 @@ class Player:
                 "\n    Translating and rotating molecule to standard orientation..."
             )
 
-            mol.standard_orientation()
+            mol.rotate_to_standard_orientation()
             logger.info("\n Done")
             logger.info("\nNew values:\n")
             mol.print_mol_info()
@@ -267,8 +267,6 @@ class Player:
             if "position" not in result:
                 raise RuntimeError("Optimization failed. No position found in result.")
 
-            self.system.update_molecule(result["position"])
-
         else:
             if "charges" not in result:
                 raise RuntimeError(
@@ -277,19 +275,43 @@ class Player:
 
             diff = self.system.molecule[0].update_charges(result["charges"])
 
-            self.system.print_charges_and_dipole(cycle)
+            self.print_charges_and_dipole(cycle)
             self.print_geoms(cycle)
 
             if diff < self.config.gaussian.chg_tol:
                 logger.info(f"Charges converged after {cycle} cycles.")
                 raise StopIteration()
 
+    def print_charges_and_dipole(self, cycle: int) -> None:
+        """
+        Print the charges and dipole of the molecule in the Output file
+
+        Args:
+            cycle (int): Number of the cycle
+            fh (TextIO): Output file
+        """
+
+        logger.info("Cycle # {}\n".format(cycle))
+        logger.info("Number of site: {}\n".format(len(self.system.molecule[0].atom)))
+
+        chargesAndDipole = self.system.molecule[0].charges_and_dipole()
+
+        logger.info(
+            "{:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(
+                chargesAndDipole[0],
+                chargesAndDipole[1],
+                chargesAndDipole[2],
+                chargesAndDipole[3],
+                chargesAndDipole[4],
+            )
+        )
+
     def print_geoms(self, cycle: int):
         with open(self.config.geoms_file, "a") as file:
             file.write(f"Cycle # {cycle}\n")
 
             for atom in self.system.molecule[0].atom:
-                symbol = atomsymb[atom.na]
+                symbol = PTable.get_atomic_symbol(atom.na)
                 file.write(
                     f"{symbol:<2s}    {atom.rx:>10.6f}  {atom.ry:>10.6f}  {atom.rz:>10.6f}\n"
                 )

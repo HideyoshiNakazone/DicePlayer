@@ -8,42 +8,38 @@ authors = [
 readme = "README.md"
 license = "GPL-2.0-only"
 scripts = { diceplayer = "diceplayer.__main__:main" }
-requires-python = ">=3.9"
-dynamic = ["version", "dependencies"]
+requires-python = ">=3.10"
+dynamic = ["version"]
 
 
-# Poetry configuration
-[tool.poetry]
-version = "0.0.0"
+dependencies = [
+    "numpy>=2.2.0",
+    "argparse>=1.4.0",
+    "setproctitle>=1.3.2",
+    "pyyaml>=6.0",
+    "pydantic>=2.12.5",
+    "typing-extensions>=4.15.0"
+]
 
 
-[tool.poetry.dependencies]
-numpy = "^1.26.4"
-argparse = "^1.4.0"
-setproctitle = "^1.3.2"
-pyyaml = "^6.0"
-nptyping = "^2.5.0"
-pydantic = "^2.12.5"
-typing-extensions = "^4.15.0"
-
-
-[tool.poetry.group.dev.dependencies]
-coverage = "^7.2.7"
-isort = "^5.13.2"
-black = "^24.4.2"
-pre-commit = "^3.7.1"
-poethepoet = "^0.27.0"
-ruff = "^0.15.2"
+[dependency-groups]
+dev = [
+    "coverage>=7.2.7",
+    "isort>=5.13.2",
+    "black>=24.4.2",
+    "pre-commit>=3.7.1",
+    "poethepoet>=0.27.0",
+    "ruff>=0.15.2"
+]
 
 
 # Build system
-[tool.poetry-dynamic-versioning]
-enable = true
-vcs = "git"
+[tool.hatch.version]
+source = "vcs"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry_dynamic_versioning.backend"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
 
 # POE Tasks
@@ -65,6 +61,9 @@ omit = [
 # Linters
 [tool.ruff.lint]
 extend-select = ["I"]
+ignore = [
+    "E741" # ambiguous variable name 'l', 'O', or 'I'
+]
 
 [tool.ruff.lint.isort]
 known-first-party = ["jambo"]

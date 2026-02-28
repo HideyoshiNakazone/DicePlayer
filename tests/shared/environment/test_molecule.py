@@ -68,15 +68,10 @@ class TestMolecule(unittest.TestCase):
             Atom(lbl=1, na=1, rx=1.0, ry=1.0, rz=1.0, chg=1.0, eps=1.0, sig=1.0)
         )
 
-        expected = [
-            [0.0, 1.73205081],
-            [1.73205081, 0.0]
-        ]
+        expected = [[0.0, 1.73205081], [1.73205081, 0.0]]
         actual = mol.distances_between_atoms()
 
-        npt.assert_almost_equal(
-            expected, actual
-        )
+        npt.assert_almost_equal(expected, actual)
 
     def test_inertia_tensor(self):
         mol = Molecule("test")

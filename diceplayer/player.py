@@ -267,8 +267,6 @@ class Player:
             if "position" not in result:
                 raise RuntimeError("Optimization failed. No position found in result.")
 
-            self.system.update_molecule(result["position"])
-
         else:
             if "charges" not in result:
                 raise RuntimeError(
@@ -277,12 +275,36 @@ class Player:
 
             diff = self.system.molecule[0].update_charges(result["charges"])
 
-            self.system.print_charges_and_dipole(cycle)
+            self.print_charges_and_dipole(cycle)
             self.print_geoms(cycle)
 
             if diff < self.config.gaussian.chg_tol:
                 logger.info(f"Charges converged after {cycle} cycles.")
                 raise StopIteration()
+
+    def print_charges_and_dipole(self, cycle: int) -> None:
+        """
+        Print the charges and dipole of the molecule in the Output file
+
+        Args:
+            cycle (int): Number of the cycle
+            fh (TextIO): Output file
+        """
+
+        logger.info("Cycle # {}\n".format(cycle))
+        logger.info("Number of site: {}\n".format(len(self.system.molecule[0].atom)))
+
+        chargesAndDipole = self.system.molecule[0].charges_and_dipole()
+
+        logger.info(
+            "{:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(
+                chargesAndDipole[0],
+                chargesAndDipole[1],
+                chargesAndDipole[2],
+                chargesAndDipole[3],
+                chargesAndDipole[4],
+            )
+        )
 
     def print_geoms(self, cycle: int):
         with open(self.config.geoms_file, "a") as file:

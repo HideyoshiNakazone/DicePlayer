@@ -1,4 +1,4 @@
-from diceplayer.utils.ptable import PTable, AtomInfo
+from diceplayer.utils.ptable import AtomInfo, PTable
 
 from dataclasses import dataclass
 

@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, Field
-from functools import cached_property
-
 from diceplayer import logger
 from diceplayer.environment import Atom
 from diceplayer.utils.cache import invalidate_computed_properties
@@ -12,10 +9,12 @@ from diceplayer.utils.ptable import GHOST_NUMBER
 import numpy as np
 import numpy.typing as npt
 from numpy.linalg import linalg
-from typing_extensions import List, Tuple, Self
+from typing_extensions import List, Self, Tuple
 
 import math
 from copy import deepcopy
+from dataclasses import dataclass, field
+from functools import cached_property
 
 
 @dataclass
@@ -30,8 +29,9 @@ class Molecule:
         com (npt.NDArray[np.float64]): The center of mass of the molecule
         inertia_tensor (npt.NDArray[np.float64]): The inertia tensor of the molecule
     """
+
     molname: str
-    atom: List[Atom] = Field(default_factory=list)
+    atom: List[Atom] = field(default_factory=list)
 
     @cached_property
     def total_mass(self) -> float:
@@ -301,12 +301,16 @@ class Molecule:
         Returns:
             float: minimum distance between the two molecules
         """
-        coords_a = np.array([(a.rx, a.ry, a.rz) for a in self.atom if a.na != GHOST_NUMBER])
-        coords_b = np.array([(a.rx, a.ry, a.rz) for a in molec.atom if a.na != GHOST_NUMBER])
+        coords_a = np.array(
+            [(a.rx, a.ry, a.rz) for a in self.atom if a.na != GHOST_NUMBER]
+        )
+        coords_b = np.array(
+            [(a.rx, a.ry, a.rz) for a in molec.atom if a.na != GHOST_NUMBER]
+        )
 
         if len(coords_a) == 0 or len(coords_b) == 0:
             raise ValueError("No real atoms to compare")
 
         diff = coords_a[:, None, :] - coords_b[None, :, :]
-        d2 = np.sum(diff ** 2, axis=-1)
+        d2 = np.sum(diff**2, axis=-1)
         return np.sqrt(d2.min())

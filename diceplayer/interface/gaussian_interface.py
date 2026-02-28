@@ -10,7 +10,7 @@ from diceplayer.utils.misc import date_time
 from diceplayer.utils.ptable import PTable
 
 import numpy as np
-from nptyping import NDArray
+import numpy.typing as npt
 from typing_extensions import Any, Dict, List, Tuple
 
 import os

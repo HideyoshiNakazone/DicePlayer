@@ -8,7 +8,7 @@ from diceplayer.utils.ptable import GHOST_NUMBER
 
 import numpy as np
 import numpy.typing as npt
-from numpy.linalg import linalg
+import numpy.linalg as linalg
 from typing_extensions import List, Self, Tuple
 
 import math

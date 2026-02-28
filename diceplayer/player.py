@@ -76,7 +76,7 @@ class Player:
                 "\n    Translating and rotating molecule to standard orientation..."
             )
 
-            mol.standard_orientation()
+            mol.rotate_to_standard_orientation()
             logger.info("\n Done")
             logger.info("\nNew values:\n")
             mol.print_mol_info()

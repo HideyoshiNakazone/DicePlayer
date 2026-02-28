@@ -1,4 +1,4 @@
-from diceplayer.utils.ptable import PTable
+from diceplayer.utils.ptable import PTable, AtomInfo
 
 from dataclasses import dataclass
 
@@ -21,3 +21,7 @@ class Atom:
     @property
     def mass(self) -> float:
         return PTable.get_atomic_mass(self.na)
+
+    @property
+    def atom_info(self) -> AtomInfo:
+        return PTable.get_from_atomic_number(self.na)

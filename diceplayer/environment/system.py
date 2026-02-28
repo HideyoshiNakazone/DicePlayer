@@ -33,7 +33,7 @@ class System:
         Args:
             m (Molecule): The instance of the new type of molecule
         """
-        if isinstance(m, Molecule) is False:
+        if not isinstance(m, Molecule):
             raise TypeError("Error: molecule is not a Molecule instance")
         self.molecule.append(m)
 
@@ -71,8 +71,8 @@ class System:
         new_projecting_mol = deepcopy(projecting_mol)
         new_reference_mol = deepcopy(reference_mol)
 
-        new_projecting_mol.center_of_mass_to_origin()
-        new_reference_mol.center_of_mass_to_origin()
+        new_projecting_mol.move_center_of_mass_to_origin()
+        new_reference_mol.move_center_of_mass_to_origin()
 
         x = []
         y = []
@@ -129,90 +129,10 @@ class System:
             new_projecting_mol.atom[i].ry = x[i, 1]
             new_projecting_mol.atom[i].rz = x[i, 2]
 
-        reference_mol.center_of_mass()
-
         projected_mol = new_projecting_mol.translate(reference_mol.com)
 
         return rmsd, projected_mol
 
-    # def center_of_mass_distance(self, a: int, b: int) -> float:
-    #     """
-    #     Calculates the distance between the center of mass of two molecules
-    #
-    #     Args:
-    #         a (Molecule): First Molecule Instance
-    #         b (Molecule): Second Molecule Instance
-    #
-    #     Returns:
-    #         float: module of the distance between the two center of masses
-    #     """
-    #
-    #     com1 = self.molecule[a].center_of_mass()
-    #     com2 = self.molecule[b].center_of_mass()
-    #     dx = com1[0] - com2[0]
-    #     dy = com1[1] - com2[1]
-    #     dz = com1[2] - com2[2]
-    #     distance = math.sqrt(dx**2 + dy**2 + dz**2)
-    #
-    #     return distance
-
-    # def nearest_image(
-    #     self,
-    #     index_r: int,
-    #     index_m: int,
-    #     lx: float,
-    #     ly: float,
-    #     lz: float,
-    #     criterium=None,
-    # ) -> Tuple[float, Molecule]:
-    #
-    #     if criterium in None:
-    #         criterium = "com"
-    #
-    #     if criterium != "com" and criterium != "min":
-    #         raise RuntimeError("Error in value passed to function nearest_image")
-    #
-    #     min_dist = 1e20
-    #
-    #     for i in range(-1, 2):
-    #         for j in range(-1, 2):
-    #             for k in range(-1, 2):
-    #
-    #                 tr_vector = [i * lx, j * ly, k * lz]
-    #                 self.add_molecule(self.molecule[index_m].translate(tr_vector))
-    #
-    #                 if criterium == "com":
-    #                     dist = self.center_of_mass_distance(index_r, -1)
-    #                 else:
-    #                     dist = self.minimum_distance(index_r, -1)
-    #
-    #                 if dist < min_dist:
-    #                     min_dist = dist
-    #                     nearestmol = deepcopy(self.molecule[-1])
-    #
-    #     self.molecule.pop(-1)
-    #
-    #     return min_dist, nearestmol
-
-    # def print_geom(self, cycle: int, fh: TextIO) -> None:
-    #     """
-    #             Print the geometry of the molecule in the Output file
-    #
-    #             Args:
-    #                 cycle (int): Number of the cycle
-    #                 fh (TextIO): Output file
-    #             """
-    #
-    #     fh.write("Cycle # {}\n".format(cycle))
-    #     fh.write("Number of site: {}\n".format(len(self.molecule[0].atom)))
-    #     for atom in self.molecule[0].atom:
-    #         symbol = atomsymb[atom.na]
-    #         fh.write(
-    #             "{:<2s}    {:>10.6f}  {:>10.6f}  {:>10.6f}\n".format(
-    #                 symbol, atom.rx, atom.ry, atom.rz
-    #             )
-    #         )
-    #
     def print_charges_and_dipole(self, cycle: int) -> None:
         """
         Print the charges and dipole of the molecule in the Output file

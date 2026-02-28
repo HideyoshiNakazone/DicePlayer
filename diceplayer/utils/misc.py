@@ -13,6 +13,8 @@ import time
 BOHR2ANG: Final[float] = 0.52917721092
 ANG2BOHR: Final[float] = 1 / BOHR2ANG
 
+EA_2_DEBYE = 1 / 0.20819434
+
 
 #######################################  functions  ######################################
 

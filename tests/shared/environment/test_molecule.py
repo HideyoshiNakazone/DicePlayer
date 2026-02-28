@@ -41,7 +41,7 @@ class TestMolecule(unittest.TestCase):
             Atom(lbl=1, na=1, rx=1.0, ry=1.0, rz=1.0, chg=1.0, eps=1.0, sig=1.0)
         )
 
-        mol.center_of_mass_to_origin()
+        mol.move_center_of_mass_to_origin()
 
         npt.assert_equal(mol.com, [0, 0, 0])
 
@@ -68,11 +68,14 @@ class TestMolecule(unittest.TestCase):
             Atom(lbl=1, na=1, rx=1.0, ry=1.0, rz=1.0, chg=1.0, eps=1.0, sig=1.0)
         )
 
-        expected_distance_between_atoms = [[1.73205081], [1.73205081]]
-        actual_distance_between_atoms = mol.distances_between_atoms()
+        expected = [
+            [0.0, 1.73205081],
+            [1.73205081, 0.0]
+        ]
+        actual = mol.distances_between_atoms()
 
         npt.assert_almost_equal(
-            expected_distance_between_atoms, actual_distance_between_atoms
+            expected, actual
         )
 
     def test_inertia_tensor(self):
@@ -91,7 +94,7 @@ class TestMolecule(unittest.TestCase):
             [-0.50395, -0.50395, 1.0079],
         ]
 
-        actual_inertia_tensor = mol.inertia_tensor()
+        actual_inertia_tensor = mol.inertia_tensor
 
         npt.assert_equal(expected_inertia_tensor, actual_inertia_tensor)
 
@@ -163,7 +166,7 @@ class TestMolecule(unittest.TestCase):
             Atom(lbl=1, na=1, rx=1.0, ry=1.0, rz=1.0, chg=1.0, eps=1.0, sig=1.0)
         )
 
-        mol.standard_orientation()
+        mol.rotate_to_standard_orientation()
 
         expected_position = [0.0, 0.0, 0.0]
 
